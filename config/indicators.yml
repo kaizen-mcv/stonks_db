@@ -1,0 +1,258 @@
+# Indicadores macroeconómicos y sus códigos por fuente
+# Formato: code -> {name, category, unit, frequency, sources}
+
+# ── PIB ──────────────────────────────────────────────
+
+GDP_NOMINAL:
+  name: "PIB nominal (USD corrientes)"
+  category: "GDP"
+  unit: "billion_usd"
+  frequency: "annual"
+  sources:
+    world_bank: "NY.GDP.MKTP.CD"
+
+GDP_GROWTH:
+  name: "Crecimiento PIB (%)"
+  category: "GDP"
+  unit: "percent"
+  frequency: "annual"
+  sources:
+    world_bank: "NY.GDP.MKTP.KD.ZG"
+
+GDP_PER_CAPITA:
+  name: "PIB per cápita (USD corrientes)"
+  category: "GDP"
+  unit: "usd"
+  frequency: "annual"
+  sources:
+    world_bank: "NY.GDP.PCAP.CD"
+
+GDP_PPP:
+  name: "PIB PPP (USD internacionales)"
+  category: "GDP"
+  unit: "billion_intl_usd"
+  frequency: "annual"
+  sources:
+    world_bank: "NY.GDP.MKTP.PP.CD"
+
+# ── Inflación ────────────────────────────────────────
+
+CPI_YOY:
+  name: "Inflación IPC interanual (%)"
+  category: "Inflation"
+  unit: "percent"
+  frequency: "annual"
+  sources:
+    world_bank: "FP.CPI.TOTL.ZG"
+
+INFLATION_GDP_DEFLATOR:
+  name: "Deflactor PIB (%)"
+  category: "Inflation"
+  unit: "percent"
+  frequency: "annual"
+  sources:
+    world_bank: "NY.GDP.DEFL.KD.ZG"
+
+# ── Empleo ───────────────────────────────────────────
+
+UNEMPLOYMENT:
+  name: "Tasa de desempleo (%)"
+  category: "Employment"
+  unit: "percent"
+  frequency: "annual"
+  sources:
+    world_bank: "SL.UEM.TOTL.ZS"
+
+LABOR_FORCE:
+  name: "Fuerza laboral (total)"
+  category: "Employment"
+  unit: "persons"
+  frequency: "annual"
+  sources:
+    world_bank: "SL.TLF.TOTL.IN"
+
+# ── Comercio ─────────────────────────────────────────
+
+TRADE_BALANCE_PCT_GDP:
+  name: "Balanza comercial (% PIB)"
+  category: "Trade"
+  unit: "percent"
+  frequency: "annual"
+  sources:
+    world_bank: "NE.RSB.GNFS.ZS"
+
+EXPORTS_PCT_GDP:
+  name: "Exportaciones (% PIB)"
+  category: "Trade"
+  unit: "percent"
+  frequency: "annual"
+  sources:
+    world_bank: "NE.EXP.GNFS.ZS"
+
+IMPORTS_PCT_GDP:
+  name: "Importaciones (% PIB)"
+  category: "Trade"
+  unit: "percent"
+  frequency: "annual"
+  sources:
+    world_bank: "NE.IMP.GNFS.ZS"
+
+CURRENT_ACCOUNT_PCT_GDP:
+  name: "Cuenta corriente (% PIB)"
+  category: "Trade"
+  unit: "percent"
+  frequency: "annual"
+  sources:
+    world_bank: "BN.CAB.XOKA.GD.ZS"
+
+FDI_INFLOWS_PCT_GDP:
+  name: "IED entrante (% PIB)"
+  category: "Trade"
+  unit: "percent"
+  frequency: "annual"
+  sources:
+    world_bank: "BX.KLT.DINV.WD.GD.ZS"
+
+# ── Deuda y gobierno ─────────────────────────────────
+
+GOVT_DEBT_PCT_GDP:
+  name: "Deuda pública (% PIB)"
+  category: "Government"
+  unit: "percent"
+  frequency: "annual"
+  sources:
+    world_bank: "GC.DOD.TOTL.GD.ZS"
+
+GOVT_EXPENDITURE_PCT_GDP:
+  name: "Gasto público (% PIB)"
+  category: "Government"
+  unit: "percent"
+  frequency: "annual"
+  sources:
+    world_bank: "GC.XPN.TOTL.GD.ZS"
+
+GOVT_REVENUE_PCT_GDP:
+  name: "Ingresos públicos (% PIB)"
+  category: "Government"
+  unit: "percent"
+  frequency: "annual"
+  sources:
+    world_bank: "GC.REV.XGRT.GD.ZS"
+
+TAX_REVENUE_PCT_GDP:
+  name: "Ingresos fiscales (% PIB)"
+  category: "Government"
+  unit: "percent"
+  frequency: "annual"
+  sources:
+    world_bank: "GC.TAX.TOTL.GD.ZS"
+
+# ── Sector financiero ────────────────────────────────
+
+INTEREST_RATE_LENDING:
+  name: "Tipo de interés de préstamos (%)"
+  category: "Financial"
+  unit: "percent"
+  frequency: "annual"
+  sources:
+    world_bank: "FR.INR.LEND"
+
+INTEREST_RATE_DEPOSIT:
+  name: "Tipo de interés de depósitos (%)"
+  category: "Financial"
+  unit: "percent"
+  frequency: "annual"
+  sources:
+    world_bank: "FR.INR.DPST"
+
+REAL_INTEREST_RATE:
+  name: "Tipo de interés real (%)"
+  category: "Financial"
+  unit: "percent"
+  frequency: "annual"
+  sources:
+    world_bank: "FR.INR.RINR"
+
+BROAD_MONEY_PCT_GDP:
+  name: "Dinero amplio (% PIB)"
+  category: "Financial"
+  unit: "percent"
+  frequency: "annual"
+  sources:
+    world_bank: "FM.LBL.BMNY.GD.ZS"
+
+DOMESTIC_CREDIT_PCT_GDP:
+  name: "Crédito interno (% PIB)"
+  category: "Financial"
+  unit: "percent"
+  frequency: "annual"
+  sources:
+    world_bank: "FS.AST.DOMS.GD.ZS"
+
+MARKET_CAP_PCT_GDP:
+  name: "Capitalización bursátil (% PIB)"
+  category: "Financial"
+  unit: "percent"
+  frequency: "annual"
+  sources:
+    world_bank: "CM.MKT.LCAP.GD.ZS"
+
+# ── Demografía ───────────────────────────────────────
+
+POPULATION:
+  name: "Población total"
+  category: "Demographics"
+  unit: "persons"
+  frequency: "annual"
+  sources:
+    world_bank: "SP.POP.TOTL"
+
+POPULATION_GROWTH:
+  name: "Crecimiento poblacional (%)"
+  category: "Demographics"
+  unit: "percent"
+  frequency: "annual"
+  sources:
+    world_bank: "SP.POP.GROW"
+
+URBAN_POPULATION_PCT:
+  name: "Población urbana (%)"
+  category: "Demographics"
+  unit: "percent"
+  frequency: "annual"
+  sources:
+    world_bank: "SP.URB.TOTL.IN.ZS"
+
+LIFE_EXPECTANCY:
+  name: "Esperanza de vida al nacer"
+  category: "Demographics"
+  unit: "years"
+  frequency: "annual"
+  sources:
+    world_bank: "SP.DYN.LE00.IN"
+
+# ── Energía ──────────────────────────────────────────
+
+ENERGY_USE_PER_CAPITA:
+  name: "Uso de energía per cápita (kg petróleo eq.)"
+  category: "Energy"
+  unit: "kg_oil_eq"
+  frequency: "annual"
+  sources:
+    world_bank: "EG.USE.PCAP.KG.OE"
+
+RENEWABLE_ENERGY_PCT:
+  name: "Energía renovable (% consumo total)"
+  category: "Energy"
+  unit: "percent"
+  frequency: "annual"
+  sources:
+    world_bank: "EG.FEC.RNEW.ZS"
+
+CO2_EMISSIONS_PER_CAPITA:
+  name: "Emisiones CO2 per cápita (toneladas)"
+  category: "Energy"
+  unit: "metric_tons"
+  frequency: "annual"
+  sources:
+    world_bank: "EN.ATM.CO2E.PC"

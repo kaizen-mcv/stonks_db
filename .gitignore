@@ -1,0 +1,28 @@
+# Python
+*.pyc
+__pycache__/
+*.py[cod]
+.pytest_cache/
+
+# Entorno
+.venv/
+venv/
+.env
+
+# Datos generados
+data/logs/
+data/downloads/
+data/state/
+data/exports/
+
+# Build
+build/
+dist/
+*.egg-info/
+
+# IDE
+.vscode/
+.idea/
+
+# Sistema
+.DS_Store

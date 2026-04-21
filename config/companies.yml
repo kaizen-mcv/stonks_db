@@ -1,0 +1,439 @@
+# Empresas principales por mercado/región
+# ~500 tickers organizados geográficamente
+
+us_large_cap:
+  # S&P 500 top 100
+  - AAPL
+  - MSFT
+  - AMZN
+  - NVDA
+  - GOOGL
+  - META
+  - BRK-B
+  - TSLA
+  - UNH
+  - XOM
+  - JNJ
+  - JPM
+  - V
+  - PG
+  - MA
+  - HD
+  - CVX
+  - MRK
+  - ABBV
+  - LLY
+  - PEP
+  - KO
+  - COST
+  - AVGO
+  - WMT
+  - TMO
+  - MCD
+  - CSCO
+  - ACN
+  - ABT
+  - DHR
+  - CRM
+  - ADBE
+  - NFLX
+  - CMCSA
+  - TXN
+  - NEE
+  - PM
+  - WFC
+  - BMY
+  - AMD
+  - INTC
+  - ORCL
+  - UPS
+  - RTX
+  - QCOM
+  - AMGN
+  - HON
+  - IBM
+  - CAT
+  - GE
+  - LOW
+  - BA
+  - SPGI
+  - DE
+  - INTU
+  - ISRG
+  - MDLZ
+  - BLK
+  - GILD
+  - ADP
+  - ADI
+  - VRTX
+  - SYK
+  - REGN
+  - BKNG
+  - LRCX
+  - MMC
+  - CI
+  - PANW
+  - CB
+  - SCHW
+  - ETN
+  - KLAC
+  - MO
+  - ZTS
+  - SLB
+  - DUK
+  - CME
+  - SO
+  - BDX
+  - CL
+  - ICE
+  - EOG
+  - NOC
+  - SNPS
+  - WM
+  - PNC
+  - FDX
+  - MCK
+  - TGT
+  - APD
+  - ORLY
+  - AJG
+  - EMR
+  - SHW
+  - GD
+  - TFC
+  - CDNS
+  - PSA
+  - USB
+
+us_mid_cap:
+  # Mid caps relevantes
+  - CRWD
+  - DDOG
+  - ZS
+  - NET
+  - SNOW
+  - MELI
+  - SQ
+  - SHOP
+  - COIN
+  - RIVN
+  - LCID
+  - PLTR
+  - RBLX
+  - U
+  - PINS
+  - SNAP
+  - TWLO
+  - ROKU
+  - HOOD
+  - SOFI
+  - ABNB
+  - DASH
+  - UBER
+  - LYFT
+  - SE
+  - GRAB
+  - PATH
+  - BILL
+  - HUBS
+  - VEEV
+  - PAYC
+  - OKTA
+  - ZI
+  - DKNG
+  - MGMT
+  - W
+  - ETSY
+  - CHWY
+  - BROS
+  - CAVA
+  - DT
+  - CFLT
+  - MDB
+  - ESTC
+  - GTLB
+  - SMCI
+  - ARM
+  - MRVL
+  - ON
+  - SWKS
+
+europe_large:
+  # UK
+  - SHEL.L
+  - AZN.L
+  - HSBA.L
+  - BP.L
+  - GSK.L
+  - RIO.L
+  - ULVR.L
+  - DGE.L
+  - LSEG.L
+  - REL.L
+  - BA.L
+  - VOD.L
+  - GLEN.L
+  - NG.L
+  - LLOY.L
+  - BARC.L
+  - RR.L
+  - AAL.L
+  - ABF.L
+  - AHT.L
+  # Alemania
+  - SAP.DE
+  - SIE.DE
+  - ALV.DE
+  - DTE.DE
+  - BAS.DE
+  - MBG.DE
+  - BMW.DE
+  - MUV2.DE
+  - ADS.DE
+  - IFX.DE
+  - HEN3.DE
+  - DB1.DE
+  - RWE.DE
+  - VOW3.DE
+  - FRE.DE
+  - CON.DE
+  - BEI.DE
+  - HEI.DE
+  - MTX.DE
+  - SY1.DE
+  # Francia
+  - MC.PA
+  - OR.PA
+  - TTE.PA
+  - SAN.PA
+  - AIR.PA
+  - BNP.PA
+  - SU.PA
+  - AI.PA
+  - CS.PA
+  - DG.PA
+  - KER.PA
+  - RI.PA
+  - CAP.PA
+  - SGO.PA
+  - VIV.PA
+  - STLAP.PA
+  - EN.PA
+  - ACA.PA
+  - HO.PA
+  - DSY.PA
+  # España
+  - SAN.MC
+  - IBE.MC
+  - ITX.MC
+  - BBVA.MC
+  - TEF.MC
+  - REP.MC
+  - FER.MC
+  - AMS.MC
+  - ENG.MC
+  - ANA.MC
+  - GRF.MC
+  - RED.MC
+  - MAP.MC
+  - CLNX.MC
+  - IAG.MC
+  # Italia
+  - UCG.MI
+  - ISP.MI
+  - ENI.MI
+  - ENEL.MI
+  - STLAM.MI
+  - G.MI
+  - RACE.MI
+  - TEN.MI
+  - SRG.MI
+  - PRY.MI
+  # Países Bajos
+  - ASML
+  - INGA.AS
+  - AD.AS
+  - PHIA.AS
+  - UNA.AS
+  - WKL.AS
+  - HEIA.AS
+  - AKZA.AS
+  - DSM.AS
+  - REN.AS
+  # Suiza
+  - NESN.SW
+  - ROG.SW
+  - NOVN.SW
+  - UBSG.SW
+  - ZURN.SW
+  - ABBN.SW
+  - SREN.SW
+  - GIVN.SW
+  - GEBN.SW
+  - LONN.SW
+  # Nórdicos
+  - NVO
+  - NOVO-B.CO
+  - ERIC-B.ST
+  - VOLV-B.ST
+  - AZA.ST
+  - SAND.ST
+  - ATCO-A.ST
+  - NESTE.HE
+  - FORTUM.HE
+  - ORSTED.CO
+  - DNB.OL
+  - EQNR.OL
+  - TEL.OL
+  - MAERSK-B.CO
+  - CARL-B.CO
+
+asia_pacific:
+  # Japón
+  - 7203.T    # Toyota
+  - 6758.T    # Sony
+  - 6861.T    # Keyence
+  - 6954.T    # Fanuc
+  - 9984.T    # SoftBank
+  - 8306.T    # MUFG
+  - 6501.T    # Hitachi
+  - 7741.T    # HOYA
+  - 4063.T    # Shin-Etsu
+  - 6367.T    # Daikin
+  - 8035.T    # Tokyo Electron
+  - 6902.T    # Denso
+  - 4502.T    # Takeda
+  - 4568.T    # Daiichi Sankyo
+  - 6098.T    # Recruit
+  - 7974.T    # Nintendo
+  - 9432.T    # NTT
+  - 9433.T    # KDDI
+  - 8001.T    # ITOCHU
+  - 8058.T    # Mitsubishi Corp
+  # Corea del Sur
+  - 005930.KS  # Samsung
+  - 000660.KS  # SK Hynix
+  - 373220.KS  # LG Energy
+  - 207940.KS  # Samsung Biologics
+  - 005380.KS  # Hyundai Motor
+  - 035420.KS  # Naver
+  - 068270.KS  # Celltrion
+  - 051910.KS  # LG Chem
+  - 006400.KS  # Samsung SDI
+  - 035720.KS  # Kakao
+  # Australia
+  - BHP.AX
+  - CBA.AX
+  - CSL.AX
+  - NAB.AX
+  - WBC.AX
+  - ANZ.AX
+  - WES.AX
+  - MQG.AX
+  - FMG.AX
+  - RIO.AX
+  # Hong Kong / China
+  - 0700.HK    # Tencent
+  - 9988.HK    # Alibaba
+  - 0941.HK    # China Mobile
+  - 1299.HK    # AIA Group
+  - 3690.HK    # Meituan
+  - 2318.HK    # Ping An
+  - 0005.HK    # HSBC
+  - 9618.HK    # JD.com
+  - 9888.HK    # Baidu
+  - 1810.HK    # Xiaomi
+  - 2020.HK    # Anta Sports
+  - 0003.HK    # CK Hutchison
+  - 0016.HK    # Sun Hung Kai
+  - 0388.HK    # HKEX
+  - 2269.HK    # WuXi Bio
+  # India (NSE)
+  - RELIANCE.NS
+  - TCS.NS
+  - HDFCBANK.NS
+  - INFY.NS
+  - ICICIBANK.NS
+  - HINDUNILVR.NS
+  - BHARTIARTL.NS
+  - ITC.NS
+  - SBIN.NS
+  - LT.NS
+  - BAJFINANCE.NS
+  - KOTAKBANK.NS
+  - ASIANPAINT.NS
+  - MARUTI.NS
+  - TATAMOTORS.NS
+  # Singapur
+  - D05.SI     # DBS
+  - O39.SI     # OCBC
+  - U11.SI     # UOB
+  - Z74.SI     # Singtel
+  - BN4.SI     # Keppel
+
+americas_emerging:
+  # Brasil
+  - VALE3.SA
+  - PETR4.SA
+  - ITUB4.SA
+  - BBDC4.SA
+  - WEGE3.SA
+  - ABEV3.SA
+  - RENT3.SA
+  - B3SA3.SA
+  - GGBR4.SA
+  - SUZB3.SA
+  # México
+  - WALMEX.MX
+  - FEMSAUBD.MX
+  - GFNORTEO.MX
+  - AMXB.MX
+  - CEMEXCPO.MX
+  - GMEXICOB.MX
+  - AC.MX
+  - BIMBOA.MX
+  - TLEVISACPO.MX
+  - GAPB.MX
+  # Canadá
+  - RY.TO
+  - TD.TO
+  - SHOP.TO
+  - ENB.TO
+  - BN.TO
+  - CNR.TO
+  - BMO.TO
+  - CP.TO
+  - ATD.TO
+  - SU.TO
+  # Chile
+  - SQM
+  - BSANTANDER.SN
+  - COPEC.SN
+  - FALABELLA.SN
+  - CENCOSUD.SN
+
+middle_east_africa:
+  # Arabia Saudí (Tadawul)
+  - 2222.SR    # Aramco
+  - 1180.SR    # Al Rajhi Bank
+  - 2010.SR    # SABIC
+  - 7010.SR    # STC
+  - 1120.SR    # Al Rajhi REIT
+  # Sudáfrica
+  - NPN.JO     # Naspers
+  - BTI.JO     # BAT
+  - SOL.JO     # Sasol
+  - SBK.JO     # Standard Bank
+  - FSR.JO     # FirstRand
+  # Israel
+  - CHKP
+  - NICE
+  - MNDY
+  - CYBR
+  - WIX
+  # Turquía
+  - THYAO.IS   # Turkish Airlines
+  - GARAN.IS   # Garanti Bank
+  - ASELS.IS   # Aselsan
+  - BIMAS.IS   # BIM
+  - EREGL.IS   # Eregli Steel

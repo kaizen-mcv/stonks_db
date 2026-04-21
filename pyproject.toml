@@ -1,0 +1,26 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "stonks"
+version = "0.1.0"
+description = "Base de datos global de inversión"
+requires-python = ">=3.11"
+dependencies = [
+    "typer[all]>=0.12.0",
+    "rich>=13.0.0",
+    "sqlalchemy>=2.0.0",
+    "psycopg[binary]>=3.1.0",
+    "pydantic>=2.5.0",
+    "pydantic-settings>=2.1.0",
+    "requests>=2.28.0",
+    "yfinance>=0.2.30",
+    "pyyaml>=6.0.0",
+    "pycountry>=23.12.0",
+    "pandas>=2.1.0",
+    "python-dateutil>=2.8.0",
+]
+
+[project.scripts]
+stonks = "stonks.cli:app"

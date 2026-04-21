@@ -1,0 +1,102 @@
+# Fuentes de datos y configuración de APIs
+
+world_bank:
+  enabled: true
+  display_name: "World Bank Open Data"
+  base_url: "https://api.worldbank.org/v2"
+  api_key_env: null
+  rate_limit: 5.0
+  daily_limit: null
+  domains:
+    - macro
+    - country
+
+imf:
+  enabled: true
+  display_name: "IMF Data API"
+  base_url: "https://www.imf.org/external/datamapper/api/v1"
+  api_key_env: null
+  rate_limit: 2.0
+  daily_limit: null
+  domains:
+    - macro
+
+yfinance:
+  enabled: true
+  display_name: "Yahoo Finance (via yfinance)"
+  base_url: null
+  api_key_env: null
+  rate_limit: 1.0
+  daily_limit: null
+  batch_size: 50
+  domains:
+    - equity
+    - commodity
+    - forex
+    - fund
+
+ecb:
+  enabled: true
+  display_name: "European Central Bank"
+  base_url: "https://data-api.ecb.europa.eu/service"
+  api_key_env: null
+  rate_limit: 5.0
+  daily_limit: null
+  domains:
+    - macro
+    - forex
+
+fred:
+  enabled: true
+  display_name: "Federal Reserve Economic Data"
+  base_url: "https://api.stlouisfed.org/fred"
+  api_key_env: "STONKS_FRED_API_KEY"
+  rate_limit: 2.0
+  daily_limit: null
+  domains:
+    - macro
+    - fi
+    - realestate
+    - alt
+
+coingecko:
+  enabled: false
+  display_name: "CoinGecko"
+  base_url: "https://api.coingecko.com/api/v3"
+  api_key_env: "STONKS_COINGECKO_KEY"
+  rate_limit: 0.5
+  daily_limit: null
+  domains:
+    - crypto
+
+alpha_vantage:
+  enabled: false
+  display_name: "Alpha Vantage"
+  base_url: "https://www.alphavantage.co/query"
+  api_key_env: "STONKS_ALPHA_VANTAGE_KEY"
+  rate_limit: 0.08
+  daily_limit: 25
+  domains:
+    - equity
+
+sec_edgar:
+  enabled: true
+  display_name: "SEC EDGAR"
+  base_url: "https://efts.sec.gov"
+  api_key_env: null
+  rate_limit: 10.0
+  daily_limit: null
+  user_agent: "stonks marc@localhost"
+  domains:
+    - alt
+
+oecd:
+  enabled: true
+  display_name: "OECD Data"
+  base_url: "https://sdmx.oecd.org/public/rest"
+  api_key_env: null
+  rate_limit: 2.0
+  daily_limit: null
+  domains:
+    - macro
+    - realestate
