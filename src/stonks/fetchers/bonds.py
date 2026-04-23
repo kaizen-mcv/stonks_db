@@ -6,15 +6,14 @@ from datetime import date, datetime
 
 from sqlalchemy import and_
 
+import stonks.models  # noqa: F401
 from stonks.db import get_session
 from stonks.fetchers.base import BaseFetcher, logger
-import stonks.models  # noqa: F401
 from stonks.models.fixed_income import (
     Bond,
     BondIssuer,
     CreditRating,
 )
-from stonks.models.meta import DataSource
 
 # Emisores soberanos G20+ principales
 GOVERNMENT_ISSUERS = [
@@ -164,10 +163,8 @@ class BondFetcher(BaseFetcher):
                     .filter(
                         and_(
                             BondIssuer.name == name,
-                            BondIssuer.country_code
-                            == country,
-                            BondIssuer.issuer_type
-                            == "government",
+                            BondIssuer.country_code == country,
+                            BondIssuer.issuer_type == "government",
                         )
                     )
                     .first()
@@ -192,9 +189,7 @@ class BondFetcher(BaseFetcher):
         except Exception as e:
             session.rollback()
             stats["errors"] += 1
-            logger.error(
-                "Error seed issuers: %s", e
-            )
+            logger.error("Error seed issuers: %s", e)
         finally:
             session.close()
 
@@ -202,9 +197,7 @@ class BondFetcher(BaseFetcher):
 
     def fetch_us_bonds(self) -> dict[str, int]:
         """Descargar bonos US Treasury via API."""
-        run_id = self._start_run(
-            params={"type": "us_bonds"}
-        )
+        run_id = self._start_run(params={"type": "us_bonds"})
         stats = {
             "fetched": 0,
             "inserted": 0,
@@ -221,18 +214,13 @@ class BondFetcher(BaseFetcher):
         try:
             # Buscar issuer US Treasury
             us_issuer = (
-                session.query(BondIssuer)
-                .filter_by(country_code="USA")
-                .first()
+                session.query(BondIssuer).filter_by(country_code="USA").first()
             )
             if not us_issuer:
                 logger.error(
-                    "No existe issuer USA. "
-                    "Ejecuta 'stonks fi seed' primero."
+                    "No existe issuer USA. Ejecuta 'stonks fi seed' primero."
                 )
-                self._finish_run(
-                    run_id, "failed", **stats
-                )
+                self._finish_run(run_id, "failed", **stats)
                 return stats
 
             issuer_id = us_issuer.id
@@ -246,14 +234,9 @@ class BondFetcher(BaseFetcher):
                     "sort": "-auction_date",
                 }
                 if last_date:
-                    params["filter"] = (
-                        f"auction_date:gte:"
-                        f"{last_date}"
-                    )
+                    params["filter"] = f"auction_date:gte:{last_date}"
 
-                data = self._get(
-                    TREASURY_API, params=params
-                )
+                data = self._get(TREASURY_API, params=params)
                 records = data.get("data", [])
 
                 if not records:
@@ -265,21 +248,12 @@ class BondFetcher(BaseFetcher):
                     if not cusip or cusip == "null":
                         continue
 
-                    sec_type = rec.get(
-                        "security_type", ""
-                    )
-                    bond_type = BOND_TYPE_MAP.get(
-                        sec_type, "government_bond"
-                    )
+                    sec_type = rec.get("security_type", "")
+                    bond_type = BOND_TYPE_MAP.get(sec_type, "government_bond")
 
                     # Nombre del bono
-                    term = rec.get(
-                        "security_term", ""
-                    )
-                    name = (
-                        f"US Treasury {sec_type} "
-                        f"{term} {cusip}"
-                    )
+                    term = rec.get("security_term", "")
+                    name = f"US Treasury {sec_type} {term} {cusip}"
 
                     # Coupon
                     int_rate = rec.get("int_rate")
@@ -290,32 +264,18 @@ class BondFetcher(BaseFetcher):
                         "int_payment_frequency",
                         "None",
                     )
-                    coupon_freq = COUPON_FREQ_MAP.get(
-                        freq_str, 0
-                    )
+                    coupon_freq = COUPON_FREQ_MAP.get(freq_str, 0)
 
                     # Fechas
-                    issue = _safe_date(
-                        rec.get("issue_date")
-                    )
-                    maturity = _safe_date(
-                        rec.get("maturity_date")
-                    )
-                    auction = rec.get(
-                        "auction_date", ""
-                    )
+                    issue = _safe_date(rec.get("issue_date"))
+                    maturity = _safe_date(rec.get("maturity_date"))
+                    auction = rec.get("auction_date", "")
 
                     # Callable
-                    is_callable = (
-                        rec.get("callable") == "Yes"
-                    )
+                    is_callable = rec.get("callable") == "Yes"
 
                     # Verificar duplicado
-                    exists = (
-                        session.query(Bond)
-                        .filter_by(isin=cusip)
-                        .first()
-                    )
+                    exists = session.query(Bond).filter_by(isin=cusip).first()
                     if exists:
                         continue
 
@@ -348,9 +308,7 @@ class BondFetcher(BaseFetcher):
 
                 # Siguiente pagina
                 meta = data.get("meta", {})
-                total_pages = meta.get(
-                    "total-pages", 1
-                )
+                total_pages = meta.get("total-pages", 1)
                 if page >= total_pages:
                     break
                 page += 1
@@ -362,9 +320,7 @@ class BondFetcher(BaseFetcher):
                     {"last_auction_date": max_date},
                 )
 
-            self._finish_run(
-                run_id, "success", **stats
-            )
+            self._finish_run(run_id, "success", **stats)
             logger.info(
                 "Bonos US importados: %d",
                 stats["inserted"],
@@ -373,9 +329,7 @@ class BondFetcher(BaseFetcher):
         except Exception as e:
             session.rollback()
             stats["errors"] += 1
-            logger.error(
-                "Error fetch US bonds: %s", e
-            )
+            logger.error("Error fetch US bonds: %s", e)
             self._finish_run(
                 run_id,
                 "failed",
@@ -391,9 +345,7 @@ class BondFetcher(BaseFetcher):
         self,
     ) -> dict[str, int]:
         """Descargar ratings soberanos de Fitch."""
-        run_id = self._start_run(
-            params={"type": "sovereign_ratings"}
-        )
+        run_id = self._start_run(params={"type": "sovereign_ratings"})
         stats = {
             "fetched": 0,
             "inserted": 0,
@@ -415,26 +367,17 @@ class BondFetcher(BaseFetcher):
                 .filter_by(issuer_type="government")
                 .all()
             ):
-                issuer_cache[
-                    issuer.country_code
-                ] = issuer.id
+                issuer_cache[issuer.country_code] = issuer.id
 
             # Descargar CSV
-            logger.info(
-                "Descargando ratings Fitch "
-                "Sovereign..."
-            )
+            logger.info("Descargando ratings Fitch Sovereign...")
             self._rate_limit()
-            resp = self._session.get(
-                FITCH_SOVEREIGN_URL, timeout=60
-            )
+            resp = self._session.get(FITCH_SOVEREIGN_URL, timeout=60)
             resp.raise_for_status()
 
             # Parsear CSV
             text = resp.text
-            reader = csv.DictReader(
-                io.StringIO(text)
-            )
+            reader = csv.DictReader(io.StringIO(text))
 
             max_date = last_date or ""
 
@@ -442,43 +385,24 @@ class BondFetcher(BaseFetcher):
                 stats["fetched"] += 1
 
                 # Solo Long Term ratings
-                rating_type = row.get(
-                    "rating_type", ""
-                )
+                rating_type = row.get("rating_type", "")
                 if "Long Term" not in rating_type:
                     continue
 
-                issuer_name = row.get(
-                    "issuer_name", ""
-                ).strip().strip('"')
-                rating = row.get(
-                    "rating", ""
-                ).strip()
-                rating_date_str = row.get(
-                    "rating_action_date", ""
-                ).strip()
-                outlook = row.get(
-                    "rating_outlook", ""
-                ).strip() or None
+                issuer_name = row.get("issuer_name", "").strip().strip('"')
+                rating = row.get("rating", "").strip()
+                rating_date_str = row.get("rating_action_date", "").strip()
+                outlook = row.get("rating_outlook", "").strip() or None
 
-                if (
-                    not issuer_name
-                    or not rating
-                    or not rating_date_str
-                ):
+                if not issuer_name or not rating or not rating_date_str:
                     continue
 
                 # Filtro incremental
-                if (
-                    last_date
-                    and rating_date_str <= last_date
-                ):
+                if last_date and rating_date_str <= last_date:
                     continue
 
                 # Buscar country_code
-                country = COUNTRY_RATING_MAP.get(
-                    issuer_name
-                )
+                country = COUNTRY_RATING_MAP.get(issuer_name)
                 if not country:
                     continue
 
@@ -495,9 +419,7 @@ class BondFetcher(BaseFetcher):
                     issuer_id = new_issuer.id
                     issuer_cache[country] = issuer_id
 
-                rating_date = _safe_date(
-                    rating_date_str
-                )
+                rating_date = _safe_date(rating_date_str)
                 if not rating_date:
                     continue
 
@@ -506,12 +428,9 @@ class BondFetcher(BaseFetcher):
                     session.query(CreditRating)
                     .filter(
                         and_(
-                            CreditRating.issuer_id
-                            == issuer_id,
-                            CreditRating.agency
-                            == "Fitch",
-                            CreditRating.rating_date
-                            == rating_date,
+                            CreditRating.issuer_id == issuer_id,
+                            CreditRating.agency == "Fitch",
+                            CreditRating.rating_date == rating_date,
                         )
                     )
                     .first()
@@ -524,17 +443,13 @@ class BondFetcher(BaseFetcher):
                         issuer_id=issuer_id,
                         agency="Fitch",
                         rating=rating[:10],
-                        outlook=outlook[:20]
-                        if outlook
-                        else None,
+                        outlook=outlook[:20] if outlook else None,
                         rating_date=rating_date,
                     )
                 )
                 stats["inserted"] += 1
 
-                if (
-                    rating_date_str > max_date
-                ):
+                if rating_date_str > max_date:
                     max_date = rating_date_str
 
             session.commit()
@@ -546,9 +461,7 @@ class BondFetcher(BaseFetcher):
                     {"last_date": max_date},
                 )
 
-            self._finish_run(
-                run_id, "success", **stats
-            )
+            self._finish_run(run_id, "success", **stats)
             logger.info(
                 "Ratings soberanos insertados: %d",
                 stats["inserted"],
@@ -557,9 +470,7 @@ class BondFetcher(BaseFetcher):
         except Exception as e:
             session.rollback()
             stats["errors"] += 1
-            logger.error(
-                "Error fetch ratings: %s", e
-            )
+            logger.error("Error fetch ratings: %s", e)
             self._finish_run(
                 run_id,
                 "failed",
@@ -587,8 +498,6 @@ def _safe_date(value: str | None) -> date | None:
     if not value or value.strip() in ("", "null"):
         return None
     try:
-        return datetime.strptime(
-            value.strip()[:10], "%Y-%m-%d"
-        ).date()
+        return datetime.strptime(value.strip()[:10], "%Y-%m-%d").date()
     except (ValueError, TypeError):
         return None

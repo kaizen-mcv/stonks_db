@@ -5,7 +5,6 @@ from datetime import date
 from sqlalchemy import (
     Date,
     ForeignKey,
-    Index,
     Integer,
     Numeric,
     String,
@@ -23,18 +22,10 @@ class SentimentIndicator(Base):
     __tablename__ = "sentiment_indicator"
     __table_args__ = {"schema": "alt"}
 
-    id: Mapped[int] = mapped_column(
-        Integer, primary_key=True
-    )
-    code: Mapped[str] = mapped_column(
-        String(50), unique=True, nullable=False
-    )
-    name: Mapped[str | None] = mapped_column(
-        String(200)
-    )
-    description: Mapped[str | None] = mapped_column(
-        Text
-    )
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    code: Mapped[str] = mapped_column(String(50), unique=True, nullable=False)
+    name: Mapped[str | None] = mapped_column(String(200))
+    description: Mapped[str | None] = mapped_column(Text)
 
 
 class SentimentValue(Base):
@@ -54,12 +45,8 @@ class SentimentValue(Base):
         ForeignKey("alt.sentiment_indicator.id"),
         nullable=False,
     )
-    date: Mapped[date] = mapped_column(
-        Date, nullable=False
-    )
-    value: Mapped[float] = mapped_column(
-        Numeric(12, 4), nullable=False
-    )
+    date: Mapped[date] = mapped_column(Date, nullable=False)
+    value: Mapped[float] = mapped_column(Numeric(12, 4), nullable=False)
 
 
 class HousingIndex(Base):
@@ -68,21 +55,13 @@ class HousingIndex(Base):
     __tablename__ = "housing_index"
     __table_args__ = {"schema": "alt"}
 
-    id: Mapped[int] = mapped_column(
-        Integer, primary_key=True
-    )
-    code: Mapped[str] = mapped_column(
-        String(50), unique=True, nullable=False
-    )
-    name: Mapped[str | None] = mapped_column(
-        String(200)
-    )
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    code: Mapped[str] = mapped_column(String(50), unique=True, nullable=False)
+    name: Mapped[str | None] = mapped_column(String(200))
     country_code: Mapped[str | None] = mapped_column(
         String(3), ForeignKey("ref.country.code")
     )
-    index_type: Mapped[str | None] = mapped_column(
-        String(50)
-    )
+    index_type: Mapped[str | None] = mapped_column(String(50))
 
 
 class HousingIndexValue(Base):
@@ -102,12 +81,6 @@ class HousingIndexValue(Base):
         ForeignKey("alt.housing_index.id"),
         nullable=False,
     )
-    date: Mapped[date] = mapped_column(
-        Date, nullable=False
-    )
-    value: Mapped[float] = mapped_column(
-        Numeric(12, 4), nullable=False
-    )
-    yoy_change_pct: Mapped[float | None] = (
-        mapped_column(Numeric(8, 4))
-    )
+    date: Mapped[date] = mapped_column(Date, nullable=False)
+    value: Mapped[float] = mapped_column(Numeric(12, 4), nullable=False)
+    yoy_change_pct: Mapped[float | None] = mapped_column(Numeric(8, 4))

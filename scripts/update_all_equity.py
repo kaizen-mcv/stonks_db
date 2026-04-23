@@ -27,20 +27,14 @@ def main() -> None:
     # Todas las empresas de la BD
     session = get_session()
     all_companies = (
-        session.query(
-            Company.ticker, Company.id
-        )
+        session.query(Company.ticker, Company.id)
         .filter(Company.is_active.is_(True))
         .all()
     )
     session.close()
 
     # Filtrar los que NO estan en el YAML
-    pending = [
-        (t, cid)
-        for t, cid in all_companies
-        if t not in yaml_tickers
-    ]
+    pending = [(t, cid) for t, cid in all_companies if t not in yaml_tickers]
     logger.info(
         "Empresas totales: %d",
         len(all_companies),
@@ -59,7 +53,9 @@ def main() -> None:
         try:
             logger.info(
                 "[%d/%d] %s...",
-                i, len(pending), ticker,
+                i,
+                len(pending),
+                ticker,
             )
             stats = fetcher.fetch_prices(
                 ticker,
@@ -72,13 +68,13 @@ def main() -> None:
             total_upd += upd
             logger.info(
                 "  → %s: %d ins, %d upd",
-                ticker, ins, upd,
+                ticker,
+                ins,
+                upd,
             )
         except Exception as e:
             errors += 1
-            logger.warning(
-                "  Error %s: %s", ticker, e
-            )
+            logger.warning("  Error %s: %s", ticker, e)
 
     logger.info("")
     logger.info("=== RESUMEN ===")

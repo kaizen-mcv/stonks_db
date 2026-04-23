@@ -4,9 +4,43 @@ build-backend = "hatchling.build"
 
 [project]
 name = "stonks"
-version = "0.1.0"
-description = "Base de datos global de inversión"
+version = "0.2.0"
+description = "Base de datos PostgreSQL global de inversion: macro, equity, renta fija, commodities, forex, crypto y datos alternativos"
+readme = "README.md"
 requires-python = ">=3.11"
+license = {text = "MIT"}
+authors = [
+    {name = "Marc Villanueva"},
+]
+maintainers = [
+    {name = "Marc Villanueva"},
+]
+keywords = [
+    "finance",
+    "database",
+    "postgresql",
+    "economic-data",
+    "stocks",
+    "bonds",
+    "yield-curve",
+    "macro",
+    "quantitative-analysis",
+    "etl",
+]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Financial and Insurance Industry",
+    "License :: OSI Approved :: MIT License",
+    "Natural Language :: Spanish",
+    "Operating System :: POSIX :: Linux",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Database",
+    "Topic :: Office/Business :: Financial :: Investment",
+    "Topic :: Scientific/Engineering :: Information Analysis",
+]
 dependencies = [
     "typer[all]>=0.12.0",
     "rich>=13.0.0",
@@ -22,5 +56,52 @@ dependencies = [
     "python-dateutil>=2.8.0",
 ]
 
+[project.optional-dependencies]
+dev = [
+    "ruff>=0.6.0",
+    "pre-commit>=3.8.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/kaizen-mcv/stonks_db"
+Repository = "https://github.com/kaizen-mcv/stonks_db"
+Issues = "https://github.com/kaizen-mcv/stonks_db/issues"
+Changelog = "https://github.com/kaizen-mcv/stonks_db/blob/main/CHANGELOG.md"
+
 [project.scripts]
 stonks = "stonks.cli:app"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/stonks"]
+
+[tool.ruff]
+line-length = 79
+target-version = "py311"
+extend-exclude = [
+    "data",
+    ".venv",
+    "build",
+    "dist",
+]
+
+[tool.ruff.lint]
+select = [
+    "E",   # pycodestyle errors
+    "W",   # pycodestyle warnings
+    "F",   # pyflakes
+    "I",   # isort
+    "B",   # flake8-bugbear
+    "UP",  # pyupgrade
+]
+ignore = [
+    "E501",  # line too long (gestionado por formatter)
+    "B008",  # Do not perform function calls in argument defaults (Typer)
+    "B023",  # Function definition does not bind loop variable (closures)
+]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+
+[tool.ruff.lint.isort]
+known-first-party = ["stonks"]

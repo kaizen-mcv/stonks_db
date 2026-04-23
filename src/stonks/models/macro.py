@@ -25,28 +25,14 @@ class Indicator(Base):
     __tablename__ = "indicator"
     __table_args__ = {"schema": "macro"}
 
-    id: Mapped[int] = mapped_column(
-        Integer, primary_key=True
-    )
-    code: Mapped[str] = mapped_column(
-        String(100), unique=True, nullable=False
-    )
-    name: Mapped[str] = mapped_column(
-        String(300), nullable=False
-    )
-    category: Mapped[str | None] = mapped_column(
-        String(100)
-    )
-    subcategory: Mapped[str | None] = mapped_column(
-        String(100)
-    )
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    code: Mapped[str] = mapped_column(String(100), unique=True, nullable=False)
+    name: Mapped[str] = mapped_column(String(300), nullable=False)
+    category: Mapped[str | None] = mapped_column(String(100))
+    subcategory: Mapped[str | None] = mapped_column(String(100))
     unit: Mapped[str | None] = mapped_column(String(50))
-    frequency: Mapped[str | None] = mapped_column(
-        String(20)
-    )
-    seasonal_adjustment: Mapped[str | None] = (
-        mapped_column(String(20))
-    )
+    frequency: Mapped[str | None] = mapped_column(String(20))
+    seasonal_adjustment: Mapped[str | None] = mapped_column(String(20))
     description: Mapped[str | None] = mapped_column(Text)
 
 
@@ -55,15 +41,11 @@ class IndicatorSource(Base):
 
     __tablename__ = "indicator_source"
     __table_args__ = (
-        UniqueConstraint(
-            "indicator_id", "source_id"
-        ),
+        UniqueConstraint("indicator_id", "source_id"),
         {"schema": "macro"},
     )
 
-    id: Mapped[int] = mapped_column(
-        Integer, primary_key=True
-    )
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
     indicator_id: Mapped[int] = mapped_column(
         Integer,
         ForeignKey("macro.indicator.id"),
@@ -74,15 +56,9 @@ class IndicatorSource(Base):
         ForeignKey("meta.data_source.id"),
         nullable=False,
     )
-    external_code: Mapped[str] = mapped_column(
-        String(200), nullable=False
-    )
-    external_name: Mapped[str | None] = mapped_column(
-        String(500)
-    )
-    priority: Mapped[int] = mapped_column(
-        SmallInteger, default=1
-    )
+    external_code: Mapped[str] = mapped_column(String(200), nullable=False)
+    external_name: Mapped[str | None] = mapped_column(String(500))
+    priority: Mapped[int] = mapped_column(SmallInteger, default=1)
 
 
 class Series(Base):
@@ -91,15 +67,14 @@ class Series(Base):
     __tablename__ = "series"
     __table_args__ = (
         UniqueConstraint(
-            "indicator_id", "country_code",
+            "indicator_id",
+            "country_code",
             "region_code",
         ),
         {"schema": "macro"},
     )
 
-    id: Mapped[int] = mapped_column(
-        Integer, primary_key=True
-    )
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
     indicator_id: Mapped[int] = mapped_column(
         Integer,
         ForeignKey("macro.indicator.id"),
@@ -108,16 +83,10 @@ class Series(Base):
     country_code: Mapped[str | None] = mapped_column(
         String(3), ForeignKey("ref.country.code")
     )
-    region_code: Mapped[str | None] = mapped_column(
-        String(20)
-    )
-    last_value: Mapped[float | None] = mapped_column(
-        Numeric(20, 6)
-    )
+    region_code: Mapped[str | None] = mapped_column(String(20))
+    last_value: Mapped[float | None] = mapped_column(Numeric(20, 6))
     last_date: Mapped[date | None] = mapped_column(Date)
-    point_count: Mapped[int] = mapped_column(
-        Integer, default=0
-    )
+    point_count: Mapped[int] = mapped_column(Integer, default=0)
 
 
 class DataPoint(Base):
@@ -142,12 +111,8 @@ class DataPoint(Base):
         ForeignKey("macro.series.id"),
         nullable=False,
     )
-    date: Mapped[date] = mapped_column(
-        Date, nullable=False
-    )
-    value: Mapped[float] = mapped_column(
-        Numeric(20, 6), nullable=False
-    )
+    date: Mapped[date] = mapped_column(Date, nullable=False)
+    value: Mapped[float] = mapped_column(Numeric(20, 6), nullable=False)
     source_id: Mapped[int | None] = mapped_column(
         Integer, ForeignKey("meta.data_source.id")
     )

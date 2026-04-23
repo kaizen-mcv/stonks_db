@@ -2,9 +2,9 @@
 
 from datetime import datetime
 
+import stonks.models  # noqa: F401
 from stonks.db import get_session
 from stonks.fetchers.base import BaseFetcher, logger
-import stonks.models  # noqa: F401
 from stonks.models.country import (
     CountryProfile,
     Demographics,
@@ -12,14 +12,46 @@ from stonks.models.country import (
 
 # Países principales para perfiles
 PROFILE_COUNTRIES = [
-    "USA", "CHN", "JPN", "DEU", "IND",
-    "GBR", "FRA", "ITA", "BRA", "CAN",
-    "RUS", "KOR", "AUS", "ESP", "MEX",
-    "IDN", "NLD", "SAU", "TUR", "CHE",
-    "POL", "SWE", "NOR", "DNK", "FIN",
-    "IRL", "SGP", "HKG", "ISR", "ARE",
-    "NZL", "PRT", "GRC", "CZE", "HUN",
-    "CHL", "COL", "ARG", "PER", "ZAF",
+    "USA",
+    "CHN",
+    "JPN",
+    "DEU",
+    "IND",
+    "GBR",
+    "FRA",
+    "ITA",
+    "BRA",
+    "CAN",
+    "RUS",
+    "KOR",
+    "AUS",
+    "ESP",
+    "MEX",
+    "IDN",
+    "NLD",
+    "SAU",
+    "TUR",
+    "CHE",
+    "POL",
+    "SWE",
+    "NOR",
+    "DNK",
+    "FIN",
+    "IRL",
+    "SGP",
+    "HKG",
+    "ISR",
+    "ARE",
+    "NZL",
+    "PRT",
+    "GRC",
+    "CZE",
+    "HUN",
+    "CHL",
+    "COL",
+    "ARG",
+    "PER",
+    "ZAF",
 ]
 
 # Indicadores para perfil de país
@@ -49,29 +81,27 @@ class CountryProfileFetcher(BaseFetcher):
 
     def fetch_profiles(self) -> dict[str, int]:
         """Descargar perfiles de país (último dato)."""
-        run_id = self._start_run(params={
-            "type": "profiles",
-        })
+        run_id = self._start_run(
+            params={
+                "type": "profiles",
+            }
+        )
         stats = {
-            "fetched": 0, "inserted": 0,
-            "updated": 0, "errors": 0,
+            "fetched": 0,
+            "inserted": 0,
+            "updated": 0,
+            "errors": 0,
         }
         session = get_session()
 
         try:
             # World Bank acepta max ~20 países
             chunks = [
-                PROFILE_COUNTRIES[i:i + 20]
-                for i in range(
-                    0, len(PROFILE_COUNTRIES), 20
-                )
+                PROFILE_COUNTRIES[i : i + 20]
+                for i in range(0, len(PROFILE_COUNTRIES), 20)
             ]
-            for indicator_code, field in (
-                PROFILE_INDICATORS.items()
-            ):
-                logger.info(
-                    "  Perfil: %s...", indicator_code
-                )
+            for indicator_code, field in PROFILE_INDICATORS.items():
+                logger.info("  Perfil: %s...", indicator_code)
                 for chunk in chunks:
                     country_str = ";".join(chunk)
                     url = (
@@ -90,7 +120,8 @@ class CountryProfileFetcher(BaseFetcher):
                     except Exception as e:
                         logger.warning(
                             "  Error %s: %s",
-                            indicator_code, e,
+                            indicator_code,
+                            e,
                         )
                         stats["errors"] += 1
                         continue
@@ -107,18 +138,16 @@ class CountryProfileFetcher(BaseFetcher):
                         stats["fetched"] += 1
                         cc = rec["countryiso3code"]
 
-                        profile = session.query(
-                            CountryProfile
-                        ).filter_by(
-                            country_code=cc
-                        ).first()
+                        profile = (
+                            session.query(CountryProfile)
+                            .filter_by(country_code=cc)
+                            .first()
+                        )
 
                         if not profile:
                             profile = CountryProfile(
                                 country_code=cc,
-                                last_updated=(
-                                    datetime.now()
-                                ),
+                                last_updated=(datetime.now()),
                             )
                             session.add(profile)
                             stats["inserted"] += 1
@@ -127,23 +156,19 @@ class CountryProfileFetcher(BaseFetcher):
 
                         setattr(profile, field, val)
                         if field == "population":
-                            profile.population_year = (
-                                int(rec["date"])
-                            )
-                        profile.last_updated = (
-                            datetime.now()
-                        )
+                            profile.population_year = int(rec["date"])
+                        profile.last_updated = datetime.now()
 
             session.commit()
-            self._finish_run(
-                run_id, "success", **stats
-            )
+            self._finish_run(run_id, "success", **stats)
         except Exception as e:
             session.rollback()
             stats["errors"] += 1
             logger.error("Error profiles: %s", e)
             self._finish_run(
-                run_id, "failed", **stats,
+                run_id,
+                "failed",
+                **stats,
                 error_log={"msg": str(e)},
             )
         finally:
@@ -156,27 +181,27 @@ class CountryProfileFetcher(BaseFetcher):
         date_range: str = "2000:2025",
     ) -> dict[str, int]:
         """Descargar demografía histórica."""
-        run_id = self._start_run(params={
-            "type": "demographics",
-            "date_range": date_range,
-        })
+        run_id = self._start_run(
+            params={
+                "type": "demographics",
+                "date_range": date_range,
+            }
+        )
         stats = {
-            "fetched": 0, "inserted": 0,
-            "updated": 0, "errors": 0,
+            "fetched": 0,
+            "inserted": 0,
+            "updated": 0,
+            "errors": 0,
         }
         session = get_session()
 
         try:
             chunks = [
-                PROFILE_COUNTRIES[i:i + 20]
-                for i in range(
-                    0, len(PROFILE_COUNTRIES), 20
-                )
+                PROFILE_COUNTRIES[i : i + 20]
+                for i in range(0, len(PROFILE_COUNTRIES), 20)
             ]
 
-            for indicator_code, field in (
-                DEMO_INDICATORS.items()
-            ):
+            for indicator_code, field in DEMO_INDICATORS.items():
                 logger.info(
                     "  Demografía: %s...",
                     indicator_code,
@@ -197,14 +222,12 @@ class CountryProfileFetcher(BaseFetcher):
 
                     try:
                         data = self._get(url, params)
-                    except Exception as e:
+                    except Exception:
                         stats["errors"] += 1
                         continue
 
                     if data and len(data) >= 2:
-                        all_records.extend(
-                            data[1] or []
-                        )
+                        all_records.extend(data[1] or [])
 
                 records = all_records
                 for rec in records:
@@ -216,12 +239,14 @@ class CountryProfileFetcher(BaseFetcher):
                     cc = rec["countryiso3code"]
                     year = int(rec["date"])
 
-                    demo = session.query(
-                        Demographics
-                    ).filter_by(
-                        country_code=cc,
-                        year=year,
-                    ).first()
+                    demo = (
+                        session.query(Demographics)
+                        .filter_by(
+                            country_code=cc,
+                            year=year,
+                        )
+                        .first()
+                    )
 
                     if not demo:
                         demo = Demographics(
@@ -235,15 +260,15 @@ class CountryProfileFetcher(BaseFetcher):
 
                 session.commit()
 
-            self._finish_run(
-                run_id, "success", **stats
-            )
+            self._finish_run(run_id, "success", **stats)
         except Exception as e:
             session.rollback()
             stats["errors"] += 1
             logger.error("Error demographics: %s", e)
             self._finish_run(
-                run_id, "failed", **stats,
+                run_id,
+                "failed",
+                **stats,
                 error_log={"msg": str(e)},
             )
         finally:

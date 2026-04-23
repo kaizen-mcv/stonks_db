@@ -30,9 +30,7 @@ def seed_indicators() -> int:
 
         for code, info in data.items():
             # Crear o buscar indicador
-            ind = session.query(Indicator).filter_by(
-                code=code
-            ).first()
+            ind = session.query(Indicator).filter_by(code=code).first()
             if not ind:
                 ind = Indicator(
                     code=code,
@@ -51,19 +49,23 @@ def seed_indicators() -> int:
                 src_id = source_cache.get(src_name)
                 if not src_id:
                     continue
-                exists = session.query(
-                    IndicatorSource
-                ).filter_by(
-                    indicator_id=ind.id,
-                    source_id=src_id,
-                ).first()
-                if not exists:
-                    session.add(IndicatorSource(
+                exists = (
+                    session.query(IndicatorSource)
+                    .filter_by(
                         indicator_id=ind.id,
                         source_id=src_id,
-                        external_code=ext_code,
-                        priority=1,
-                    ))
+                    )
+                    .first()
+                )
+                if not exists:
+                    session.add(
+                        IndicatorSource(
+                            indicator_id=ind.id,
+                            source_id=src_id,
+                            external_code=ext_code,
+                            priority=1,
+                        )
+                    )
 
         session.commit()
     finally:

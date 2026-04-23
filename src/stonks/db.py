@@ -49,15 +49,14 @@ def create_schemas() -> None:
     """Crear los esquemas PostgreSQL."""
     with engine.connect() as conn:
         for schema in SCHEMAS:
-            conn.execute(
-                text(f"CREATE SCHEMA IF NOT EXISTS {schema}")
-            )
+            conn.execute(text(f"CREATE SCHEMA IF NOT EXISTS {schema}"))
         conn.commit()
 
 
 def init_db() -> None:
     """Crear esquemas y todas las tablas."""
     import stonks.models  # noqa: F401
+
     create_schemas()
     Base.metadata.create_all(bind=engine)
 
@@ -65,10 +64,9 @@ def init_db() -> None:
 def drop_db() -> None:
     """Borrar todas las tablas y esquemas."""
     import stonks.models  # noqa: F401
+
     Base.metadata.drop_all(bind=engine)
     with engine.connect() as conn:
         for schema in reversed(SCHEMAS):
-            conn.execute(
-                text(f"DROP SCHEMA IF EXISTS {schema} CASCADE")
-            )
+            conn.execute(text(f"DROP SCHEMA IF EXISTS {schema} CASCADE"))
         conn.commit()

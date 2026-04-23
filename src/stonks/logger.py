@@ -2,7 +2,6 @@
 
 import logging
 from datetime import datetime
-from pathlib import Path
 
 from stonks.config import settings
 
@@ -44,8 +43,11 @@ def setup_logger(
 
     # Silenciar librerías externas
     for lib in (
-        "urllib3", "requests", "httpx",
-        "yfinance", "peewee",
+        "urllib3",
+        "requests",
+        "httpx",
+        "yfinance",
+        "peewee",
     ):
         logging.getLogger(lib).setLevel(logging.WARNING)
 

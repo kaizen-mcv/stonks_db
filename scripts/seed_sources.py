@@ -23,24 +23,20 @@ def seed_sources() -> int:
     count = 0
     try:
         for name, info in data.items():
-            exists = session.query(DataSource).filter_by(
-                name=name
-            ).first()
+            exists = session.query(DataSource).filter_by(name=name).first()
             if exists:
                 continue
-            session.add(DataSource(
-                name=name,
-                display_name=info.get("display_name"),
-                base_url=info.get("base_url"),
-                api_key_env_var=info.get("api_key_env"),
-                rate_limit_per_second=info.get(
-                    "rate_limit"
-                ),
-                daily_request_limit=info.get(
-                    "daily_limit"
-                ),
-                is_enabled=info.get("enabled", True),
-            ))
+            session.add(
+                DataSource(
+                    name=name,
+                    display_name=info.get("display_name"),
+                    base_url=info.get("base_url"),
+                    api_key_env_var=info.get("api_key_env"),
+                    rate_limit_per_second=info.get("rate_limit"),
+                    daily_request_limit=info.get("daily_limit"),
+                    is_enabled=info.get("enabled", True),
+                )
+            )
             count += 1
         session.commit()
     finally:

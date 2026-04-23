@@ -10,9 +10,21 @@ logger = setup_logger("stonks.seed")
 
 # Divisas principales
 MAJOR_CURRENCIES = {
-    "USD", "EUR", "GBP", "JPY", "CHF",
-    "CAD", "AUD", "NZD", "CNY", "HKD",
-    "SGD", "SEK", "NOK", "DKK", "KRW",
+    "USD",
+    "EUR",
+    "GBP",
+    "JPY",
+    "CHF",
+    "CAD",
+    "AUD",
+    "NZD",
+    "CNY",
+    "HKD",
+    "SGD",
+    "SEK",
+    "NOK",
+    "DKK",
+    "KRW",
 }
 
 
@@ -22,16 +34,18 @@ def seed_currencies() -> int:
     count = 0
     try:
         for cur in pycountry.currencies:
-            exists = session.query(Currency).filter_by(
-                code=cur.alpha_3
-            ).first()
+            exists = (
+                session.query(Currency).filter_by(code=cur.alpha_3).first()
+            )
             if exists:
                 continue
-            session.add(Currency(
-                code=cur.alpha_3,
-                name=cur.name,
-                is_major=cur.alpha_3 in MAJOR_CURRENCIES,
-            ))
+            session.add(
+                Currency(
+                    code=cur.alpha_3,
+                    name=cur.name,
+                    is_major=cur.alpha_3 in MAJOR_CURRENCIES,
+                )
+            )
             count += 1
         session.commit()
     finally:
@@ -46,16 +60,16 @@ def seed_countries() -> int:
     try:
         for c in pycountry.countries:
             alpha3 = c.alpha_3
-            exists = session.query(Country).filter_by(
-                code=alpha3
-            ).first()
+            exists = session.query(Country).filter_by(code=alpha3).first()
             if exists:
                 continue
-            session.add(Country(
-                code=alpha3,
-                code_alpha2=getattr(c, "alpha_2", None),
-                name=c.name,
-            ))
+            session.add(
+                Country(
+                    code=alpha3,
+                    code_alpha2=getattr(c, "alpha_2", None),
+                    name=c.name,
+                )
+            )
             count += 1
         session.commit()
     finally:

@@ -14,9 +14,8 @@ class Settings(BaseSettings):
         env_prefix="STONKS_",
     )
 
-    db_url: str = (
-        "postgresql+psycopg://marc@/stonks_db"
-    )
+    # Configurar via STONKS_DB_URL en .env
+    db_url: str = "postgresql+psycopg://localhost/stonks_db"
 
     # API keys (opcionales)
     fred_api_key: str = ""

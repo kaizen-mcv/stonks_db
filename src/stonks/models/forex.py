@@ -21,15 +21,11 @@ class CurrencyPair(Base):
 
     __tablename__ = "currency_pair"
     __table_args__ = (
-        UniqueConstraint(
-            "base_currency", "quote_currency"
-        ),
+        UniqueConstraint("base_currency", "quote_currency"),
         {"schema": "forex"},
     )
 
-    id: Mapped[int] = mapped_column(
-        Integer, primary_key=True
-    )
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
     base_currency: Mapped[str] = mapped_column(
         String(3),
         ForeignKey("ref.currency.code"),
@@ -43,9 +39,7 @@ class CurrencyPair(Base):
     pair_code: Mapped[str] = mapped_column(
         String(7), unique=True, nullable=False
     )
-    category: Mapped[str | None] = mapped_column(
-        String(20)
-    )
+    category: Mapped[str | None] = mapped_column(String(20))
 
 
 class ForexRate(Base):
@@ -56,7 +50,8 @@ class ForexRate(Base):
         UniqueConstraint("pair_id", "date"),
         Index(
             "ix_forex_rate_pair_date",
-            "pair_id", "date",
+            "pair_id",
+            "date",
         ),
         {"schema": "forex"},
     )
@@ -69,21 +64,11 @@ class ForexRate(Base):
         ForeignKey("forex.currency_pair.id"),
         nullable=False,
     )
-    date: Mapped[date] = mapped_column(
-        Date, nullable=False
-    )
-    open: Mapped[float | None] = mapped_column(
-        Numeric(14, 8)
-    )
-    high: Mapped[float | None] = mapped_column(
-        Numeric(14, 8)
-    )
-    low: Mapped[float | None] = mapped_column(
-        Numeric(14, 8)
-    )
-    close: Mapped[float] = mapped_column(
-        Numeric(14, 8), nullable=False
-    )
+    date: Mapped[date] = mapped_column(Date, nullable=False)
+    open: Mapped[float | None] = mapped_column(Numeric(14, 8))
+    high: Mapped[float | None] = mapped_column(Numeric(14, 8))
+    low: Mapped[float | None] = mapped_column(Numeric(14, 8))
+    close: Mapped[float] = mapped_column(Numeric(14, 8), nullable=False)
     source_id: Mapped[int | None] = mapped_column(
         Integer, ForeignKey("meta.data_source.id")
     )

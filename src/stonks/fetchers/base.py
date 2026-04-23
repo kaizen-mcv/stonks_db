@@ -27,10 +27,12 @@ class BaseFetcher:
     def __init__(self) -> None:
         self._last_request: float = 0.0
         self._session = requests.Session()
-        self._session.headers.update({
-            "User-Agent": "stonks/0.1.0",
-            "Accept": "application/json",
-        })
+        self._session.headers.update(
+            {
+                "User-Agent": "stonks/0.1.0",
+                "Accept": "application/json",
+            }
+        )
 
     def _rate_limit(self) -> None:
         """Esperar si es necesario para respetar el
@@ -50,25 +52,23 @@ class BaseFetcher:
         for attempt in range(1, self.MAX_RETRIES + 1):
             self._rate_limit()
             try:
-                resp = self._session.get(
-                    url, params=params, timeout=30
-                )
+                resp = self._session.get(url, params=params, timeout=30)
                 resp.raise_for_status()
                 return resp.json()
             except requests.RequestException as e:
                 logger.warning(
                     "%s intento %d/%d falló: %s",
-                    self.SOURCE_NAME, attempt,
-                    self.MAX_RETRIES, e,
+                    self.SOURCE_NAME,
+                    attempt,
+                    self.MAX_RETRIES,
+                    e,
                 )
                 if attempt == self.MAX_RETRIES:
                     raise
-                time.sleep(2 ** attempt)
+                time.sleep(2**attempt)
         return {}
 
-    def _start_run(
-        self, params: dict | None = None
-    ) -> FetchRun:
+    def _start_run(self, params: dict | None = None) -> FetchRun:
         """Registrar inicio de ejecución."""
         session = get_session()
         run = FetchRun(
@@ -79,9 +79,10 @@ class BaseFetcher:
         )
         # Buscar source_id
         from stonks.models.meta import DataSource
-        src = session.query(DataSource).filter_by(
-            name=self.SOURCE_NAME
-        ).first()
+
+        src = (
+            session.query(DataSource).filter_by(name=self.SOURCE_NAME).first()
+        )
         if src:
             run.source_id = src.id
         session.add(run)
@@ -130,9 +131,7 @@ class BaseFetcher:
                 return json.load(f)
         return {}
 
-    def _save_state(
-        self, key: str, state: dict
-    ) -> None:
+    def _save_state(self, key: str, state: dict) -> None:
         """Guardar estado para próxima ejecución."""
         path = self._state_path(key)
         with open(path, "w", encoding="utf-8") as f:
