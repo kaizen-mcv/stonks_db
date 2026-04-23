@@ -1,7 +1,11 @@
-# Stonks — Base de Datos Global de Inversión
+# stonks_db
 
-Base de datos PostgreSQL con información económica y financiera
-mundial para toma de decisiones de inversión.
+Base de datos PostgreSQL global de inversión: macro, equity, renta fija,
+commodities, forex, crypto, fondos, inmobiliario, alt-data y calendario
+económico. Orientada a toma de decisiones y análisis cuantitativo.
+
+**Stack:** Python 3.11+, PostgreSQL, fetchers de FRED, ECB, Yahoo Finance,
+CoinGecko, World Bank.
 
 ## Dominios
 
@@ -22,7 +26,7 @@ mundial para toma de decisiones de inversión.
 ## Instalación
 
 ```bash
-cd /home/marc/Projects/db-projects/stonks
+cd stonks_db
 python -m venv .venv
 source .venv/bin/activate
 pip install -e .

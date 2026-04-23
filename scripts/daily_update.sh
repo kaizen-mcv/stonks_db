@@ -4,8 +4,8 @@
 
 set -e
 
-VENV="/home/marc/Projects/db-projects/stonks/.venv"
-PROJECT="/home/marc/Projects/db-projects/stonks"
+PROJECT="$(cd "$(dirname "$0")/.." && pwd)"
+VENV="$PROJECT/.venv"
 LOG_DIR="$PROJECT/data/logs"
 DATE=$(date +%Y%m%d)
 LOG="$LOG_DIR/daily_update_${DATE}.log"

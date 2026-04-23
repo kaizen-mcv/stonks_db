@@ -598,7 +598,7 @@ if __name__ == "__main__":
     tickers = build_universe()
     # Guardar a archivo
     out = (
-        "/home/marc/Projects/db-projects/stonks/"
+        "."
         "data/universe_tickers.txt"
     )
     with open(out, "w") as f:

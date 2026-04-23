@@ -16,7 +16,7 @@ from stonks.models.equity import Company
 logger = setup_logger("stonks.universe")
 
 DATA_DIR = Path(
-    "/home/marc/Projects/db-projects/stonks/data"
+    "./data"
 )
 
 
