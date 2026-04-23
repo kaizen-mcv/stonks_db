@@ -262,6 +262,11 @@ def macro_fetch(
         help="Códigos ISO3 separados por coma "
         "(ej: USA,CHN,DEU)",
     ),
+    start_date: str = typer.Option(
+        "2000-01-01",
+        "--start-date",
+        help="Fecha inicio YYYY-MM-DD (solo FRED)",
+    ),
 ) -> None:
     """Descargar datos macroeconómicos."""
     from stonks.logger import setup_logger
@@ -327,10 +332,12 @@ def macro_fetch(
         if indicator:
             console.print(
                 f"Descargando FRED [cyan]"
-                f"{indicator}[/cyan]..."
+                f"{indicator}[/cyan] desde "
+                f"{start_date}..."
             )
             stats = fetcher.fetch_series(
                 indicator, indicator,
+                start_date=start_date,
             )
             console.print(
                 f"  Insertados: {stats['inserted']}"
@@ -338,9 +345,11 @@ def macro_fetch(
         else:
             console.print(
                 "Descargando [cyan]todas las series "
-                "FRED[/cyan] (40 series)..."
+                f"FRED[/cyan] desde {start_date}..."
             )
-            results = fetcher.fetch_all()
+            results = fetcher.fetch_all(
+                start_date=start_date,
+            )
             total_ins = sum(
                 r["inserted"]
                 for r in results.values()
@@ -626,6 +635,62 @@ def fi_fetch(
     )
     fetcher = YieldCurveFetcher()
     stats = fetcher.fetch_us_yields(period=period)
+    console.print(
+        f"  Insertados: {stats['inserted']}, "
+        f"Errores: {stats['errors']}"
+    )
+
+
+@fi_app.command("seed")
+def fi_seed() -> None:
+    """Poblar emisores soberanos G20+."""
+    from stonks.fetchers.bonds import BondFetcher
+    from stonks.logger import setup_logger
+    setup_logger("stonks.fetch")
+
+    console.print(
+        "Insertando [cyan]emisores "
+        "soberanos[/cyan]..."
+    )
+    fetcher = BondFetcher()
+    stats = fetcher.seed_government_issuers()
+    console.print(
+        f"  Insertados: {stats['inserted']}"
+    )
+
+
+@fi_app.command("bonds")
+def fi_bonds() -> None:
+    """Descargar bonos US Treasury."""
+    from stonks.fetchers.bonds import BondFetcher
+    from stonks.logger import setup_logger
+    setup_logger("stonks.fetch")
+
+    console.print(
+        "Descargando [cyan]bonos US "
+        "Treasury[/cyan]..."
+    )
+    fetcher = BondFetcher()
+    stats = fetcher.fetch_us_bonds()
+    console.print(
+        f"  Insertados: {stats['inserted']}, "
+        f"Errores: {stats['errors']}"
+    )
+
+
+@fi_app.command("ratings")
+def fi_ratings() -> None:
+    """Descargar ratings soberanos (Fitch)."""
+    from stonks.fetchers.bonds import BondFetcher
+    from stonks.logger import setup_logger
+    setup_logger("stonks.fetch")
+
+    console.print(
+        "Descargando [cyan]ratings "
+        "soberanos[/cyan]..."
+    )
+    fetcher = BondFetcher()
+    stats = fetcher.fetch_sovereign_ratings()
     console.print(
         f"  Insertados: {stats['inserted']}, "
         f"Errores: {stats['errors']}"

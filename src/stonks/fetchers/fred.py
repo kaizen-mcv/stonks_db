@@ -405,7 +405,10 @@ class FredFetcher(BaseFetcher):
 
         return stats
 
-    def fetch_all(self) -> dict[str, dict]:
+    def fetch_all(
+        self,
+        start_date: str = "2000-01-01",
+    ) -> dict[str, dict]:
         """Descargar todas las series FRED."""
         if not self.api_key:
             logger.error(
@@ -415,6 +418,7 @@ class FredFetcher(BaseFetcher):
 
         run_id = self._start_run(params={
             "type": "all_series",
+            "start_date": start_date,
         })
         results = {}
         total = len(FRED_SERIES)
@@ -430,7 +434,8 @@ class FredFetcher(BaseFetcher):
                 i, total, code, fred_id,
             )
             stats = self.fetch_series(
-                fred_id, code, domain=domain
+                fred_id, code, domain=domain,
+                start_date=start_date,
             )
             results[code] = stats
             total_ins += stats["inserted"]

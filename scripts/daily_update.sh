@@ -45,7 +45,12 @@ stonks crypto fetch --days 30 >> "$LOG" 2>&1 || true
 echo "[$(date +%H:%M)] Actualizando FRED..." >> "$LOG"
 stonks macro fetch --source fred >> "$LOG" 2>&1 || true
 
-# 8. VIX / sentimiento
+# 8. Bonos y ratings soberanos
+echo "[$(date +%H:%M)] Actualizando bonos FI..." >> "$LOG"
+stonks fi bonds >> "$LOG" 2>&1 || true
+stonks fi ratings >> "$LOG" 2>&1 || true
+
+# 9. VIX / sentimiento
 echo "[$(date +%H:%M)] Actualizando sentimiento..." >> "$LOG"
 stonks alt fetch --period 1y >> "$LOG" 2>&1 || true
 

@@ -54,8 +54,18 @@ class CoinGeckoFetcher(BaseFetcher):
 
     SOURCE_NAME = "coingecko"
     DOMAIN = "crypto"
-    RATE_LIMIT = 7.0  # free tier muy restrictivo
+    RATE_LIMIT = 1.0  # con API key: ~30 req/min
     BASE_URL = "https://api.coingecko.com/api/v3"
+
+    def __init__(self) -> None:
+        super().__init__()
+        from stonks.config import settings
+        if settings.coingecko_key:
+            self._session.headers.update({
+                "x-cg-demo-api-key": (
+                    settings.coingecko_key
+                ),
+            })
 
     def seed_coins(self) -> int:
         """Insertar coins de referencia."""
