@@ -29,4 +29,10 @@ stonks country fetch >> "$LOG" 2>&1 || true
 echo "[$(date +%H:%M)] Actualizando fundamentales..." >> "$LOG"
 stonks equity fundamentals --all >> "$LOG" 2>&1 || true
 
+# 4. Refrescar vista materializada de ratios (consumida por kairos_bot)
+echo "[$(date +%H:%M)] Refrescando equity.ratios_mv..." >> "$LOG"
+psql -d stonks_db -c \
+    "REFRESH MATERIALIZED VIEW CONCURRENTLY equity.ratios_mv;" \
+    >> "$LOG" 2>&1 || true
+
 echo "[$(date +%H:%M)] === Weekly update completado ===" >> "$LOG"

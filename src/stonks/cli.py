@@ -179,6 +179,41 @@ def status() -> None:
 
 
 @app.command()
+def update(
+    cadence: str = typer.Option(
+        "daily",
+        "-c",
+        "--cadence",
+        help="Cadencia: daily | weekly | monthly | all",
+    ),
+    dry_run: bool = typer.Option(
+        False,
+        "--dry-run",
+        help="Solo listar los pasos, sin ejecutarlos",
+    ),
+    no_build: bool = typer.Option(
+        False,
+        "--no-build",
+        help="No reconstruir la capa gold al final",
+    ),
+) -> None:
+    """Ejecutar el pipeline medallion de una cadencia."""
+    from stonks.logger import setup_logger
+    from stonks.pipeline import run_update
+
+    setup_logger("stonks.cli")
+    resumen = run_update(cadence, dry_run=dry_run, build=not no_build)
+
+    table = Table(title=f"Pipeline ({cadence})")
+    table.add_column("Paso", style="cyan")
+    table.add_column("Estado")
+    for paso, estado in resumen.items():
+        color = "green" if estado in ("ok", "dry-run") else "red"
+        table.add_row(paso, f"[{color}]{estado}[/{color}]")
+    console.print(table)
+
+
+@app.command()
 def sources() -> None:
     """Mostrar fuentes de datos configuradas."""
     from stonks.db import get_session

@@ -18,6 +18,50 @@
 | **fund** | 2 | 132.303 | ~15 MB | ETFs/fondos y NAV |
 | **country** | 3 | 1.038 | ~656 KB | Perfiles de país, demografía, impuestos |
 | **alt** | 4 | 5.635 | ~760 KB | Datos alternativos: sentimiento, vivienda |
+| **bronze** | 3 | — | — | Aterrizaje crudo JSONB (SEC, constituyentes, analistas) |
+| **gold** | 5 | — | — | Analítica point-in-time (membership, PIT, factores, marts) |
+
+---
+
+## Capa medallion: bronze y gold
+
+Esquemas añadidos sobre los dominios "silver" (ver
+[ARCHITECTURE.md](ARCHITECTURE.md)).
+
+**bronze** (append-only, JSONB crudo):
+
+| Tabla | Clave natural | Contenido |
+|-------|---------------|-----------|
+| `bronze.sec_companyfacts` | `(cik, ingested_at)` | JSON de la API companyfacts de SEC EDGAR |
+| `bronze.constituents_snapshot` | `(index_code, source_kind, ingested_at)` | Constituyentes S&P 500 (GitHub/Wikipedia) |
+| `bronze.analyst_snapshot` | `(ticker, snapshot_date)` | Foto diaria de analistas (yfinance) |
+
+**gold** (point-in-time + marts):
+
+| Tabla / vista | Grano | Contenido |
+|---------------|-------|-----------|
+| `gold.dim_date` | 1/día | Dimensión fecha |
+| `gold.dim_company` | 1/empresa | Dimensión empresa (sector desnormalizado) |
+| `gold.index_membership` | periodo de pertenencia | Universo S&P 500 **point-in-time** |
+| `gold.fact_fundamentals_pit` | métrica × periodo × `filed_date` | Fundamentales con fecha de publicación (SEC) |
+| `gold.fact_factor_scores` | empresa × `as_of_date` × factor | Factores Value/Quality/Momentum sector-neutral, **point-in-time** (universo S&P 500 PIT; historial mensual para backtests) |
+| `gold.mart_pool_membership` (vista) | empresa × día | Universo PIT expandido a días de cotización |
+| `gold.mart_benchmark_returns` (MV) | día × método | Retorno EW honesto del pool vs SPY |
+
+**equity** (tablas nuevas silver): `analyst_estimate`,
+`earnings_revision`, `index_constituent_current`.
+
+**meta**: nueva tabla `transform_run` (auditoría de transformaciones).
+
+### Limitaciones conocidas (fuentes gratuitas)
+
+- **Empresas deslistadas sin precios**: de las 563 deslistadas
+  reconstruidas, ~198 tienen precios (yfinance); el resto (quiebras y
+  absorciones antiguas) ya no estan en yfinance, y Stooq ahora exige
+  JavaScript. El `equal_weight` historico es survivorship-free en lo
+  posible, pero los tramos mas antiguos siguen incompletos.
+- **Fundamentales PIT**: cubren emisores US (SEC EDGAR). Las empresas
+  no-US se quedan con los fundamentales "foto" de yfinance en silver.
 
 ---
 

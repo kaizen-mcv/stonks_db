@@ -22,6 +22,9 @@ class Settings(BaseSettings):
     alpha_vantage_key: str = ""
     coingecko_key: str = ""
 
+    # SEC EDGAR exige User-Agent con email de contacto (o devuelve 403)
+    sec_contact_email: str = "jvcsan@gmail.com"
+
     # Rate limiting por defecto
     default_rate_limit: float = 1.0
     default_max_retries: int = 3

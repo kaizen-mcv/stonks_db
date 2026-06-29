@@ -55,6 +55,28 @@ class FetchRun(Base):
     error_log: Mapped[dict | None] = mapped_column(JSONB)
 
 
+class TransformRun(Base):
+    """Auditoría de cada transformación (bronze→silver, →gold)."""
+
+    __tablename__ = "transform_run"
+    __table_args__ = {"schema": "meta"}
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    domain: Mapped[str] = mapped_column(String(50), index=True)
+    # Capa destino: silver o gold
+    target_layer: Mapped[str] = mapped_column(String(20), default="silver")
+    started_at: Mapped[datetime] = mapped_column(
+        DateTime, default=datetime.now
+    )
+    finished_at: Mapped[datetime | None] = mapped_column(DateTime)
+    status: Mapped[str] = mapped_column(String(20), default="running")
+    records_read: Mapped[int] = mapped_column(Integer, default=0)
+    records_written: Mapped[int] = mapped_column(Integer, default=0)
+    records_invalid: Mapped[int] = mapped_column(Integer, default=0)
+    params: Mapped[dict | None] = mapped_column(JSONB)
+    error_log: Mapped[dict | None] = mapped_column(JSONB)
+
+
 class DataQuality(Base):
     """Puntuación de calidad por entidad/dominio."""
 

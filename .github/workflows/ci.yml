@@ -44,3 +44,6 @@ jobs:
 
       - name: Smoke test (CLI --help)
         run: stonks --help
+
+      - name: Run tests (los tests con BD se omiten sin Postgres)
+        run: pytest -q

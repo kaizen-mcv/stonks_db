@@ -9,7 +9,9 @@ from sqlalchemy.orm import (
 
 from stonks.config import settings
 
-# Todos los esquemas PostgreSQL del proyecto
+# Todos los esquemas PostgreSQL del proyecto.
+# bronze = aterrizaje crudo (fuentes nuevas); gold = capa analítica
+# point-in-time (hechos + marts). El resto son la capa "silver".
 SCHEMAS = [
     "meta",
     "ref",
@@ -25,6 +27,8 @@ SCHEMAS = [
     "alt",
     "calendar",
     "country",
+    "bronze",
+    "gold",
 ]
 
 engine = create_engine(

@@ -17,6 +17,33 @@ extenderlo. Para el esquema de BD ver
 6. **Codigo simple**, sin sobreingenieria — si un script resuelve
    el problema, no hace falta una clase
 
+## Arquitectura medallion (hibrida)
+
+Sobre los esquemas de dominio se anaden dos capas:
+
+- **bronze** (`src/stonks/models/bronze.py`): aterrizaje crudo
+  append-only en JSONB. Solo para fuentes nuevas (SEC EDGAR,
+  constituyentes de indices, snapshots de analistas). Las fuentes ya
+  existentes siguen escribiendo directo a su dominio ("silver").
+- **silver**: los 13 esquemas de dominio (`ref`, `equity`, `macro`...),
+  datos normalizados con FKs.
+- **gold** (`src/stonks/models/gold.py`): modelo analitico
+  point-in-time (dimensiones, hechos PIT, marts). Se reconstruye de
+  forma idempotente con `stonks.gold.build.build_gold()`.
+
+El flujo lo orquesta `src/stonks/pipeline.py` por cadencia
+(`daily`/`weekly`/`monthly`) via `stonks update -c`. Cada paso (`Step`)
+agrupa descargas (fetchers) y transformaciones, se aisla de los demas
+(un fallo no detiene el resto) y queda auditado. Las transformaciones
+heredan `transform/base.py::BaseTransform` (auditoria en
+`meta.transform_run`) y hacen upsert idempotente con
+`insert().on_conflict_do_update`.
+
+```
+fetcher --> bronze (JSONB)   --transform-->  silver/gold
+fetcher --> silver (dominio)                 gold = build_gold()
+```
+
 ## Capas
 
 ### CLI (Typer + Rich)

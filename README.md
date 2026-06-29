@@ -34,7 +34,9 @@ alternativos. Orientada a analisis cuantitativo y toma de decisiones.
 
 ## Caracteristicas
 
-- **11 schemas** / **40 tablas** / **45 foreign keys**
+- **Arquitectura medallion hibrida**: dominios "silver" + `bronze`
+  (aterrizaje crudo) + `gold` (analitica point-in-time).
+- **13 schemas** de dominio + `bronze` + `gold`
 - **~9.7M filas** de datos historicos reales
 - Cobertura historica profunda:
   - Indices desde **1927** (Dow Jones)
@@ -43,10 +45,17 @@ alternativos. Orientada a analisis cuantitativo y toma de decisiones.
   - Bonos US Treasury desde **1980**
   - ETFs desde **1993**
   - Forex desde **1999**
+- **Sin sesgo de supervivencia**: constituyentes historicos del
+  S&P 500 (point-in-time) y empresas deslistadas en `gold.index_membership`.
+- **Fundamentales point-in-time** reales via SEC EDGAR (fecha de
+  publicacion) en `gold.fact_fundamentals_pit`.
+- **Factores** Value/Quality/Momentum neutralizados por sector en
+  `gold.fact_factor_scores`; sector GICS poblado en `equity.company`.
+- **Revisiones de analistas** (foto diaria acumulativa) en `equity`.
 - **15+ fetchers** modulares para fuentes gratuitas
-- CLI intuitiva con Typer + Rich
-- Estado incremental para actualizaciones diarias resumibles
-- Auditoria completa via `meta.fetch_run`
+- CLI intuitiva con Typer + Rich; orquestador `stonks update -c`
+- Estado incremental para actualizaciones resumibles
+- Auditoria completa via `meta.fetch_run` y `meta.transform_run`
 
 ---
 
@@ -55,23 +64,29 @@ alternativos. Orientada a analisis cuantitativo y toma de decisiones.
 ```
 ┌─────────────────────────────────────────┐
 │            CLI (Typer + Rich)           │
-│    stonks init | status | fetch ...     │
+│  stonks init | status | update -c ...   │
 └──────────────────┬──────────────────────┘
                    │
 ┌──────────────────▼──────────────────────┐
-│        Fetchers (src/stonks/fetchers)   │
-│  FRED | yfinance | ECB | Treasury | ... │
-│  BaseFetcher: rate limit, retries, state│
+│   Pipeline (src/stonks/pipeline.py)     │
+│  orquesta por cadencia: daily/weekly/...│
+└──────────────────┬──────────────────────┘
+        ┌──────────┴───────────┐
+        ▼                      ▼
+┌───────────────┐     ┌──────────────────┐
+│   Fetchers    │     │    Transforms    │
+│ fuente→bronze │     │ bronze→silver/gold│
+│ /silver       │     │ idempotentes     │
+└──────┬────────┘     └────────┬─────────┘
+       │                       │
+┌──────▼───────────────────────▼─────────┐
+│  bronze  →  silver (dominios)  →  gold  │
+│  (crudo)    (ref, equity, ...)   (PIT,  │
+│   JSONB                          marts) │
 └──────────────────┬──────────────────────┘
                    │
 ┌──────────────────▼──────────────────────┐
-│      Models (SQLAlchemy 2.0)            │
-│   11 schemas · 40 tablas · 45 FKs       │
-└──────────────────┬──────────────────────┘
-                   │
-┌──────────────────▼──────────────────────┐
-│          PostgreSQL 14+                 │
-│         stonks_db (~1.7 GB)             │
+│             PostgreSQL 16               │
 └─────────────────────────────────────────┘
 ```
 
@@ -161,26 +176,49 @@ stonks fund fetch --period max
 stonks commodity fetch --period max
 stonks crypto fetch --days 3650
 stonks index fetch --period max
+
+# Pipeline medallion por cadencia (analistas, sectores,
+# constituyentes, PIT, factores) + reconstruccion de gold
+stonks update -c daily      # foto diaria de analistas
+stonks update -c weekly     # sectores, constituyentes, SEC PIT
+stonks update -c monthly    # factores
+stonks update -c all --dry-run   # ver los pasos sin ejecutar
 ```
+
+---
+
+## Capa gold (analitica point-in-time)
+
+La capa `gold` sirve analisis cuantitativo honesto, construida de forma
+idempotente desde `stonks.gold.build` y los transforms:
+
+| Tabla / vista | Que aporta |
+|---------------|------------|
+| `gold.index_membership` | Universo S&P 500 **point-in-time** (sin sesgo de supervivencia) |
+| `gold.fact_fundamentals_pit` | Fundamentales con **fecha de publicacion** real (SEC EDGAR) |
+| `gold.fact_factor_scores` | Factores Value/Quality/Momentum **sector-neutral** |
+| `gold.mart_benchmark_returns` | Retorno del pool equiponderado **honesto** vs SPY |
+| `gold.dim_company`, `gold.dim_date` | Dimensiones del modelo analitico |
 
 ---
 
 ## Schemas y datos
 
-| Schema | Tablas | Filas | Cobertura |
-|--------|-------:|------:|-----------|
-| `ref` | 4 | 425 | Paises, monedas, bolsas, sectores GICS |
-| `meta` | 3 | ~8K | Fuentes, auditoria de ejecuciones |
-| `macro` | 4 | ~108K | Indicadores economicos (FRED, World Bank) |
-| `equity` | 9 | **~8.9M** | Empresas, precios, fundamentales, dividendos |
-| `fi` | 4 | ~84K | Bonos, ratings, curvas de tipos |
-| `commodity` | 2 | ~105K | Materias primas |
-| `forex` | 2 | ~183K | Tipos de cambio (EUR vs 30+ divisas) |
-| `crypto` | 3 | ~11K | Criptomonedas |
-| `fund` | 2 | ~132K | ETFs y NAV historico |
-| `country` | 3 | ~1K | Perfiles de pais, demografia |
-| `alt` | 4 | ~6K | Sentimiento (VIX, consumer sentiment) |
-| **Total** | **40** | **~9.7M** | |
+| Schema | Cobertura |
+|--------|-----------|
+| `ref` | Paises, monedas, bolsas, sectores GICS |
+| `meta` | Fuentes, auditoria (`fetch_run`, `transform_run`) |
+| `macro` | Indicadores economicos (FRED, World Bank) |
+| `equity` | Empresas, precios, fundamentales, analistas, constituyentes |
+| `fi` | Bonos, ratings, curvas de tipos |
+| `commodity` | Materias primas |
+| `forex` | Tipos de cambio (EUR vs 30+ divisas) |
+| `crypto` | Criptomonedas |
+| `fund` | ETFs y NAV historico |
+| `country` | Perfiles de pais, demografia |
+| `alt` | Sentimiento (VIX, consumer sentiment) |
+| **`bronze`** | Aterrizaje crudo JSONB (SEC, constituyentes, analistas) |
+| **`gold`** | Analitica point-in-time (ver arriba) |
 
 Ver [docs/SCHEMA_RELATIONS.md](docs/SCHEMA_RELATIONS.md) para el
 diagrama ER completo con todas las relaciones.
@@ -214,11 +252,17 @@ Dos scripts en `scripts/`:
   bonos FI (~10 min)
 - `weekly_update.sh`: fundamentales, datos macro mas lentos
 
+Y el pipeline medallion via `stonks update -c <cadencia>` (idempotente,
+reconstruye `gold` al final).
+
 Ejemplo de crontab (ejecuta a las 22:00 UTC, mercados cerrados):
 
 ```cron
 0 22 * * 1-5 /ruta/a/stonks_db/scripts/daily_update.sh
 0 23 * * 0   /ruta/a/stonks_db/scripts/weekly_update.sh
+30 22 * * *  cd /ruta/a/stonks_db && .venv/bin/stonks update -c daily
+0  1  * * 1  cd /ruta/a/stonks_db && .venv/bin/stonks update -c weekly
+0  2  1 * *  cd /ruta/a/stonks_db && .venv/bin/stonks update -c monthly
 ```
 
 ---

@@ -16,8 +16,10 @@ from stonks.models.macro import (
 )
 from stonks.models.meta import DataSource
 
-# Top 20 economías por PIB + agregados
+# Universo macro global: G20 + economías europeas, asiáticas y
+# emergentes (reduce el sesgo US-céntrico de la BD).
 DEFAULT_COUNTRIES = [
+    # G20 / mayores economías
     "USA",
     "CHN",
     "JPN",
@@ -38,6 +40,44 @@ DEFAULT_COUNTRIES = [
     "SAU",
     "TUR",
     "CHE",
+    # Resto de Europa
+    "SWE",
+    "NOR",
+    "DNK",
+    "FIN",
+    "BEL",
+    "AUT",
+    "IRL",
+    "POL",
+    "PRT",
+    "GRC",
+    "CZE",
+    "HUN",
+    "ROU",
+    "UKR",
+    # Asia-Pacífico
+    "SGP",
+    "HKG",
+    "TWN",
+    "THA",
+    "MYS",
+    "PHL",
+    "VNM",
+    "PAK",
+    "BGD",
+    "NZL",
+    # Oriente Medio y África
+    "ARE",
+    "ISR",
+    "QAT",
+    "ZAF",
+    "NGA",
+    "EGY",
+    # Latinoamérica
+    "ARG",
+    "CHL",
+    "COL",
+    "PER",
 ]
 
 # Regiones/agregados del World Bank

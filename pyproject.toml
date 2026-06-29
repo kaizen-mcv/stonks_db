@@ -60,7 +60,12 @@ dependencies = [
 dev = [
     "ruff>=0.6.0",
     "pre-commit>=3.8.0",
+    "pytest>=8.0.0",
 ]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-v"
 
 [project.urls]
 Homepage = "https://github.com/kaizen-mcv/stonks_db"

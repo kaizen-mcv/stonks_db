@@ -280,6 +280,65 @@ class Split(Base):
     ratio_to: Mapped[float | None] = mapped_column(Numeric(10, 4))
 
 
+class AnalystEstimate(Base):
+    """Estimación de consenso de analistas (foto por día).
+
+    El histórico se acumula capturando una foto diaria de yfinance
+    (no hay serie retroactiva gratuita). horizon: '0q','+1q','0y','+1y'.
+    """
+
+    __tablename__ = "analyst_estimate"
+    __table_args__ = (
+        UniqueConstraint("company_id", "snapshot_date", "horizon"),
+        {"schema": "equity"},
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    company_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("equity.company.id"), nullable=False
+    )
+    snapshot_date: Mapped[date] = mapped_column(Date, nullable=False)
+    horizon: Mapped[str] = mapped_column(String(10), nullable=False)
+    period_label: Mapped[str | None] = mapped_column(String(20))
+    eps_avg: Mapped[float | None] = mapped_column(Numeric(12, 4))
+    eps_low: Mapped[float | None] = mapped_column(Numeric(12, 4))
+    eps_high: Mapped[float | None] = mapped_column(Numeric(12, 4))
+    revenue_avg: Mapped[float | None] = mapped_column(Numeric(20, 2))
+    num_analysts: Mapped[int | None] = mapped_column(SmallInteger)
+    source_id: Mapped[int | None] = mapped_column(
+        Integer, ForeignKey("meta.data_source.id")
+    )
+
+
+class EarningsRevision(Base):
+    """Revisiones de estimaciones de EPS (foto por día).
+
+    Factor de momentum fundamental: cómo se mueve el consenso de EPS y
+    cuántos analistas revisan al alza/baja. Se acumula por día.
+    """
+
+    __tablename__ = "earnings_revision"
+    __table_args__ = (
+        UniqueConstraint("company_id", "snapshot_date", "horizon"),
+        {"schema": "equity"},
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    company_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("equity.company.id"), nullable=False
+    )
+    snapshot_date: Mapped[date] = mapped_column(Date, nullable=False)
+    horizon: Mapped[str] = mapped_column(String(10), nullable=False)
+    eps_current: Mapped[float | None] = mapped_column(Numeric(12, 4))
+    eps_7d_ago: Mapped[float | None] = mapped_column(Numeric(12, 4))
+    eps_30d_ago: Mapped[float | None] = mapped_column(Numeric(12, 4))
+    up_last_30d: Mapped[int | None] = mapped_column(SmallInteger)
+    down_last_30d: Mapped[int | None] = mapped_column(SmallInteger)
+    source_id: Mapped[int | None] = mapped_column(
+        Integer, ForeignKey("meta.data_source.id")
+    )
+
+
 class MarketIndex(Base):
     """Índice de mercado."""
 
@@ -297,6 +356,34 @@ class MarketIndex(Base):
     )
     currency_code: Mapped[str | None] = mapped_column(String(3))
     description: Mapped[str | None] = mapped_column(Text)
+
+
+class IndexConstituentCurrent(Base):
+    """Constituyentes ACTUALES de un índice (snapshot sin historial).
+
+    Para índices donde no reconstruimos historial point-in-time (el
+    histórico del S&P 500 vive en gold.index_membership). weight suele
+    venir vacío en fuentes gratuitas.
+    """
+
+    __tablename__ = "index_constituent_current"
+    __table_args__ = (
+        UniqueConstraint("index_id", "company_id"),
+        {"schema": "equity"},
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    index_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("equity.market_index.id"), nullable=False
+    )
+    company_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("equity.company.id"), nullable=False
+    )
+    weight: Mapped[float | None] = mapped_column(Numeric(8, 5))
+    as_of_date: Mapped[date] = mapped_column(Date, nullable=False)
+    source_id: Mapped[int | None] = mapped_column(
+        Integer, ForeignKey("meta.data_source.id")
+    )
 
 
 class IndexPrice(Base):
