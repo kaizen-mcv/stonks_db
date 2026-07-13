@@ -44,6 +44,19 @@ class DimDate(Base):
     is_trading_day: Mapped[bool | None] = mapped_column(Boolean)
 
 
+class DimCountry(Base):
+    """Dimensión de país (economía mundial)."""
+
+    __tablename__ = "dim_country"
+    __table_args__ = {"schema": "gold"}
+
+    country_code: Mapped[str] = mapped_column(String(3), primary_key=True)
+    name: Mapped[str] = mapped_column(String(200), nullable=False)
+    region: Mapped[str | None] = mapped_column(String(100))
+    sub_region: Mapped[str | None] = mapped_column(String(100))
+    income_group: Mapped[str | None] = mapped_column(String(50))
+
+
 class DimCompany(Base):
     """Dimensión de empresa (SCD-1; sector desnormalizado)."""
 

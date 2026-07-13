@@ -8,6 +8,7 @@ from stonks.models import (
     commodity,  # noqa: F401
     country,  # noqa: F401
     crypto,  # noqa: F401
+    energy,  # noqa: F401
     equity,  # noqa: F401
     fixed_income,  # noqa: F401
     forex,  # noqa: F401
@@ -16,4 +17,5 @@ from stonks.models import (
     macro,  # noqa: F401
     meta,  # noqa: F401
     ref,  # noqa: F401
+    trade,  # noqa: F401
 )

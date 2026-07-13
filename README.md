@@ -1,331 +1,286 @@
 # stonks_db
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
-[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-14+-336791.svg?logo=postgresql&logoColor=white)](https://www.postgresql.org/)
-[![CI](https://github.com/kaizen-mcv/stonks_db/actions/workflows/ci.yml/badge.svg)](https://github.com/kaizen-mcv/stonks_db/actions/workflows/ci.yml)
-[![Code style: ruff](https://img.shields.io/badge/code%20style-ruff-000000.svg)](https://github.com/astral-sh/ruff)
+Base de datos PostgreSQL que reúne, con **fuentes oficiales gratuitas**,
+los **mercados financieros globales** y la **economía mundial** en un
+único modelo medallion (bronze → silver → gold), listo para análisis
+cuantitativo.
 
-Base de datos PostgreSQL global de inversion con **~9.7M filas** de
-datos historicos desde **1927**. Cubre macroeconomia, equity, renta
-fija, commodities, forex, crypto, fondos, perfiles de pais y datos
-alternativos. Orientada a analisis cuantitativo y toma de decisiones.
-
-> **Stack:** Python 3.11+, PostgreSQL 14+, SQLAlchemy 2.0,
-> Typer, Pydantic.
+- **~13 millones de filas**, **~200 países**, histórico profundo
+  (mercados desde 1927, macro desde 1960, energía desde 1900, CO2 desde
+  1750, comercio desde 1988).
+- **Point-in-time** donde importa: fundamentales con fecha de publicación
+  (SEC EDGAR), universo S&P 500 sin sesgo de supervivencia y factores
+  replayables para backtests honestos.
+- **Medallion**: aterrizaje crudo auditado (`bronze`), dominios
+  normalizados (`silver`) y capa analítica lista para leer (`gold`).
 
 ---
 
-## Tabla de contenidos
+## Índice
 
-- [Caracteristicas](#caracteristicas)
+- [Características](#características)
 - [Arquitectura](#arquitectura)
-- [Requisitos](#requisitos)
-- [Instalacion](#instalacion)
-- [Uso rapido](#uso-rapido)
-- [Schemas y datos](#schemas-y-datos)
+- [Estructura de la base de datos](#estructura-de-la-base-de-datos)
 - [Fuentes de datos](#fuentes-de-datos)
-- [Actualizacion diaria](#actualizacion-diaria)
-- [Documentacion](#documentacion)
-- [Contribuir](#contribuir)
-- [Licencia](#licencia)
+- [Instalación](#instalación)
+- [Uso](#uso)
+- [Actualización (cron)](#actualización-cron)
+- [Estructura del proyecto](#estructura-del-proyecto)
+- [Tests](#tests)
+- [Limitaciones conocidas](#limitaciones-conocidas)
 
 ---
 
-## Caracteristicas
+## Características
 
-- **Arquitectura medallion hibrida**: dominios "silver" + `bronze`
-  (aterrizaje crudo) + `gold` (analitica point-in-time).
-- **13 schemas** de dominio + `bronze` + `gold`
-- **~9.7M filas** de datos historicos reales
-- Cobertura historica profunda:
-  - Indices desde **1927** (Dow Jones)
-  - Equity y yields desde **1962**
-  - Macro (FRED) desde **1960**
-  - Bonos US Treasury desde **1980**
-  - ETFs desde **1993**
-  - Forex desde **1999**
-- **Sin sesgo de supervivencia**: constituyentes historicos del
-  S&P 500 (point-in-time) y empresas deslistadas en `gold.index_membership`.
-- **Fundamentales point-in-time** reales via SEC EDGAR (fecha de
-  publicacion) en `gold.fact_fundamentals_pit`.
-- **Factores** Value/Quality/Momentum neutralizados por sector en
-  `gold.fact_factor_scores`; sector GICS poblado en `equity.company`.
-- **Revisiones de analistas** (foto diaria acumulativa) en `equity`.
-- **15+ fetchers** modulares para fuentes gratuitas
-- CLI intuitiva con Typer + Rich; orquestador `stonks update -c`
-- Estado incremental para actualizaciones resumibles
-- Auditoria completa via `meta.fetch_run` y `meta.transform_run`
+- **Mercados financieros**: ~3.000 empresas (incl. deslistadas), precios
+  diarios (9,3M), fundamentales, dividendos, índices, renta fija,
+  commodities, forex, crypto, ETFs y sentimiento.
+- **Economía mundial**: ~200 países con PIB, precios, empleo, fiscal,
+  cuentas externas, energía por fuente, comercio bilateral y emisiones.
+- **Sin sesgo de supervivencia**: constituyentes históricos del S&P 500
+  (point-in-time) y empresas deslistadas en `gold.index_membership`.
+- **Fundamentales point-in-time** reales (SEC EDGAR, fecha de `filed`).
+- **Factores** Value/Quality/Momentum sector-neutral, replayables en
+  cualquier fecha pasada (`gold.fact_factor_scores`).
+- **Panel país-año** cross-dominio (`gold.mart_country_year`) y **matriz
+  de comercio bilateral** (`gold.mart_trade_matrix`).
+- Medallion idempotente y **auditado** (`meta.fetch_run`,
+  `meta.transform_run`) con checks de calidad (`meta.data_quality`).
+- Stack: **Python 3.11+**, **PostgreSQL 16**, SQLAlchemy 2.0, Typer, Pydantic.
 
 ---
 
 ## Arquitectura
 
 ```
-┌─────────────────────────────────────────┐
-│            CLI (Typer + Rich)           │
-│  stonks init | status | update -c ...   │
-└──────────────────┬──────────────────────┘
-                   │
-┌──────────────────▼──────────────────────┐
-│   Pipeline (src/stonks/pipeline.py)     │
-│  orquesta por cadencia: daily/weekly/...│
-└──────────────────┬──────────────────────┘
-        ┌──────────┴───────────┐
-        ▼                      ▼
-┌───────────────┐     ┌──────────────────┐
-│   Fetchers    │     │    Transforms    │
-│ fuente→bronze │     │ bronze→silver/gold│
-│ /silver       │     │ idempotentes     │
-└──────┬────────┘     └────────┬─────────┘
-       │                       │
-┌──────▼───────────────────────▼─────────┐
-│  bronze  →  silver (dominios)  →  gold  │
-│  (crudo)    (ref, equity, ...)   (PIT,  │
-│   JSONB                          marts) │
-└──────────────────┬──────────────────────┘
-                   │
-┌──────────────────▼──────────────────────┐
-│             PostgreSQL 16               │
-└─────────────────────────────────────────┘
+┌─────────────────────────────────────────────┐
+│               CLI (Typer + Rich)             │
+│   init · status · world · indicators · update │
+└───────────────────────┬──────────────────────┘
+                        │
+┌───────────────────────▼──────────────────────┐
+│        Pipeline por cadencia (pipeline.py)    │
+│        daily · weekly · monthly · yearly      │
+└──────────┬─────────────────────────┬──────────┘
+           ▼                         ▼
+┌────────────────────┐    ┌────────────────────┐
+│  Fetchers          │    │  Transforms         │
+│  fuente → bronze/   │    │  bronze → silver/   │
+│  silver (BaseFetcher)│   │  gold (BaseTransform)│
+└──────────┬─────────┘    └─────────┬──────────┘
+           │                        │
+┌──────────▼────────────────────────▼──────────┐
+│   bronze  →  silver (dominios)  →  gold        │
+│   (JSONB     (ref, equity, macro,   (PIT,      │
+│    crudo)     trade, energy...)      marts)    │
+└───────────────────────┬───────────────────────┘
+                        ▼
+                  PostgreSQL 16
 ```
 
-Ver [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) para detalles de
-diseno.
+- **bronze**: respuestas crudas (JSONB, append-only) de las fuentes
+  nuevas. Permite re-derivar sin volver a descargar.
+- **silver**: dominios normalizados con claves foráneas. La clave
+  universal es `country_code` (ISO-3) / `ticker`.
+- **gold**: dimensiones, hechos point-in-time y *marts* listos para leer.
+  Se reconstruye de forma idempotente con `build_gold()`.
+
+Cada paso del pipeline se aísla (un fallo no detiene el resto), es
+**idempotente** (`INSERT … ON CONFLICT DO UPDATE`) y queda **auditado**.
+Ver [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
 ---
 
-## Requisitos
+## Estructura de la base de datos
 
-- **Python** 3.11 o superior
-- **PostgreSQL** 14 o superior
-- **Linux/macOS** (probado en Ubuntu 24.04)
+18 esquemas. Cifras aproximadas.
 
----
+### Referencia y metadatos
+| Esquema | Tablas | Contenido |
+|---|---|---|
+| `ref` | country, currency, exchange, sector | Países (249), divisas, bolsas, sectores GICS |
+| `meta` | data_source, fetch_run, transform_run, data_quality | Fuentes y **auditoría** de descargas/transformaciones |
 
-## Instalacion
+### Mercados financieros (silver) — ~9,7M filas
+| Esquema | Tablas principales | Filas |
+|---|---|---|
+| `equity` | company, price_daily, income_statement, balance_sheet, cash_flow, dividend, split, market_index, index_price, analyst_estimate, earnings_revision, index_constituent_current, ratios_mv | **~9,7M** (precios 9,3M) |
+| `fi` | bond, bond_issuer, credit_rating, yield_curve | ~84K |
+| `commodity` | commodity, price_daily | ~105K |
+| `forex` | currency_pair, rate_daily | ~183K |
+| `crypto` | coin, price_daily, market_dominance | ~12K |
+| `fund` | fund, nav_daily | ~132K |
+| `alt` | sentiment_indicator, sentiment_value, housing_index* | ~6K |
 
-```bash
-# Clonar el repositorio
-git clone git@github.com:kaizen-mcv/stonks_db.git
-cd stonks_db
+### Economía mundial (silver)
+| Esquema | Tablas | Filas |
+|---|---|---|
+| `macro` | indicator, indicator_source, series, data_point | **~885K** (país × indicador × año) |
+| `trade` | flow | **~973K** (comercio bilateral, 1988→2023) |
+| `energy` | balance | ~186K (país × fuente × flujo, TWh) |
+| `country` | profile, demographics, tax_rate | ~1K |
 
-# Crear entorno virtual
-python3 -m venv .venv
-source .venv/bin/activate
+### Medallion
+| Esquema | Tablas / vistas | Papel |
+|---|---|---|
+| `bronze` | api_response, sec_companyfacts, constituents_snapshot, analyst_snapshot | Aterrizaje crudo JSONB |
+| `gold` | dim_date, dim_company, dim_country, index_membership, fact_fundamentals_pit, fact_factor_scores, mart_benchmark_returns, **mart_country_year**, mart_trade_matrix, dim_indicator (vista) | Analítica point-in-time y *marts* |
 
-# Instalar el paquete
-pip install -e .
+**Tablas gold clave para analizar:**
+- `gold.mart_country_year` — panel ancho **país × año** (~25 métricas:
+  PIB nominal/PPP/pc/crecimiento, inflación, paro, deuda, saldo/ingreso/
+  gasto público, ahorro, inversión, cuenta corriente, CO2/GHG, energía
+  primaria/eléctrica/renovable, exportaciones/importaciones y balance).
+- `gold.mart_trade_matrix` — matriz bilateral reporter × partner × año.
+- `gold.fact_fundamentals_pit` — fundamentales US con fecha de publicación.
+- `gold.fact_factor_scores` — factores sector-neutral, historial mensual.
+- `gold.index_membership` — universo S&P 500 point-in-time.
+- `gold.dim_indicator` (vista) — **catálogo autodocumentado** de indicadores.
 
-# (Opcional) Instalar dependencias de desarrollo
-pip install -e ".[dev]"
-```
-
-### Configuracion
-
-```bash
-# Crear base de datos
-createdb stonks_db
-
-# Copiar plantilla y editar
-cp .env.example .env
-# Editar .env con tu conexion a PostgreSQL y API keys
-
-# Inicializar tablas y datos de referencia
-stonks init
-```
-
-### API keys (opcionales pero recomendadas)
-
-| Servicio | URL para obtener key | Uso |
-|----------|---------------------|-----|
-| FRED | https://fred.stlouisfed.org/docs/api/api_key.html | Datos macro US |
-| CoinGecko | https://www.coingecko.com/en/api/pricing | Crypto |
-| Alpha Vantage | https://www.alphavantage.co/support/#api-key | Backup yfinance |
-
----
-
-## Uso rapido
-
-```bash
-# Ver comandos disponibles
-stonks --help
-
-# Ver estado de la BD
-stonks status
-
-# Descargar datos macroeconomicos (FRED, desde 1960)
-stonks macro fetch --source fred --start-date 1960-01-01
-
-# Descargar precios de una accion (historico completo)
-stonks equity fetch --ticker AAPL --period max
-
-# Descargar por batch (SP500 top, Europa o global)
-stonks equity fetch --batch global --period max
-
-# Forex historico completo (ECB)
-stonks forex fetch --full
-
-# Renta fija: emisores + bonos US + ratings
-stonks fi seed
-stonks fi bonds
-stonks fi ratings
-
-# ETFs, commodities, crypto, indices
-stonks fund fetch --period max
-stonks commodity fetch --period max
-stonks crypto fetch --days 3650
-stonks index fetch --period max
-
-# Pipeline medallion por cadencia (analistas, sectores,
-# constituyentes, PIT, factores) + reconstruccion de gold
-stonks update -c daily      # foto diaria de analistas
-stonks update -c weekly     # sectores, constituyentes, SEC PIT
-stonks update -c monthly    # factores
-stonks update -c all --dry-run   # ver los pasos sin ejecutar
-```
-
----
-
-## Capa gold (analitica point-in-time)
-
-La capa `gold` sirve analisis cuantitativo honesto, construida de forma
-idempotente desde `stonks.gold.build` y los transforms:
-
-| Tabla / vista | Que aporta |
-|---------------|------------|
-| `gold.index_membership` | Universo S&P 500 **point-in-time** (sin sesgo de supervivencia) |
-| `gold.fact_fundamentals_pit` | Fundamentales con **fecha de publicacion** real (SEC EDGAR) |
-| `gold.fact_factor_scores` | Factores Value/Quality/Momentum **sector-neutral** |
-| `gold.mart_benchmark_returns` | Retorno del pool equiponderado **honesto** vs SPY |
-| `gold.dim_company`, `gold.dim_date` | Dimensiones del modelo analitico |
-
----
-
-## Schemas y datos
-
-| Schema | Cobertura |
-|--------|-----------|
-| `ref` | Paises, monedas, bolsas, sectores GICS |
-| `meta` | Fuentes, auditoria (`fetch_run`, `transform_run`) |
-| `macro` | Indicadores economicos (FRED, World Bank) |
-| `equity` | Empresas, precios, fundamentales, analistas, constituyentes |
-| `fi` | Bonos, ratings, curvas de tipos |
-| `commodity` | Materias primas |
-| `forex` | Tipos de cambio (EUR vs 30+ divisas) |
-| `crypto` | Criptomonedas |
-| `fund` | ETFs y NAV historico |
-| `country` | Perfiles de pais, demografia |
-| `alt` | Sentimiento (VIX, consumer sentiment) |
-| **`bronze`** | Aterrizaje crudo JSONB (SEC, constituyentes, analistas) |
-| **`gold`** | Analitica point-in-time (ver arriba) |
-
-Ver [docs/SCHEMA_RELATIONS.md](docs/SCHEMA_RELATIONS.md) para el
-diagrama ER completo con todas las relaciones.
+Diagrama ER completo en
+[docs/SCHEMA_RELATIONS.md](docs/SCHEMA_RELATIONS.md).
 
 ---
 
 ## Fuentes de datos
 
-Todas las fuentes usadas son **gratuitas**:
+Todas **gratuitas y oficiales**:
 
-| Fuente | Cobertura | API key | Uso |
-|--------|-----------|---------|-----|
-| **Yahoo Finance** (yfinance) | Acciones, ETFs, commodities, indices | No | Precios historicos |
-| **FRED** (Federal Reserve) | Macro US, yields, spreads | Si (gratis) | Series economicas |
-| **ECB** (European Central Bank) | Forex desde 1999 | No | Tipos de cambio EUR |
-| **World Bank** | Indicadores macro globales | No | PIB, demografia |
-| **US Treasury Fiscal Data** | Bonos US Treasury | No | Subastas historicas |
-| **CoinGecko** | Criptomonedas | Demo key recomendada | Precios crypto |
-| **ratingshistory.info** | Ratings soberanos Fitch | No | Historial de ratings |
-| **IMF Data** | Deuda publica, tipos | No | Complemento macro |
-| **SEC EDGAR** | Fundamentales US | No | Estados financieros |
-| **OECD** | Estadisticas OCDE | No | Datos complementarios |
+| Fuente | Dominio | Clave |
+|---|---|---|
+| Yahoo Finance (yfinance) | Precios, fundamentales, analistas | No |
+| SEC EDGAR | Fundamentales US point-in-time | No (User-Agent) |
+| FRED | Macro US, yields | Sí (gratis) |
+| ECB | Forex, tipos BCE | No |
+| US Treasury / Fitch | Bonos, ratings | No |
+| Wikipedia + GitHub (fja05680) | Constituyentes S&P 500 históricos | No |
+| **IMF DataMapper** | Macro mundial (132 indicadores WEO) | No |
+| **World Bank** (WDI) | Indicadores de desarrollo | No |
+| **World Bank WITS** | Comercio bilateral | No |
+| **Our World in Data** | Energía y emisiones CO2/GHG | No |
+| CoinGecko | Crypto | Opcional |
 
 ---
 
-## Actualizacion diaria
+## Instalación
 
-Dos scripts en `scripts/`:
+```bash
+git clone <repo> && cd stonks
+python -m venv .venv && source .venv/bin/activate
+pip install -e ".[dev]"          # incluye pytest y ruff
 
-- `daily_update.sh`: precios equity, ETFs, forex, crypto, yields,
-  bonos FI (~10 min)
-- `weekly_update.sh`: fundamentales, datos macro mas lentos
+cp .env.example .env             # editar conexión y claves
+createdb stonks_db
+stonks init                      # crea esquemas, tablas y datos ref.
+```
 
-Y el pipeline medallion via `stonks update -c <cadencia>` (idempotente,
-reconstruye `gold` al final).
+Configuración vía `STONKS_*` en `.env` (ver `config.py`): `STONKS_DB_URL`,
+`STONKS_FRED_API_KEY` (opcional), `STONKS_SEC_CONTACT_EMAIL`.
 
-Ejemplo de crontab (ejecuta a las 22:00 UTC, mercados cerrados):
+---
 
-```cron
-0 22 * * 1-5 /ruta/a/stonks_db/scripts/daily_update.sh
-0 23 * * 0   /ruta/a/stonks_db/scripts/weekly_update.sh
-30 22 * * *  cd /ruta/a/stonks_db && .venv/bin/stonks update -c daily
-0  1  * * 1  cd /ruta/a/stonks_db && .venv/bin/stonks update -c weekly
-0  2  1 * *  cd /ruta/a/stonks_db && .venv/bin/stonks update -c monthly
+## Uso
+
+```bash
+# Estado y exploración
+stonks status                    # conteos por tabla
+stonks world ESP                 # panel de un país (PIB, CO2, comercio...)
+stonks world CHN -n 10
+stonks indicators -s inflation   # catálogo de indicadores macro
+stonks indicators -c fiscal
+
+# Pipeline medallion por cadencia (idempotente, reconstruye gold)
+stonks update -c daily           # foto diaria de analistas
+stonks update -c weekly          # sectores, constituyentes, SEC PIT
+stonks update -c monthly         # factores
+stonks update -c yearly          # economía mundial: IMF, comercio, energía
+stonks update -c all --dry-run   # ver los pasos sin ejecutar
+
+# Ingesta por dominio (fuentes de mercados)
+stonks equity fetch --batch global --period max
+stonks macro fetch --source fred
+stonks forex fetch --full
+stonks fi bonds && stonks fi ratings
+```
+
+Ejemplo de consulta cross-dominio (la clave `country_code` une todo):
+
+```sql
+SELECT year, gdp_usd_bn, co2_mt, exports_usd_bn, renewables_share_elec_pct
+FROM gold.mart_country_year
+WHERE country_code = 'DEU' AND year BETWEEN 2015 AND 2023;
 ```
 
 ---
 
-## Documentacion
+## Actualización (cron)
 
-| Documento | Descripcion |
-|-----------|-------------|
-| [README.md](README.md) | Este documento |
-| [docs/SCHEMA_RELATIONS.md](docs/SCHEMA_RELATIONS.md) | Diagrama ER + queries de ejemplo |
-| [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Diseno interno y como extender |
-| [CONTRIBUTING.md](CONTRIBUTING.md) | Como contribuir |
-| [CHANGELOG.md](CHANGELOG.md) | Cambios por version |
-| [SECURITY.md](SECURITY.md) | Politica de seguridad |
+Dos vías complementarias:
+
+- **Scripts por dominio** (mercados): `scripts/daily_update.sh`,
+  `scripts/weekly_update.sh` (refresca también `equity.ratios_mv`).
+- **Pipeline medallion**: `stonks update -c <cadencia>`.
+
+```cron
+0  22 * * 1-5  /ruta/stonks/scripts/daily_update.sh
+0  23 * * 0    /ruta/stonks/scripts/weekly_update.sh
+30 22 * * *    cd /ruta/stonks && .venv/bin/stonks update -c daily
+0  1  * * 1    cd /ruta/stonks && .venv/bin/stonks update -c weekly
+0  2  1 * *    cd /ruta/stonks && .venv/bin/stonks update -c monthly
+0  3  1 1 *    cd /ruta/stonks && .venv/bin/stonks update -c yearly
+```
 
 ---
 
 ## Estructura del proyecto
 
 ```
-stonks_db/
-├── src/stonks/          # Codigo fuente
-│   ├── cli.py           # CLI Typer
-│   ├── config.py        # Configuracion Pydantic
-│   ├── db.py            # SQLAlchemy engine
-│   ├── logger.py        # Logging centralizado
-│   ├── fetchers/        # 15+ fetchers por fuente
-│   └── models/          # Modelos por dominio (11 schemas)
-├── config/              # YAMLs: paises, indicadores, sources
-├── scripts/             # Seed scripts, update diario/semanal
-├── docs/                # Documentacion tecnica
-├── data/                # (gitignored) logs, downloads, state
-├── .github/             # Templates de issues/PRs, CI
-├── pyproject.toml       # Metadatos y dependencias
-├── .env.example         # Plantilla de configuracion
-├── LICENSE              # MIT
-├── CHANGELOG.md         # Historial de cambios
-├── CONTRIBUTING.md      # Guia de contribucion
-├── CODE_OF_CONDUCT.md   # Codigo de conducta
-├── SECURITY.md          # Politica de seguridad
-└── README.md            # Este archivo
+stonks/
+├── src/stonks/
+│   ├── cli.py              # CLI Typer (init, status, world, indicators, update)
+│   ├── config.py          # Settings Pydantic
+│   ├── db.py              # Engine, esquemas, init_db
+│   ├── pipeline.py        # Orquestador por cadencia
+│   ├── quality.py         # Checks de calidad → meta.data_quality
+│   ├── fetchers/          # Fuente → bronze/silver (heredan BaseFetcher)
+│   ├── transform/         # bronze → silver/gold (heredan BaseTransform)
+│   ├── gold/build.py      # Reconstrucción idempotente de gold
+│   ├── models/            # ORM SQLAlchemy, 1 módulo por esquema
+│   └── seed/reference.py  # seed_all (países, divisas, bolsas, sectores...)
+├── scripts/               # Utilidades: build_universe, cron, ratios_mv
+├── config/                # sources.yml, indicators.yml, companies.yml
+├── docs/                  # ARCHITECTURE.md, SCHEMA_RELATIONS.md
+└── tests/                 # pytest
 ```
 
 ---
 
-## Contribuir
+## Tests
 
-Las contribuciones son bienvenidas. Por favor lee
-[CONTRIBUTING.md](CONTRIBUTING.md) antes de enviar un PR.
+```bash
+pytest                     # 28 tests (lógica pura + BD si está disponible)
+ruff check . && ruff format --check .
+```
 
-Flujo rapido:
-
-1. Abre una issue describiendo la propuesta
-2. Fork + crear rama `feat/nombre` o `fix/nombre`
-3. Hacer cambios + `ruff check .` + `ruff format .`
-4. Abrir PR siguiendo la plantilla
+Los tests de BD se **omiten** automáticamente si no hay conexión, así que
+la suite corre también en CI sin PostgreSQL.
 
 ---
 
-## Licencia
+## Limitaciones conocidas
 
-[MIT](LICENSE) © 2026 Marc Villanueva
+Todas derivadas de usar solo fuentes gratuitas:
 
-Los datos descargados de fuentes externas (FRED, yfinance, ECB, etc.)
-estan sujetos a los terminos de uso de cada proveedor. Este proyecto
-solo proporciona la infraestructura de ETL.
+- **Frecuencia macro**: la economía real es **anual** (los mercados son
+  diarios). No hay macro mensual/trimestral.
+- **Sin vintages macro**: guardamos la última versión de cada dato
+  (el crudo original queda en `bronze`); no es point-in-time como los
+  fundamentales de equity.
+- **Fundamentales PIT solo US** (SEC EDGAR); el resto usa la foto de
+  yfinance.
+- **Comercio a nivel producto 'Total'** (matriz país×país); el detalle
+  por producto HS y FAOSTAT/WHO detallados quedan como extensión futura.
+- **Deslistadas antiguas sin precios**: ~198/563 tienen histórico en
+  yfinance; el resto (quiebras/absorciones antiguas) no es recuperable
+  gratis.

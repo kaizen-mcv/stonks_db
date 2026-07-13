@@ -202,7 +202,8 @@ class CorporateBondsFetcher(BaseFetcher):
 
 ### 2. Registrar la fuente en `meta.data_source`
 
-En `scripts/seed_sources.py` o insertando directamente:
+Añadiéndola a `config/sources.yml` (se carga en `stonks init` vía
+`seed/reference.py::seed_sources`) o insertando directamente:
 
 ```python
 session.add(DataSource(

@@ -4,8 +4,13 @@ from stonks.pipeline import CADENCES, PIPELINE, run_update
 
 
 def test_cadencias_definidas():
-    assert set(CADENCES) == {"daily", "weekly", "monthly"}
+    assert set(CADENCES) == {"daily", "weekly", "monthly", "yearly"}
     assert set(PIPELINE) == set(CADENCES)
+
+
+def test_yearly_incluye_imf_macro():
+    nombres = [s.name for s in PIPELINE["yearly"]]
+    assert "imf-macro" in nombres
 
 
 def test_weekly_incluye_sectores():

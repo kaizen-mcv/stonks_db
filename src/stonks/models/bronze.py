@@ -23,6 +23,32 @@ from sqlalchemy.orm import Mapped, mapped_column
 from stonks.db import Base
 
 
+class ApiResponse(Base):
+    """Respuesta cruda de una API macro (genérica, append-only).
+
+    Aterrizaje común para las fuentes de economía mundial (IMF, World
+    Bank, Eurostat, OECD, ILO, WHO, EIA, OWID...). La normalización a
+    macro.series/data_point la hace transform/macro_indicators.py.
+    """
+
+    __tablename__ = "api_response"
+    __table_args__ = {"schema": "bronze"}
+
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+    fetch_run_id: Mapped[int | None] = mapped_column(Integer)
+    ingested_at: Mapped[datetime] = mapped_column(
+        DateTime, default=datetime.now, index=True
+    )
+    source_name: Mapped[str] = mapped_column(
+        String(50), nullable=False, index=True
+    )
+    dataset: Mapped[str] = mapped_column(
+        String(120), nullable=False, index=True
+    )
+    params: Mapped[dict | None] = mapped_column(JSONB)
+    payload: Mapped[dict] = mapped_column(JSONB, nullable=False)
+
+
 class SecCompanyFacts(Base):
     """JSON crudo de la API companyfacts de SEC EDGAR (por empresa).
 

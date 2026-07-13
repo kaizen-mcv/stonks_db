@@ -101,6 +101,115 @@ def init(
 
 
 @app.command()
+def world(
+    country: str = typer.Argument(
+        ..., help="Código ISO3 del país (p.ej. ESP, USA, CHN)"
+    ),
+    years: int = typer.Option(6, "-n", help="Número de años a mostrar"),
+) -> None:
+    """Panel de economía mundial de un país (gold.mart_country_year)."""
+    from sqlalchemy import text
+
+    from stonks.db import get_session
+
+    session = get_session()
+    rows = session.execute(
+        text(
+            "SELECT year, gdp_usd_bn, gdp_per_capita_usd, gdp_growth_pct, "
+            "inflation_pct, unemployment_pct, gov_debt_pct_gdp, co2_mt, "
+            "exports_usd_bn FROM gold.mart_country_year "
+            "WHERE country_code = :c "
+            "  AND year <= extract(year FROM now()) "
+            "ORDER BY year DESC LIMIT :n"
+        ),
+        {"c": country.upper(), "n": years},
+    ).fetchall()
+    session.close()
+
+    if not rows:
+        console.print(f"[yellow]Sin datos para {country.upper()}[/yellow]")
+        return
+
+    table = Table(title=f"Economía — {country.upper()}")
+    for col in (
+        "Año",
+        "PIB $bn",
+        "PIB pc",
+        "Crec%",
+        "Infl%",
+        "Paro%",
+        "Deuda%",
+        "CO2 Mt",
+        "Export $bn",
+    ):
+        table.add_column(col, justify="right")
+
+    def _fmt(v, dec: int) -> str:
+        return "-" if v is None else f"{float(v):,.{dec}f}"
+
+    for r in reversed(rows):
+        # r: año, pib_bn, pib_pc, crec, infl, paro, deuda, co2, export
+        table.add_row(
+            str(int(r[0])),
+            _fmt(r[1], 0),
+            _fmt(r[2], 0),
+            _fmt(r[3], 1),
+            _fmt(r[4], 1),
+            _fmt(r[5], 1),
+            _fmt(r[6], 1),
+            _fmt(r[7], 0),
+            _fmt(r[8], 0),
+        )
+    console.print(table)
+
+
+@app.command()
+def indicators(
+    search: str = typer.Option(
+        "", "-s", help="Filtrar por texto en código o nombre"
+    ),
+    category: str = typer.Option("", "-c", help="Filtrar por categoría"),
+    limit: int = typer.Option(40, "-n", help="Máximo de filas"),
+) -> None:
+    """Catálogo de indicadores macro (gold.dim_indicator)."""
+    from sqlalchemy import text
+
+    from stonks.db import get_session
+
+    where = ["n_points > 0"]
+    params: dict = {"lim": limit}
+    if search:
+        where.append("(code ILIKE :s OR name ILIKE :s)")
+        params["s"] = f"%{search}%"
+    if category:
+        where.append("category = :cat")
+        params["cat"] = category
+    sql = (
+        "SELECT code, name, category, n_countries, first_date, last_date "
+        "FROM gold.dim_indicator WHERE "
+        + " AND ".join(where)
+        + " ORDER BY n_points DESC LIMIT :lim"
+    )
+    session = get_session()
+    rows = session.execute(text(sql), params).fetchall()
+    session.close()
+
+    table = Table(title="Catálogo de indicadores")
+    for col in ("Código", "Nombre", "Categoría", "Países", "Desde", "Hasta"):
+        table.add_column(col)
+    for r in rows:
+        table.add_row(
+            r[0],
+            (r[1] or "")[:45],
+            r[2] or "-",
+            str(r[3]),
+            str(r[4].year if r[4] else "-"),
+            str(r[5].year if r[5] else "-"),
+        )
+    console.print(table)
+
+
+@app.command()
 def status() -> None:
     """Mostrar estadísticas de la BD."""
     from sqlalchemy import text

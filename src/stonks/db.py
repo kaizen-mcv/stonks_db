@@ -27,6 +27,8 @@ SCHEMAS = [
     "alt",
     "calendar",
     "country",
+    "trade",
+    "energy",
     "bronze",
     "gold",
 ]

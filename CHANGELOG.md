@@ -8,18 +8,31 @@ y el versionado [Semantic Versioning](https://semver.org/lang/es/).
 ## [Unreleased]
 
 ### Añadido
-- Estructura profesional del repositorio
-- LICENSE (MIT)
-- CONTRIBUTING.md, CODE_OF_CONDUCT.md, SECURITY.md
-- `.github/` con templates de issues/PRs y workflow de CI
-- Configuración de ruff en `pyproject.toml`
-- `docs/ARCHITECTURE.md` con guía de diseño
+- **Arquitectura medallion** (bronze/silver/gold): esquemas `bronze`
+  (aterrizaje crudo JSONB) y `gold` (analítica point-in-time), capa
+  `transform/` (`BaseTransform` + `meta.transform_run`), orquestador
+  `pipeline.py` con cadencias (`stonks update -c ...`) y `gold/build.py`
+  idempotente.
+- **Sin sesgo de supervivencia**: constituyentes históricos del S&P 500
+  y empresas deslistadas en `gold.index_membership`.
+- **Fundamentales point-in-time** (SEC EDGAR) en `gold.fact_fundamentals_pit`.
+- **Factores** Value/Quality/Momentum sector-neutral y replayables en
+  `gold.fact_factor_scores` (historial mensual 2011→hoy).
+- **Sector GICS** en `equity.company` + tablas de analistas.
+- **Economía mundial**: `macro` ampliado (IMF DataMapper, World Bank),
+  `trade` (comercio bilateral WITS, 1988→2023) y `energy` (OWID, por
+  fuente); emisiones CO2/GHG; panel `gold.mart_country_year`, matriz
+  `gold.mart_trade_matrix` y catálogo `gold.dim_indicator`.
+- Comandos CLI `world`, `indicators`, `update`; checks `meta.data_quality`.
+- README definitivo con la estructura completa de la BD.
 
 ### Cambiado
-- README.md reescrito con estructura profesional
-- `pyproject.toml` con metadatos completos (autores, licencia,
-  classifiers, URLs)
-- `config.py`: URL de BD por defecto sin usuario hardcodeado
+- `pyproject.toml`: `pytest` en dependencias dev; CI ejecuta la suite.
+- `config.py`: `sec_contact_email`.
+
+### Eliminado
+- `models/agri.py` y esquema `agri` (sin uso).
+- Scripts `seed_*.py` redundantes con `stonks init` (`seed/reference.py`).
 
 ## [0.2.0] - 2026-04-23
 

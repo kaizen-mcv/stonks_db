@@ -100,3 +100,24 @@ oecd:
   domains:
     - macro
     - realestate
+
+wits:
+  enabled: true
+  display_name: "World Bank WITS (comercio)"
+  base_url: "https://wits.worldbank.org/API/V1/SDMX/V21"
+  api_key_env: null
+  rate_limit: 2.5
+  daily_limit: null
+  domains:
+    - trade
+
+owid:
+  enabled: true
+  display_name: "Our World in Data"
+  base_url: "https://raw.githubusercontent.com/owid"
+  api_key_env: null
+  rate_limit: 1.0
+  daily_limit: null
+  domains:
+    - energy
+    - macro

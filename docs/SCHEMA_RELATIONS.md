@@ -1,7 +1,8 @@
 # stonks_db — Esquema de Relaciones
 
-> 40 tablas · 11 esquemas · 45 foreign keys · ~9.7M filas totales
-> Generado: 2026-04-23
+> 18 esquemas · ~65 tablas · ~13M filas totales
+> Mercados financieros + economía mundial en un modelo medallion.
+> Para la visión de alto nivel ver el [README](../README.md).
 
 ## Resumen por esquema
 
@@ -18,8 +19,10 @@
 | **fund** | 2 | 132.303 | ~15 MB | ETFs/fondos y NAV |
 | **country** | 3 | 1.038 | ~656 KB | Perfiles de país, demografía, impuestos |
 | **alt** | 4 | 5.635 | ~760 KB | Datos alternativos: sentimiento, vivienda |
-| **bronze** | 3 | — | — | Aterrizaje crudo JSONB (SEC, constituyentes, analistas) |
-| **gold** | 5 | — | — | Analítica point-in-time (membership, PIT, factores, marts) |
+| **macro** | 4 | **~750K** | — | Economía mundial: indicadores país×año (IMF WEO, World Bank), ~207 países |
+| **trade** | 1 | — | — | Comercio bilateral país×socio (World Bank WITS) |
+| **bronze** | 4 | — | — | Aterrizaje crudo JSONB (SEC, constituyentes, analistas, APIs macro) |
+| **gold** | 7 | — | — | Analítica: PIT financiero + panel país-año + matriz de comercio |
 
 ---
 
@@ -52,6 +55,41 @@ Esquemas añadidos sobre los dominios "silver" (ver
 `earnings_revision`, `index_constituent_current`.
 
 **meta**: nueva tabla `transform_run` (auditoría de transformaciones).
+
+### Economía mundial (dentro de stonks_db)
+
+Reutiliza el motor de series `macro.indicator/series/data_point` como
+backbone (país × indicador × fecha) y añade esquemas dedicados para lo
+multidimensional.
+
+| Fuente | Cobertura | Destino |
+|--------|-----------|---------|
+| IMF DataMapper (WEO) | 132 indicadores, ~207 países, 1980→proyección | `macro.*` |
+| World Bank (WDI) | indicadores de desarrollo, 54+ países | `macro.*` |
+| World Bank WITS | comercio bilateral país×socio | `trade.flow` |
+
+Marts y vistas gold nuevos:
+- `gold.mart_country_year` — **panel ancho** país × año (~25 métricas:
+  PIB nominal/PPP/pc/crecimiento, inflación, paro, población, deuda, saldo
+  y gasto/ingreso público, ahorro, inversión, cuenta corriente, CO2/GHG,
+  energía primaria/eléctrica/renovable, exportaciones/importaciones y
+  balance comercial). Tabla analítica principal de la economía mundial.
+- `gold.mart_trade_matrix` — matriz bilateral (reporter × partner × año)
+  con exportaciones e importaciones (WITS, histórico 1989+).
+- `gold.dim_country` — dimensión país (región, grupo de renta).
+- `gold.dim_indicator` (vista) — **catálogo autodocumentado**: para cada
+  indicador macro, su código, nombre, categoría, unidad, fuentes, nº de
+  países y rango de fechas. Facilita descubrir qué hay en `macro`.
+
+Los catálogos de indicadores se **auto-registran** desde los metadatos de
+cada fuente (p.ej. el fetcher IMF crea `macro.indicator` +
+`indicator_source` para sus 132 códigos), así no hay que mantenerlos a mano.
+El catálogo es consultable en la vista `gold.dim_indicator` o con
+`stonks indicators`.
+
+Energía (esquema `energy`), comercio (`trade`) y emisiones (en `macro`)
+están integrados. Como extensión futura: agricultura detallada (FAOSTAT),
+salud/educación granular (WHO/UNESCO) y comercio a nivel de producto HS.
 
 ### Limitaciones conocidas (fuentes gratuitas)
 

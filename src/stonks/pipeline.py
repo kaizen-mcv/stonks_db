@@ -86,9 +86,36 @@ PIPELINE: dict[str, list[Step]] = {
             [_transform("factors", "FactorScoreTransform")],
         ),
     ],
+    "yearly": [
+        # Economía mundial: cuentas nacionales, precios, fiscal,
+        # externo y trabajo (IMF World Economic Outlook, ~200 países).
+        Step(
+            "imf-macro",
+            [_fetcher("imf", "IMFDataMapperFetcher")],
+            [
+                _transform(
+                    "macro_indicators",
+                    "MacroIndicatorsTransform",
+                    source_name="imf",
+                )
+            ],
+        ),
+        # Comercio internacional bilateral (World Bank WITS).
+        Step(
+            "trade",
+            [_fetcher("wits", "WITSFetcher")],
+            [_transform("trade", "TradeTransform")],
+        ),
+        # Energía mundial por fuente (Our World in Data).
+        Step(
+            "energy",
+            [_fetcher("owid", "OWIDEnergyFetcher")],
+            [],
+        ),
+    ],
 }
 
-CADENCES = ("daily", "weekly", "monthly")
+CADENCES = ("daily", "weekly", "monthly", "yearly")
 
 
 def run_update(
