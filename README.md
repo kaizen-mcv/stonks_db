@@ -18,6 +18,7 @@ cuantitativo.
 
 ## Índice
 
+- [Documentación](#documentación)
 - [Características](#características)
 - [Arquitectura](#arquitectura)
 - [Estructura de la base de datos](#estructura-de-la-base-de-datos)
@@ -27,7 +28,23 @@ cuantitativo.
 - [Actualización (cron)](#actualización-cron)
 - [Estructura del proyecto](#estructura-del-proyecto)
 - [Tests](#tests)
+- [Matriz de cobertura](#matriz-de-cobertura)
 - [Limitaciones conocidas](#limitaciones-conocidas)
+
+---
+
+## Documentación
+
+Empieza por el **hub de documentación**:
+**[docs/README.md](docs/README.md)** — incluye una guía *"cómo entender la
+BD en 5 minutos"* (capas, claves universales y dónde buscar cada cosa).
+
+| Documento | Para qué |
+|---|---|
+| [docs/README.md](docs/README.md) | Índice + guía rápida de comprensión |
+| [docs/DATA_DICTIONARY.md](docs/DATA_DICTIONARY.md) | **Diccionario de datos**: cada tabla y columna (tipo, PK/FK, filas) |
+| [docs/SCHEMA_RELATIONS.md](docs/SCHEMA_RELATIONS.md) | Diagrama ER y relaciones |
+| [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Diseño interno (medallion, fetchers, transforms) |
 
 ---
 
@@ -249,9 +266,9 @@ stonks/
 │   ├── gold/build.py      # Reconstrucción idempotente de gold
 │   ├── models/            # ORM SQLAlchemy, 1 módulo por esquema
 │   └── seed/reference.py  # seed_all (países, divisas, bolsas, sectores...)
-├── scripts/               # Utilidades: build_universe, cron, ratios_mv
+├── scripts/               # Utilidades: build_universe, cron, gen_data_dictionary
 ├── config/                # sources.yml, indicators.yml, companies.yml
-├── docs/                  # ARCHITECTURE.md, SCHEMA_RELATIONS.md
+├── docs/                  # README (hub), ARCHITECTURE, SCHEMA_RELATIONS, DATA_DICTIONARY
 └── tests/                 # pytest
 ```
 
