@@ -23,15 +23,15 @@ Lista de países del mundo, con su código ISO.
 | Columna | Qué es | Tipo | Nulo | Clave |
 |---|---|---|---|---|
 | `code` | Código identificador. | character varying(3) | no | PK |
-| `code_alpha2` |  | character varying(2) | sí |  |
+| `code_alpha2` | Código ISO-2 del país (ES, US...). | character varying(2) | sí |  |
 | `name` | Nombre. | character varying(200) | no |  |
-| `region` |  | character varying(100) | sí |  |
-| `sub_region` |  | character varying(100) | sí |  |
-| `income_group` |  | character varying(50) | sí |  |
+| `region` | Región del mundo. | character varying(100) | sí |  |
+| `sub_region` | Subregión. | character varying(100) | sí |  |
+| `income_group` | Grupo de renta (clasificación WB). | character varying(50) | sí |  |
 | `currency_code` | Moneda del importe. | character varying(3) | sí |  |
-| `capital` |  | character varying(100) | sí |  |
-| `latitude` |  | numeric(9,6) | sí |  |
-| `longitude` |  | numeric(9,6) | sí |  |
+| `capital` | Ciudad capital. | character varying(100) | sí |  |
+| `latitude` | Latitud. | numeric(9,6) | sí |  |
+| `longitude` | Longitud. | numeric(9,6) | sí |  |
 
 #### `ref.currency` · tabla · ~178 filas
 Lista de monedas (euro, dólar...).
@@ -40,9 +40,9 @@ Lista de monedas (euro, dólar...).
 |---|---|---|---|---|
 | `code` | Código identificador. | character varying(3) | no | PK |
 | `name` | Nombre. | character varying(100) | sí |  |
-| `symbol` |  | character varying(10) | sí |  |
-| `is_major` |  | boolean | no |  |
-| `decimal_places` |  | smallint | no |  |
+| `symbol` | Símbolo de la moneda (€, $...). | character varying(10) | sí |  |
+| `is_major` | Si es una divisa principal. | boolean | no |  |
+| `decimal_places` | Nº de decimales de la moneda. | smallint | no |  |
 
 #### `ref.exchange` · tabla · ~0 filas
 Bolsas de valores (Nasdaq, NYSE...).
@@ -50,15 +50,15 @@ Bolsas de valores (Nasdaq, NYSE...).
 | Columna | Qué es | Tipo | Nulo | Clave |
 |---|---|---|---|---|
 | `id` | Identificador único de la fila. | integer | no | PK |
-| `mic` |  | character varying(10) | sí |  |
+| `mic` | Código MIC de la bolsa. | character varying(10) | sí |  |
 | `name` | Nombre. | character varying(200) | no |  |
-| `short_name` |  | character varying(50) | sí |  |
+| `short_name` | Nombre corto de la bolsa. | character varying(50) | sí |  |
 | `country_code` | País (código ISO-3, p.ej. ESP). | character varying(3) | sí | FK → ref.country.code |
-| `city` |  | character varying(100) | sí |  |
-| `timezone` |  | character varying(50) | sí |  |
+| `city` | Ciudad de la bolsa. | character varying(100) | sí |  |
+| `timezone` | Zona horaria. | character varying(50) | sí |  |
 | `currency_code` | Moneda del importe. | character varying(3) | sí | FK → ref.currency.code |
-| `open_time` |  | time without time zone | sí |  |
-| `close_time` |  | time without time zone | sí |  |
+| `open_time` | Hora de apertura. | time without time zone | sí |  |
+| `close_time` | Hora de cierre. | time without time zone | sí |  |
 | `website` | Web de la empresa. | character varying(300) | sí |  |
 
 #### `ref.sector` · tabla · ~0 filas
@@ -67,10 +67,10 @@ Sectores económicos GICS (Tecnología, Salud...).
 | Columna | Qué es | Tipo | Nulo | Clave |
 |---|---|---|---|---|
 | `id` | Identificador único de la fila. | integer | no | PK |
-| `gics_code` |  | character varying(10) | sí |  |
+| `gics_code` | Código GICS del sector. | character varying(10) | sí |  |
 | `name` | Nombre. | character varying(200) | no |  |
-| `parent_id` |  | integer | sí | FK → ref.sector.id |
-| `level` |  | smallint | sí |  |
+| `parent_id` | Sector padre (jerarquía). | integer | sí | FK → ref.sector.id |
+| `level` | Nivel: 1 = sector, 2 = industria. | smallint | sí |  |
 
 ### Esquema `meta`
 _Metadatos y auditoría: fuentes, ejecuciones, calidad._
@@ -81,13 +81,13 @@ Nota de calidad por dominio: cuántos países cubrimos y cómo de reciente es el
 | Columna | Qué es | Tipo | Nulo | Clave |
 |---|---|---|---|---|
 | `id` | Identificador único de la fila. | integer | no | PK |
-| `domain` |  | character varying(50) | no |  |
-| `entity_type` |  | character varying(100) | no |  |
-| `entity_id` |  | character varying(200) | no |  |
-| `completeness_score` |  | numeric(5,2) | sí |  |
-| `freshness_days` |  | integer | sí |  |
-| `source_count` |  | integer | sí |  |
-| `last_assessed` |  | timestamp without time zone | no |  |
+| `domain` | Dominio de datos afectado. | character varying(50) | no |  |
+| `entity_type` | Tipo de entidad evaluada. | character varying(100) | no |  |
+| `entity_id` | Entidad concreta evaluada. | character varying(200) | no |  |
+| `completeness_score` | % de completitud (0-100). | numeric(5,2) | sí |  |
+| `freshness_days` | Antigüedad del último dato. | integer | sí |  |
+| `source_count` | Nº de fuentes que lo aportan. | integer | sí |  |
+| `last_assessed` | Última evaluación. | timestamp without time zone | no |  |
 
 #### `meta.data_source` · tabla · ~0 filas
 Las fuentes de donde sacamos los datos (IMF, yfinance, SEC...).
@@ -96,13 +96,13 @@ Las fuentes de donde sacamos los datos (IMF, yfinance, SEC...).
 |---|---|---|---|---|
 | `id` | Identificador único de la fila. | integer | no | PK |
 | `name` | Nombre. | character varying(100) | no |  |
-| `display_name` |  | character varying(200) | sí |  |
-| `base_url` |  | character varying(500) | sí |  |
-| `api_key_env_var` |  | character varying(100) | sí |  |
-| `rate_limit_per_second` |  | numeric(6,3) | sí |  |
-| `daily_request_limit` |  | integer | sí |  |
-| `is_enabled` |  | boolean | no |  |
-| `notes` |  | text | sí |  |
+| `display_name` | Nombre legible de la fuente. | character varying(200) | sí |  |
+| `base_url` | URL base de la API. | character varying(500) | sí |  |
+| `api_key_env_var` | Variable de entorno con la clave. | character varying(100) | sí |  |
+| `rate_limit_per_second` | Límite de peticiones/segundo. | numeric(6,3) | sí |  |
+| `daily_request_limit` | Límite diario de peticiones. | integer | sí |  |
+| `is_enabled` | Si la fuente está activa. | boolean | no |  |
+| `notes` | Notas. | text | sí |  |
 
 #### `meta.fetch_run` · tabla · ~71,134 filas
 Un registro por cada descarga hecha: cuándo, qué fuente, cuántos datos y si hubo errores. Es el 'diario' de descargas.
@@ -111,16 +111,16 @@ Un registro por cada descarga hecha: cuándo, qué fuente, cuántos datos y si h
 |---|---|---|---|---|
 | `id` | Identificador único de la fila. | integer | no | PK |
 | `source_id` | Fuente de la que procede el dato. | integer | sí |  |
-| `domain` |  | character varying(50) | no |  |
-| `started_at` |  | timestamp without time zone | no |  |
-| `finished_at` |  | timestamp without time zone | sí |  |
+| `domain` | Dominio de datos afectado. | character varying(50) | no |  |
+| `started_at` | Cuándo empezó la ejecución. | timestamp without time zone | no |  |
+| `finished_at` | Cuándo terminó la ejecución. | timestamp without time zone | sí |  |
 | `status` | Estado (running / success / failed). | character varying(20) | no |  |
-| `records_fetched` |  | integer | no |  |
-| `records_inserted` |  | integer | no |  |
-| `records_updated` |  | integer | no |  |
-| `errors` |  | integer | no |  |
-| `params` |  | jsonb | sí |  |
-| `error_log` |  | jsonb | sí |  |
+| `records_fetched` | Registros descargados. | integer | no |  |
+| `records_inserted` | Registros insertados. | integer | no |  |
+| `records_updated` | Registros actualizados. | integer | no |  |
+| `errors` | Número de errores. | integer | no |  |
+| `params` | Parámetros usados en la ejecución. | jsonb | sí |  |
+| `error_log` | Errores registrados, si los hubo. | jsonb | sí |  |
 
 #### `meta.transform_run` · tabla · ~84 filas
 Un registro por cada vez que transformamos datos crudos en datos limpios. El 'diario' de transformaciones.
@@ -128,16 +128,16 @@ Un registro por cada vez que transformamos datos crudos en datos limpios. El 'di
 | Columna | Qué es | Tipo | Nulo | Clave |
 |---|---|---|---|---|
 | `id` | Identificador único de la fila. | integer | no | PK |
-| `domain` |  | character varying(50) | no |  |
-| `target_layer` |  | character varying(20) | no |  |
-| `started_at` |  | timestamp without time zone | no |  |
-| `finished_at` |  | timestamp without time zone | sí |  |
+| `domain` | Dominio de datos afectado. | character varying(50) | no |  |
+| `target_layer` | Capa destino (silver/gold). | character varying(20) | no |  |
+| `started_at` | Cuándo empezó la ejecución. | timestamp without time zone | no |  |
+| `finished_at` | Cuándo terminó la ejecución. | timestamp without time zone | sí |  |
 | `status` | Estado (running / success / failed). | character varying(20) | no |  |
-| `records_read` |  | integer | no |  |
-| `records_written` |  | integer | no |  |
-| `records_invalid` |  | integer | no |  |
-| `params` |  | jsonb | sí |  |
-| `error_log` |  | jsonb | sí |  |
+| `records_read` | Registros leídos. | integer | no |  |
+| `records_written` | Registros escritos. | integer | no |  |
+| `records_invalid` | Registros descartados por inválidos. | integer | no |  |
+| `params` | Parámetros usados en la ejecución. | jsonb | sí |  |
+| `error_log` | Errores registrados, si los hubo. | jsonb | sí |  |
 
 ## Renta variable y mercados financieros
 
@@ -152,13 +152,13 @@ Previsiones de los analistas sobre beneficios e ingresos futuros.
 | `id` | Identificador único de la fila. | integer | no | PK |
 | `company_id` | Empresa a la que pertenece. | integer | no | FK → equity.company.id |
 | `snapshot_date` | Día de la foto (los datos se acumulan por día). | date | no |  |
-| `horizon` |  | character varying(10) | no |  |
-| `period_label` |  | character varying(20) | sí |  |
-| `eps_avg` |  | numeric(12,4) | sí |  |
-| `eps_low` |  | numeric(12,4) | sí |  |
-| `eps_high` |  | numeric(12,4) | sí |  |
-| `revenue_avg` |  | numeric(20,2) | sí |  |
-| `num_analysts` |  | smallint | sí |  |
+| `horizon` | Horizonte de la previsión (0q, +1q, 0y, +1y). | character varying(10) | no |  |
+| `period_label` | Periodo estimado (p.ej. 2026Q2). | character varying(20) | sí |  |
+| `eps_avg` | Beneficio por acción estimado (medio). | numeric(12,4) | sí |  |
+| `eps_low` | BPA estimado mínimo. | numeric(12,4) | sí |  |
+| `eps_high` | BPA estimado máximo. | numeric(12,4) | sí |  |
+| `revenue_avg` | Ingresos estimados (medio). | numeric(20,2) | sí |  |
+| `num_analysts` | Nº de analistas. | smallint | sí |  |
 | `source_id` | Fuente de la que procede el dato. | integer | sí | FK → meta.data_source.id |
 
 #### `equity.balance_sheet` · tabla · ~11,119 filas
@@ -244,12 +244,12 @@ Dividendos pagados por cada acción.
 |---|---|---|---|---|
 | `id` | Identificador único de la fila. | integer | no | PK |
 | `company_id` | Empresa a la que pertenece. | integer | no | FK → equity.company.id |
-| `ex_date` |  | date | no |  |
-| `pay_date` |  | date | sí |  |
-| `record_date` |  | date | sí |  |
-| `amount` |  | numeric(12,6) | no |  |
+| `ex_date` | Fecha ex-dividendo. | date | no |  |
+| `pay_date` | Fecha de pago. | date | sí |  |
+| `record_date` | Fecha de registro. | date | sí |  |
+| `amount` | Importe del dividendo por acción. | numeric(12,6) | no |  |
 | `currency_code` | Moneda del importe. | character varying(3) | sí |  |
-| `dividend_type` |  | character varying(20) | sí |  |
+| `dividend_type` | Tipo de dividendo. | character varying(20) | sí |  |
 
 #### `equity.earnings_date` · tabla · ~100,804 filas
 Fechas de presentación de resultados, con lo esperado vs lo reportado.
@@ -261,7 +261,7 @@ Fechas de presentación de resultados, con lo esperado vs lo reportado.
 | `date` | Fecha del dato. | date | no |  |
 | `eps_estimate` | Beneficio por acción esperado. | numeric(12,4) | sí |  |
 | `reported_eps` | Beneficio por acción real. | numeric(12,4) | sí |  |
-| `surprise_pct` |  | numeric(10,4) | sí |  |
+| `surprise_pct` | Sorpresa: desviación del real vs lo esperado (%). | numeric(10,4) | sí |  |
 
 #### `equity.earnings_revision` · tabla · ~0 filas
 Cómo van cambiando esas previsiones (si los analistas revisan al alza o a la baja).
@@ -271,12 +271,12 @@ Cómo van cambiando esas previsiones (si los analistas revisan al alza o a la ba
 | `id` | Identificador único de la fila. | integer | no | PK |
 | `company_id` | Empresa a la que pertenece. | integer | no | FK → equity.company.id |
 | `snapshot_date` | Día de la foto (los datos se acumulan por día). | date | no |  |
-| `horizon` |  | character varying(10) | no |  |
-| `eps_current` |  | numeric(12,4) | sí |  |
-| `eps_7d_ago` |  | numeric(12,4) | sí |  |
-| `eps_30d_ago` |  | numeric(12,4) | sí |  |
-| `up_last_30d` |  | smallint | sí |  |
-| `down_last_30d` |  | smallint | sí |  |
+| `horizon` | Horizonte de la previsión (0q, +1q, 0y, +1y). | character varying(10) | no |  |
+| `eps_current` | BPA estimado ahora. | numeric(12,4) | sí |  |
+| `eps_7d_ago` | BPA estimado hace 7 días. | numeric(12,4) | sí |  |
+| `eps_30d_ago` | BPA estimado hace 30 días. | numeric(12,4) | sí |  |
+| `up_last_30d` | Revisiones al alza (30 días). | smallint | sí |  |
+| `down_last_30d` | Revisiones a la baja (30 días). | smallint | sí |  |
 | `source_id` | Fuente de la que procede el dato. | integer | sí | FK → meta.data_source.id |
 
 #### `equity.holder` · tabla · ~34,656 filas
@@ -287,12 +287,12 @@ Quién posee cada empresa: grandes fondos e instituciones, con su porcentaje.
 | `id` | Identificador único de la fila. | bigint | no | PK |
 | `company_id` | Empresa a la que pertenece. | integer | no | FK → equity.company.id |
 | `holder_type` | Tipo: institutional o mutualfund. | character varying(20) | no |  |
-| `holder_name` |  | character varying(200) | no |  |
+| `holder_name` | Nombre del accionista o fondo. | character varying(200) | no |  |
 | `snapshot_date` | Día de la foto (los datos se acumulan por día). | date | no |  |
-| `date_reported` |  | date | sí |  |
+| `date_reported` | Fecha de la declaración. | date | sí |  |
 | `pct_held` | % de la empresa que posee. | numeric(9,6) | sí |  |
 | `shares` | Nº de acciones que posee. | bigint | sí |  |
-| `value_usd` |  | numeric(20,2) | sí |  |
+| `value_usd` | Valor de la participación (USD). | numeric(20,2) | sí |  |
 
 #### `equity.income_statement` · tabla · ~11,053 filas
 Cuenta de resultados anual (ingresos, beneficio...) de cada empresa.
@@ -330,7 +330,7 @@ Qué empresas componen hoy cada índice.
 | `id` | Identificador único de la fila. | integer | no | PK |
 | `index_id` | Índice de mercado. | integer | no | FK → equity.market_index.id |
 | `company_id` | Empresa a la que pertenece. | integer | no | FK → equity.company.id |
-| `weight` |  | numeric(8,5) | sí |  |
+| `weight` | Peso o ponderación en el índice. | numeric(8,5) | sí |  |
 | `as_of_date` | Fecha de referencia del cálculo. | date | no |  |
 | `source_id` | Fuente de la que procede el dato. | integer | sí | FK → meta.data_source.id |
 
@@ -356,11 +356,11 @@ Compras y ventas de acciones por parte de directivos e insiders de la empresa.
 | `id` | Identificador único de la fila. | bigint | no | PK |
 | `company_id` | Empresa a la que pertenece. | integer | no | FK → equity.company.id |
 | `insider` | Nombre del directivo/insider. | character varying(200) | no |  |
-| `position` |  | character varying(200) | sí |  |
+| `position` | Cargo del insider. | character varying(200) | sí |  |
 | `transaction` | Compra o venta. | character varying(100) | sí |  |
-| `start_date` |  | date | sí |  |
-| `shares` |  | bigint | sí |  |
-| `value_usd` |  | numeric(20,2) | sí |  |
+| `start_date` | Fecha de la operación. | date | sí |  |
+| `shares` | Número de acciones. | bigint | sí |  |
+| `value_usd` | Valor de la operación (USD). | numeric(20,2) | sí |  |
 
 #### `equity.market_index` · tabla · ~0 filas
 Índices bursátiles (S&P 500, DAX...).
@@ -403,23 +403,23 @@ Ratios de valoración calculados (PER, ROE...) — foto actual.
 | `currency_code` | Moneda del importe. | character varying(3) | sí |  |
 | `market_cap_usd` | Capitalización bursátil en dólares. | numeric(18,2) | sí |  |
 | `shares_outstanding` | Acciones en circulación. | bigint | sí |  |
-| `price_date` |  | date | sí |  |
-| `income_period` |  | date | sí |  |
-| `balance_period` |  | date | sí |  |
-| `cashflow_period` |  | date | sí |  |
-| `last_close` |  | numeric(14,4) | sí |  |
-| `pe_ratio` |  | numeric | sí |  |
-| `pb_ratio` |  | numeric | sí |  |
-| `ps_ratio` |  | numeric | sí |  |
-| `roe` |  | numeric | sí |  |
-| `roa` |  | numeric | sí |  |
-| `roic` |  | numeric | sí |  |
-| `gross_margin` |  | numeric | sí |  |
-| `operating_margin` |  | numeric | sí |  |
-| `net_margin` |  | numeric | sí |  |
-| `debt_equity` |  | numeric | sí |  |
-| `debt_assets` |  | numeric | sí |  |
-| `fcf_yield` |  | numeric | sí |  |
+| `price_date` | Fecha del precio usado. | date | sí |  |
+| `income_period` | Periodo de la cuenta de resultados. | date | sí |  |
+| `balance_period` | Periodo del balance. | date | sí |  |
+| `cashflow_period` | Periodo de los flujos de caja. | date | sí |  |
+| `last_close` | Último precio de cierre. | numeric(14,4) | sí |  |
+| `pe_ratio` | PER (precio / beneficio). | numeric | sí |  |
+| `pb_ratio` | Precio / valor contable. | numeric | sí |  |
+| `ps_ratio` | Precio / ventas. | numeric | sí |  |
+| `roe` | Rentabilidad sobre patrimonio (ROE). | numeric | sí |  |
+| `roa` | Rentabilidad sobre activos (ROA). | numeric | sí |  |
+| `roic` | Rentabilidad sobre capital invertido. | numeric | sí |  |
+| `gross_margin` | Margen bruto (%). | numeric | sí |  |
+| `operating_margin` | Margen operativo (%). | numeric | sí |  |
+| `net_margin` | Margen neto (%). | numeric | sí |  |
+| `debt_equity` | Deuda / patrimonio. | numeric | sí |  |
+| `debt_assets` | Deuda / activos. | numeric | sí |  |
+| `fcf_yield` | Rentabilidad del flujo de caja libre. | numeric | sí |  |
 | `revenue` | Ingresos totales (ventas). | numeric(18,2) | sí |  |
 | `net_income` | Beneficio neto (lo que gana al final). | numeric(18,2) | sí |  |
 | `ebitda` | EBITDA (beneficio antes de intereses, impuestos y amortizaciones). | numeric(18,2) | sí |  |
@@ -438,11 +438,11 @@ Resumen de cuántos analistas recomiendan comprar, mantener o vender.
 | `company_id` | Empresa a la que pertenece. | integer | no | FK → equity.company.id |
 | `snapshot_date` | Día de la foto (los datos se acumulan por día). | date | no |  |
 | `period` | Año del dato. | character varying(10) | no |  |
-| `strong_buy` |  | smallint | sí |  |
-| `buy` |  | smallint | sí |  |
-| `hold` |  | smallint | sí |  |
-| `sell` |  | smallint | sí |  |
-| `strong_sell` |  | smallint | sí |  |
+| `strong_buy` | Analistas: comprar fuerte. | smallint | sí |  |
+| `buy` | Analistas: comprar. | smallint | sí |  |
+| `hold` | Analistas: mantener. | smallint | sí |  |
+| `sell` | Analistas: vender. | smallint | sí |  |
+| `strong_sell` | Analistas: vender fuerte. | smallint | sí |  |
 
 #### `equity.shares_history` · tabla · ~1,287,132 filas
 Número de acciones en circulación de la empresa a lo largo del tiempo.
@@ -452,7 +452,7 @@ Número de acciones en circulación de la empresa a lo largo del tiempo.
 | `id` | Identificador único de la fila. | bigint | no | PK |
 | `company_id` | Empresa a la que pertenece. | integer | no | FK → equity.company.id |
 | `date` | Fecha del dato. | date | no |  |
-| `shares` |  | bigint | sí |  |
+| `shares` | Número de acciones. | bigint | sí |  |
 
 #### `equity.split` · tabla · ~4,564 filas
 Splits (desdoblamientos) de acciones.
@@ -462,8 +462,8 @@ Splits (desdoblamientos) de acciones.
 | `id` | Identificador único de la fila. | integer | no | PK |
 | `company_id` | Empresa a la que pertenece. | integer | no | FK → equity.company.id |
 | `date` | Fecha del dato. | date | no |  |
-| `ratio_from` |  | numeric(10,4) | sí |  |
-| `ratio_to` |  | numeric(10,4) | sí |  |
+| `ratio_from` | Acciones antes del split. | numeric(10,4) | sí |  |
+| `ratio_to` | Acciones después del split. | numeric(10,4) | sí |  |
 
 #### `equity.upgrade_downgrade` · tabla · ~289,296 filas
 Cambios de recomendación y precio objetivo que hacen los analistas (comprar/vender).
@@ -475,8 +475,8 @@ Cambios de recomendación y precio objetivo que hacen los analistas (comprar/ven
 | `date` | Fecha del dato. | date | no |  |
 | `firm` | Casa de análisis (Goldman...). | character varying(200) | no |  |
 | `to_grade` | Nueva recomendación. | character varying(100) | sí |  |
-| `from_grade` |  | character varying(100) | sí |  |
-| `action` |  | character varying(50) | sí |  |
+| `from_grade` | Recomendación anterior. | character varying(100) | sí |  |
+| `action` | Tipo de cambio (up/down/init). | character varying(50) | sí |  |
 | `price_target` | Precio objetivo fijado. | numeric(14,4) | sí |  |
 
 ### Esquema `fi`
@@ -488,17 +488,17 @@ Bonos (sobre todo deuda pública de EE.UU.).
 | Columna | Qué es | Tipo | Nulo | Clave |
 |---|---|---|---|---|
 | `id` | Identificador único de la fila. | integer | no | PK |
-| `issuer_id` |  | integer | sí | FK → fi.bond_issuer.id |
+| `issuer_id` | Emisor del bono. | integer | sí | FK → fi.bond_issuer.id |
 | `isin` | Código ISIN (identificador internacional del valor). | character varying(12) | sí |  |
 | `name` | Nombre. | character varying(300) | sí |  |
-| `coupon_rate` |  | numeric(8,4) | sí |  |
-| `coupon_frequency` |  | smallint | sí |  |
-| `maturity_date` |  | date | sí |  |
-| `issue_date` |  | date | sí |  |
-| `face_value` |  | numeric(14,2) | sí |  |
+| `coupon_rate` | Tipo de cupón (%). | numeric(8,4) | sí |  |
+| `coupon_frequency` | Frecuencia del cupón. | smallint | sí |  |
+| `maturity_date` | Fecha de vencimiento. | date | sí |  |
+| `issue_date` | Fecha de emisión. | date | sí |  |
+| `face_value` | Valor nominal. | numeric(14,2) | sí |  |
 | `currency_code` | Moneda del importe. | character varying(3) | sí |  |
-| `bond_type` |  | character varying(30) | sí |  |
-| `is_callable` |  | boolean | no |  |
+| `bond_type` | Tipo de bono. | character varying(30) | sí |  |
+| `is_callable` | Si es amortizable anticipadamente. | boolean | no |  |
 
 #### `fi.bond_issuer` · tabla · ~53 filas
 Emisores de bonos (países).
@@ -507,7 +507,7 @@ Emisores de bonos (países).
 |---|---|---|---|---|
 | `id` | Identificador único de la fila. | integer | no | PK |
 | `name` | Nombre. | character varying(300) | sí |  |
-| `issuer_type` |  | character varying(20) | no |  |
+| `issuer_type` | Tipo de emisor (soberano...). | character varying(20) | no |  |
 | `country_code` | País (código ISO-3, p.ej. ESP). | character varying(3) | sí | FK → ref.country.code |
 
 #### `fi.credit_rating` · tabla · ~10,563 filas
@@ -516,12 +516,12 @@ Ratings de crédito (calificaciones de solvencia).
 | Columna | Qué es | Tipo | Nulo | Clave |
 |---|---|---|---|---|
 | `id` | Identificador único de la fila. | integer | no | PK |
-| `issuer_id` |  | integer | no | FK → fi.bond_issuer.id |
-| `agency` |  | character varying(20) | no |  |
-| `rating` |  | character varying(10) | no |  |
-| `outlook` |  | character varying(20) | sí |  |
-| `rating_date` |  | date | no |  |
-| `previous_rating` |  | character varying(10) | sí |  |
+| `issuer_id` | Emisor del bono. | integer | no | FK → fi.bond_issuer.id |
+| `agency` | Agencia de rating (Fitch...). | character varying(20) | no |  |
+| `rating` | Calificación de crédito. | character varying(10) | no |  |
+| `outlook` | Perspectiva (positiva/estable/negativa). | character varying(20) | sí |  |
+| `rating_date` | Fecha del rating. | date | no |  |
+| `previous_rating` | Rating anterior. | character varying(10) | sí |  |
 
 #### `fi.yield_curve` · tabla · ~68,072 filas
 Curvas de tipos de interés (rendimiento de la deuda por plazo).
@@ -531,8 +531,8 @@ Curvas de tipos de interés (rendimiento de la deuda por plazo).
 | `id` | Identificador único de la fila. | integer | no | PK |
 | `country_code` | País (código ISO-3, p.ej. ESP). | character varying(3) | no | FK → ref.country.code |
 | `date` | Fecha del dato. | date | no |  |
-| `maturity_months` |  | smallint | no |  |
-| `yield_pct` |  | numeric(8,4) | no |  |
+| `maturity_months` | Plazo en meses. | smallint | no |  |
+| `yield_pct` | Rendimiento (%). | numeric(8,4) | no |  |
 | `source_id` | Fuente de la que procede el dato. | integer | sí | FK → meta.data_source.id |
 
 ### Esquema `commodity`
@@ -550,8 +550,8 @@ Materias primas (oro, petróleo...).
 | `subcategory` | Subcategoría. | character varying(50) | sí |  |
 | `unit` | Unidad de medida. | character varying(50) | sí |  |
 | `currency_code` | Moneda del importe. | character varying(3) | sí |  |
-| `exchange` |  | character varying(50) | sí |  |
-| `yfinance_ticker` |  | character varying(20) | sí |  |
+| `exchange` | Bolsa/mercado donde cotiza. | character varying(50) | sí |  |
+| `yfinance_ticker` | Símbolo en yfinance. | character varying(20) | sí |  |
 
 #### `commodity.price_daily` · tabla · ~104,882 filas
 Precio diario de cada materia prima.
@@ -559,7 +559,7 @@ Precio diario de cada materia prima.
 | Columna | Qué es | Tipo | Nulo | Clave |
 |---|---|---|---|---|
 | `id` | Identificador único de la fila. | integer | no | PK |
-| `commodity_id` |  | integer | no | FK → commodity.commodity.id |
+| `commodity_id` | Materia prima a la que pertenece. | integer | no | FK → commodity.commodity.id |
 | `date` | Fecha del dato. | date | no |  |
 | `open` | Precio de apertura. | numeric(14,4) | sí |  |
 | `high` | Precio máximo del día. | numeric(14,4) | sí |  |
@@ -577,9 +577,9 @@ Pares de divisas (EUR/USD...).
 | Columna | Qué es | Tipo | Nulo | Clave |
 |---|---|---|---|---|
 | `id` | Identificador único de la fila. | integer | no | PK |
-| `base_currency` |  | character varying(3) | no | FK → ref.currency.code |
-| `quote_currency` |  | character varying(3) | no | FK → ref.currency.code |
-| `pair_code` |  | character varying(7) | no |  |
+| `base_currency` | Divisa base. | character varying(3) | no | FK → ref.currency.code |
+| `quote_currency` | Divisa cotizada. | character varying(3) | no | FK → ref.currency.code |
+| `pair_code` | Código del par (EURUSD...). | character varying(7) | no |  |
 | `category` | Categoría o dominio. | character varying(20) | sí |  |
 
 #### `forex.rate_daily` · tabla · ~183,177 filas
@@ -588,7 +588,7 @@ Tipo de cambio diario de cada par.
 | Columna | Qué es | Tipo | Nulo | Clave |
 |---|---|---|---|---|
 | `id` | Identificador único de la fila. | integer | no | PK |
-| `pair_id` |  | integer | no | FK → forex.currency_pair.id |
+| `pair_id` | Par de divisas al que pertenece. | integer | no | FK → forex.currency_pair.id |
 | `date` | Fecha del dato. | date | no |  |
 | `open` | Precio de apertura. | numeric(14,8) | sí |  |
 | `high` | Precio máximo del día. | numeric(14,8) | sí |  |
@@ -605,11 +605,11 @@ Criptomonedas (Bitcoin, Ethereum...).
 | Columna | Qué es | Tipo | Nulo | Clave |
 |---|---|---|---|---|
 | `id` | Identificador único de la fila. | integer | no | PK |
-| `coingecko_id` |  | character varying(100) | no |  |
-| `symbol` |  | character varying(20) | no |  |
+| `coingecko_id` | ID en CoinGecko. | character varying(100) | no |  |
+| `symbol` | Símbolo o código corto. | character varying(20) | no |  |
 | `name` | Nombre. | character varying(200) | no |  |
 | `category` | Categoría o dominio. | character varying(50) | sí |  |
-| `market_cap_rank` |  | smallint | sí |  |
+| `market_cap_rank` | Puesto por capitalización. | smallint | sí |  |
 
 #### `crypto.market_dominance` · tabla · ~0 filas
 Snapshot diario del mercado crypto.
@@ -618,9 +618,9 @@ Snapshot diario del mercado crypto.
 |---|---|---|---|---|
 | `id` | Identificador único de la fila. | integer | no | PK |
 | `date` | Fecha del dato. | date | no |  |
-| `total_market_cap_usd` |  | numeric(18,2) | sí |  |
-| `btc_dominance_pct` |  | numeric(6,3) | sí |  |
-| `eth_dominance_pct` |  | numeric(6,3) | sí |  |
+| `total_market_cap_usd` | Capitalización total del mercado cripto (USD). | numeric(18,2) | sí |  |
+| `btc_dominance_pct` | % que representa Bitcoin. | numeric(6,3) | sí |  |
+| `eth_dominance_pct` | % que representa Ethereum. | numeric(6,3) | sí |  |
 
 #### `crypto.price_daily` · tabla · ~13,482 filas
 Precio diario de cada cripto.
@@ -628,13 +628,13 @@ Precio diario de cada cripto.
 | Columna | Qué es | Tipo | Nulo | Clave |
 |---|---|---|---|---|
 | `id` | Identificador único de la fila. | integer | no | PK |
-| `coin_id` |  | integer | no |  |
+| `coin_id` | Cripto a la que pertenece. | integer | no |  |
 | `date` | Fecha del dato. | date | no |  |
 | `open` | Precio de apertura. | numeric(18,8) | sí |  |
 | `high` | Precio máximo del día. | numeric(18,8) | sí |  |
 | `low` | Precio mínimo del día. | numeric(18,8) | sí |  |
 | `close` | Precio de cierre. | numeric(18,8) | no |  |
-| `volume_usd` |  | numeric(18,2) | sí |  |
+| `volume_usd` | Volumen negociado (USD). | numeric(18,2) | sí |  |
 | `market_cap_usd` | Capitalización bursátil en dólares. | numeric(18,2) | sí |  |
 
 ### Esquema `fund`
@@ -648,14 +648,14 @@ ETFs y fondos de inversión.
 | `id` | Identificador único de la fila. | integer | no | PK |
 | `ticker` | Símbolo bursátil (p.ej. AAPL). | character varying(20) | sí |  |
 | `name` | Nombre. | character varying(500) | no |  |
-| `fund_type` |  | character varying(20) | no |  |
-| `asset_class` |  | character varying(50) | sí |  |
-| `geography` |  | character varying(100) | sí |  |
-| `strategy` |  | character varying(100) | sí |  |
-| `provider` |  | character varying(100) | sí |  |
-| `expense_ratio` |  | numeric(6,4) | sí |  |
-| `aum_usd` |  | numeric(18,2) | sí |  |
-| `inception_date` |  | date | sí |  |
+| `fund_type` | Tipo (ETF, fondo...). | character varying(20) | no |  |
+| `asset_class` | Clase de activo. | character varying(50) | sí |  |
+| `geography` | Geografía a la que invierte. | character varying(100) | sí |  |
+| `strategy` | Estrategia. | character varying(100) | sí |  |
+| `provider` | Gestora. | character varying(100) | sí |  |
+| `expense_ratio` | Comisión anual (%). | numeric(6,4) | sí |  |
+| `aum_usd` | Patrimonio gestionado (USD). | numeric(18,2) | sí |  |
+| `inception_date` | Fecha de creación del fondo. | date | sí |  |
 | `currency_code` | Moneda del importe. | character varying(3) | sí |  |
 | `exchange_id` | Bolsa de valores. | integer | sí | FK → ref.exchange.id |
 | `is_active` | Si sigue cotizando (no deslistada). | boolean | no |  |
@@ -666,9 +666,9 @@ Valor liquidativo (NAV) diario de cada fondo.
 | Columna | Qué es | Tipo | Nulo | Clave |
 |---|---|---|---|---|
 | `id` | Identificador único de la fila. | integer | no | PK |
-| `fund_id` |  | integer | no | FK → fund.fund.id |
+| `fund_id` | Fondo al que pertenece. | integer | no | FK → fund.fund.id |
 | `date` | Fecha del dato. | date | no |  |
-| `nav` |  | numeric(14,6) | no |  |
+| `nav` | Valor liquidativo (NAV). | numeric(14,6) | no |  |
 | `volume` | Volumen negociado. | integer | sí |  |
 
 ### Esquema `alt`
@@ -683,7 +683,7 @@ _Datos alternativos: sentimiento, vivienda._
 | `code` | Código identificador. | character varying(50) | no |  |
 | `name` | Nombre. | character varying(200) | sí |  |
 | `country_code` | País (código ISO-3, p.ej. ESP). | character varying(3) | sí | FK → ref.country.code |
-| `index_type` |  | character varying(50) | sí |  |
+| `index_type` | Tipo de índice de vivienda. | character varying(50) | sí |  |
 
 #### `alt.housing_index_value` · tabla · ~0 filas
 Valor de índice inmobiliario.
@@ -694,7 +694,7 @@ Valor de índice inmobiliario.
 | `index_id` | Índice de mercado. | integer | no | FK → alt.housing_index.id |
 | `date` | Fecha del dato. | date | no |  |
 | `value` | Valor del dato. | numeric(12,4) | no |  |
-| `yoy_change_pct` |  | numeric(8,4) | sí |  |
+| `yoy_change_pct` | Variación interanual (%). | numeric(8,4) | sí |  |
 
 #### `alt.sentiment_indicator` · tabla · ~0 filas
 Definición de indicador de sentimiento.
@@ -745,7 +745,7 @@ El catálogo de indicadores económicos que seguimos (PIB, inflación, paro...).
 | `subcategory` | Subcategoría. | character varying(100) | sí |  |
 | `unit` | En qué se mide (%, USD, personas...). | character varying(50) | sí |  |
 | `frequency` | Frecuencia (anual, mensual, diario...). | character varying(20) | sí |  |
-| `seasonal_adjustment` |  | character varying(20) | sí |  |
+| `seasonal_adjustment` | Ajuste estacional aplicado. | character varying(20) | sí |  |
 | `description` | Descripción libre. | text | sí |  |
 
 #### `macro.indicator_source` · tabla · ~1,636 filas
@@ -756,9 +756,9 @@ Cómo se llama cada indicador en cada fuente (el mismo 'PIB' tiene códigos dist
 | `id` | Identificador único de la fila. | integer | no | PK |
 | `indicator_id` | Indicador al que pertenece. | integer | no | FK → macro.indicator.id |
 | `source_id` | Fuente de la que procede el dato. | integer | no | FK → meta.data_source.id |
-| `external_code` |  | character varying(200) | no |  |
-| `external_name` |  | character varying(500) | sí |  |
-| `priority` |  | smallint | no |  |
+| `external_code` | Código del indicador en la fuente. | character varying(200) | no |  |
+| `external_name` | Nombre en la fuente. | character varying(500) | sí |  |
+| `priority` | Prioridad si hay varias fuentes. | smallint | no |  |
 
 #### `macro.series` · tabla · ~87,854 filas
 Una serie = un indicador para un país concreto (p.ej. 'inflación de España'). Agrupa sus valores en el tiempo.
@@ -768,9 +768,9 @@ Una serie = un indicador para un país concreto (p.ej. 'inflación de España').
 | `id` | Identificador único de la fila. | integer | no | PK |
 | `indicator_id` | Indicador al que pertenece. | integer | no | FK → macro.indicator.id |
 | `country_code` | País (código ISO-3, p.ej. ESP). | character varying(3) | sí | FK → ref.country.code |
-| `region_code` |  | character varying(20) | sí |  |
+| `region_code` | Región (para agregados regionales: mundo, UE...). | character varying(20) | sí |  |
 | `last_value` | Último valor conocido de la serie. | numeric(20,6) | sí |  |
-| `last_date` |  | date | sí |  |
+| `last_date` | Fecha del último dato disponible. | date | sí |  |
 | `point_count` | Cuántos datos tiene la serie. | integer | no |  |
 
 ### Esquema `trade`
@@ -839,12 +839,12 @@ Datos demográficos por país.
 | `id` | Identificador único de la fila. | integer | no | PK |
 | `country_code` | País (código ISO-3, p.ej. ESP). | character varying(3) | no | FK → ref.country.code |
 | `year` | Año. | smallint | no |  |
-| `total_population` |  | bigint | sí |  |
-| `median_age` |  | numeric(5,2) | sí |  |
-| `urban_population_pct` |  | numeric(6,3) | sí |  |
-| `life_expectancy` |  | numeric(5,2) | sí |  |
-| `fertility_rate` |  | numeric(4,2) | sí |  |
-| `labor_force` |  | bigint | sí |  |
+| `total_population` | Población total. | bigint | sí |  |
+| `median_age` | Edad mediana. | numeric(5,2) | sí |  |
+| `urban_population_pct` | % de población urbana. | numeric(6,3) | sí |  |
+| `life_expectancy` | Esperanza de vida. | numeric(5,2) | sí |  |
+| `fertility_rate` | Tasa de fertilidad. | numeric(4,2) | sí |  |
+| `labor_force` | Población activa. | bigint | sí |  |
 
 #### `country.profile` · tabla · ~40 filas
 Perfil de cada país (datos generales).
@@ -852,14 +852,14 @@ Perfil de cada país (datos generales).
 | Columna | Qué es | Tipo | Nulo | Clave |
 |---|---|---|---|---|
 | `country_code` | País (código ISO-3, p.ej. ESP). | character varying(3) | no | PK |
-| `population` |  | bigint | sí |  |
-| `population_year` |  | smallint | sí |  |
-| `gdp_usd` |  | numeric(18,2) | sí |  |
-| `gdp_per_capita_usd` |  | numeric(12,2) | sí |  |
-| `hdi` |  | numeric(5,4) | sí |  |
-| `gini_index` |  | numeric(5,2) | sí |  |
-| `ease_of_business_rank` |  | smallint | sí |  |
-| `political_stability_index` |  | numeric(6,4) | sí |  |
+| `population` | Población. | bigint | sí |  |
+| `population_year` | Año de la población. | smallint | sí |  |
+| `gdp_usd` | PIB (USD). | numeric(18,2) | sí |  |
+| `gdp_per_capita_usd` | PIB por habitante (USD). | numeric(12,2) | sí |  |
+| `hdi` | Índice de Desarrollo Humano. | numeric(5,4) | sí |  |
+| `gini_index` | Índice de Gini (desigualdad). | numeric(5,2) | sí |  |
+| `ease_of_business_rank` | Ranking de facilidad para hacer negocios. | smallint | sí |  |
+| `political_stability_index` | Índice de estabilidad política. | numeric(6,4) | sí |  |
 | `last_updated` | Última actualización. | timestamp without time zone | sí |  |
 
 #### `country.tax_rate` · tabla · ~0 filas
@@ -870,10 +870,10 @@ Tipos impositivos por país y año.
 | `id` | Identificador único de la fila. | integer | no | PK |
 | `country_code` | País (código ISO-3, p.ej. ESP). | character varying(3) | no | FK → ref.country.code |
 | `year` | Año. | smallint | no |  |
-| `corporate_tax_rate` |  | numeric(6,3) | sí |  |
-| `top_income_tax_rate` |  | numeric(6,3) | sí |  |
-| `vat_rate` |  | numeric(6,3) | sí |  |
-| `capital_gains_tax_rate` |  | numeric(6,3) | sí |  |
+| `corporate_tax_rate` | Impuesto de sociedades (%). | numeric(6,3) | sí |  |
+| `top_income_tax_rate` | Tipo máximo de IRPF (%). | numeric(6,3) | sí |  |
+| `vat_rate` | IVA (%). | numeric(6,3) | sí |  |
+| `capital_gains_tax_rate` | Impuesto sobre plusvalías (%). | numeric(6,3) | sí |  |
 
 ## Derivados
 
@@ -891,9 +891,9 @@ Foto diaria de las opciones (contratos de compra/venta) de las empresas más lí
 | `expiry` | Fecha de vencimiento del contrato. | date | no |  |
 | `option_type` | C = call (compra), P = put (venta). | character varying(1) | no |  |
 | `strike` | Precio de ejercicio del contrato. | numeric(14,4) | no |  |
-| `last_price` |  | numeric(14,4) | sí |  |
-| `bid` |  | numeric(14,4) | sí |  |
-| `ask` |  | numeric(14,4) | sí |  |
+| `last_price` | Último precio del contrato. | numeric(14,4) | sí |  |
+| `bid` | Precio de compra (bid). | numeric(14,4) | sí |  |
+| `ask` | Precio de venta (ask). | numeric(14,4) | sí |  |
 | `volume` | Volumen negociado. | integer | sí |  |
 | `open_interest` | Contratos abiertos vivos. | integer | sí |  |
 | `implied_vol` | Volatilidad implícita. | numeric(10,6) | sí |  |
@@ -924,9 +924,9 @@ La respuesta cruda de una API macro, guardada tal cual por si hay que reprocesar
 | `id` | Identificador único de la fila. | bigint | no | PK |
 | `fetch_run_id` | Descarga que trajo el dato (auditoría). | integer | sí |  |
 | `ingested_at` | Cuándo se guardó el dato crudo. | timestamp without time zone | no |  |
-| `source_name` |  | character varying(50) | no |  |
-| `dataset` |  | character varying(120) | no |  |
-| `params` |  | jsonb | sí |  |
+| `source_name` | Nombre de la fuente. | character varying(50) | no |  |
+| `dataset` | Conjunto de datos descargado. | character varying(120) | no |  |
+| `params` | Parámetros usados en la ejecución. | jsonb | sí |  |
 | `payload` | Respuesta cruda de la API (JSON), tal cual llegó. | jsonb | no |  |
 
 #### `bronze.constituents_snapshot` · tabla · ~0 filas
@@ -937,8 +937,8 @@ Foto cruda de constituyentes de un índice (Wikipedia/GitHub).
 | `id` | Identificador único de la fila. | bigint | no | PK |
 | `fetch_run_id` | Descarga que trajo el dato (auditoría). | integer | sí |  |
 | `ingested_at` | Cuándo se guardó el dato crudo. | timestamp without time zone | no |  |
-| `index_code` |  | character varying(50) | no |  |
-| `source_kind` |  | character varying(30) | no |  |
+| `index_code` | Índice (SP500...). | character varying(50) | no |  |
+| `source_kind` | Origen (wikipedia/github). | character varying(30) | no |  |
 | `payload` | Respuesta cruda de la API (JSON), tal cual llegó. | jsonb | no |  |
 
 #### `bronze.sec_companyfacts` · tabla · ~1,420 filas
@@ -949,7 +949,7 @@ El JSON crudo con todos los datos financieros que publica la SEC de cada empresa
 | `id` | Identificador único de la fila. | bigint | no | PK |
 | `fetch_run_id` | Descarga que trajo el dato (auditoría). | integer | sí |  |
 | `ingested_at` | Cuándo se guardó el dato crudo. | timestamp without time zone | no |  |
-| `cik` |  | character varying(10) | no |  |
+| `cik` | Identificador CIK de la empresa en SEC. | character varying(10) | no |  |
 | `ticker` | Símbolo bursátil (p.ej. AAPL). | character varying(20) | sí |  |
 | `payload` | Respuesta cruda de la API (JSON), tal cual llegó. | jsonb | no |  |
 
@@ -973,13 +973,13 @@ Ficha resumida de cada empresa para análisis (con su sector ya incorporado).
 
 | Columna | Qué es | Tipo | Nulo | Clave |
 |---|---|---|---|---|
-| `company_key` |  | integer | no | PK |
+| `company_key` | Clave subrogada de la empresa. | integer | no | PK |
 | `company_id` | Empresa a la que pertenece. | integer | no | FK → equity.company.id |
 | `ticker` | Símbolo bursátil (p.ej. AAPL). | character varying(20) | no |  |
 | `name` | Nombre. | character varying(500) | sí |  |
 | `sector_id` | Sector GICS. | integer | sí |  |
-| `sector_name` |  | character varying(200) | sí |  |
-| `industry_id` |  | integer | sí |  |
+| `sector_name` | Nombre del sector. | character varying(200) | sí |  |
+| `industry_id` | Industria (nivel 2 GICS). | integer | sí |  |
 | `country_code` | País (código ISO-3, p.ej. ESP). | character varying(3) | sí |  |
 | `currency_code` | Moneda del importe. | character varying(3) | sí |  |
 | `is_active` | Si sigue cotizando (no deslistada). | boolean | no |  |
@@ -992,22 +992,22 @@ Ficha de cada país (región, grupo de renta).
 |---|---|---|---|---|
 | `country_code` | País (código ISO-3, p.ej. ESP). | character varying(3) | no | PK |
 | `name` | Nombre. | character varying(200) | no |  |
-| `region` |  | character varying(100) | sí |  |
-| `sub_region` |  | character varying(100) | sí |  |
-| `income_group` |  | character varying(50) | sí |  |
+| `region` | Región. | character varying(100) | sí |  |
+| `sub_region` | Subregión. | character varying(100) | sí |  |
+| `income_group` | Grupo de renta. | character varying(50) | sí |  |
 
 #### `gold.dim_date` · tabla · ~23,552 filas
 Calendario: una fila por día, con año, trimestre...
 
 | Columna | Qué es | Tipo | Nulo | Clave |
 |---|---|---|---|---|
-| `date_key` |  | date | no | PK |
+| `date_key` | La fecha (clave). | date | no | PK |
 | `year` | Año. | smallint | no |  |
-| `quarter` |  | smallint | no |  |
-| `month` |  | smallint | no |  |
-| `day_of_week` |  | smallint | no |  |
-| `is_month_end` |  | boolean | no |  |
-| `is_trading_day` |  | boolean | sí |  |
+| `quarter` | Trimestre (1-4). | smallint | no |  |
+| `month` | Mes (1-12). | smallint | no |  |
+| `day_of_week` | Día de la semana. | smallint | no |  |
+| `is_month_end` | Si es fin de mes. | boolean | no |  |
+| `is_trading_day` | Si hubo mercado ese día. | boolean | sí |  |
 
 #### `gold.dim_indicator` · vista · ~0 filas
 Catálogo autodocumentado de indicadores macro (código, fuente, cobertura, rango).
@@ -1019,11 +1019,11 @@ Catálogo autodocumentado de indicadores macro (código, fuente, cobertura, rang
 | `category` | Categoría o dominio. | character varying(100) | sí |  |
 | `unit` | Unidad de medida. | character varying(50) | sí |  |
 | `frequency` | Frecuencia (anual, mensual, diario...). | character varying(20) | sí |  |
-| `sources` |  | text | sí |  |
-| `n_countries` |  | bigint | sí |  |
-| `first_date` |  | date | sí |  |
-| `last_date` |  | date | sí |  |
-| `n_points` |  | bigint | sí |  |
+| `sources` | Fuentes que proveen el indicador. | text | sí |  |
+| `n_countries` | Nº de países cubiertos. | bigint | sí |  |
+| `first_date` | Fecha del primer dato. | date | sí |  |
+| `last_date` | Fecha del último dato. | date | sí |  |
+| `n_points` | Nº total de datos. | bigint | sí |  |
 
 #### `gold.fact_factor_scores` · tabla · ~170,960 filas
 Puntuaciones de factores de inversión (Value/Quality/Momentum) de cada empresa, normalizadas por sector.
@@ -1034,11 +1034,11 @@ Puntuaciones de factores de inversión (Value/Quality/Momentum) de cada empresa,
 | `company_id` | Empresa a la que pertenece. | integer | no | FK → equity.company.id |
 | `as_of_date` | Fecha de referencia del cálculo. | date | no |  |
 | `factor` | value, quality o momentum. | character varying(30) | no |  |
-| `universe` |  | character varying(30) | no |  |
-| `raw_value` |  | numeric(18,6) | sí |  |
-| `z_score` |  | numeric(10,6) | sí |  |
+| `universe` | Universo de cálculo (sp500_pit...). | character varying(30) | no |  |
+| `raw_value` | Valor crudo del factor. | numeric(18,6) | sí |  |
+| `z_score` | Puntuación normalizada (global). | numeric(10,6) | sí |  |
 | `z_sector_neutral` | Puntuación normalizada dentro de su sector (para comparar manzanas con manzanas). | numeric(10,6) | sí |  |
-| `percentile` |  | numeric(6,4) | sí |  |
+| `percentile` | Percentil dentro del universo. | numeric(6,4) | sí |  |
 | `source_id` | Fuente de la que procede el dato. | integer | sí |  |
 
 #### `gold.fact_fundamentals_pit` · tabla · ~12,826,841 filas
@@ -1048,7 +1048,7 @@ Todos los datos financieros de las empresas US con la fecha en que se publicaron
 |---|---|---|---|---|
 | `id` | Identificador único de la fila. | bigint | no | PK |
 | `company_id` | Empresa a la que pertenece. | integer | no | FK → equity.company.id |
-| `statement_type` |  | character varying(10) | no |  |
+| `statement_type` | Tipo: income/balance/cashflow o la taxonomía XBRL. | character varying(10) | no |  |
 | `fiscal_year` | Año fiscal del periodo. | smallint | no |  |
 | `fiscal_quarter` | Trimestre fiscal (vacío = dato anual). | smallint | sí |  |
 | `period_end_date` | Fecha de cierre del periodo contable. | date | no |  |
@@ -1057,7 +1057,7 @@ Todos los datos financieros de las empresas US con la fecha en que se publicaron
 | `metric` | Concepto financiero (revenue, net_income o el código XBRL completo). | character varying(150) | no |  |
 | `value` | Importe del concepto. | numeric(28,6) | sí |  |
 | `currency_code` | Moneda del importe. | character varying(3) | sí |  |
-| `form` |  | character varying(10) | sí |  |
+| `form` | Formulario SEC (10-K, 10-Q...). | character varying(10) | sí |  |
 | `source_id` | Fuente de la que procede el dato. | integer | sí |  |
 
 #### `gold.index_membership` · tabla · ~1,255 filas
@@ -1079,8 +1079,8 @@ Retorno diario del pool S&P 500 equiponderado (survivorship-free) vs SPY.
 | Columna | Qué es | Tipo | Nulo | Clave |
 |---|---|---|---|---|
 | `date` | Fecha del dato. | date | sí |  |
-| `method` |  | character varying(20) | sí |  |
-| `ret` |  | numeric | sí |  |
+| `method` | Método: equal_weight (pool) o spy. | character varying(20) | sí |  |
+| `ret` | Retorno diario. | numeric | sí |  |
 
 #### `gold.mart_country_year` · materializada · ~38,444 filas
 La tabla estrella: una fila por país y año con TODO junto (PIB, inflación, paro, CO2, energía, comercio...).
