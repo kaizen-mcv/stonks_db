@@ -61,6 +61,12 @@ PIPELINE: dict[str, list[Step]] = {
             [_fetcher("analyst", "AnalystFetcher")],
             [_transform("analyst", "AnalystTransform")],
         ),
+        # Foto diaria de cadenas de opciones (top empresas líquidas).
+        Step(
+            "options",
+            [_fetcher("options", "OptionsFetcher")],
+            [],
+        ),
     ],
     "weekly": [
         Step(
@@ -77,6 +83,13 @@ PIPELINE: dict[str, list[Step]] = {
             "sec-pit",
             [_fetcher("sec_edgar", "SecEdgarFetcher", method="fetch_batch")],
             [_transform("fundamentals_pit", "FundamentalsPitTransform")],
+        ),
+        # Ficha 360° de cada empresa (holders, insiders, upgrades,
+        # recomendaciones, calendario, acciones, perfil).
+        Step(
+            "equity-deep",
+            [_fetcher("equity_deep", "EquityDeepFetcher")],
+            [],
         ),
     ],
     "monthly": [
@@ -110,6 +123,31 @@ PIPELINE: dict[str, list[Step]] = {
         Step(
             "energy",
             [_fetcher("owid", "OWIDEnergyFetcher")],
+            [],
+        ),
+        # Emisiones CO2/GHG (Our World in Data → macro).
+        Step(
+            "co2",
+            [_fetcher("owid", "OWIDEnergyFetcher", method="fetch_co2")],
+            [
+                _transform(
+                    "macro_indicators",
+                    "MacroIndicatorsTransform",
+                    source_name="owid",
+                )
+            ],
+        ),
+        # World Bank WDI completo (~1500 indicadores: desarrollo, salud,
+        # educación, pobreza, medio ambiente, agricultura...).
+        Step(
+            "world-bank",
+            [_fetcher("world_bank", "WorldBankFetcher")],
+            [],
+        ),
+        # Agricultura: producción por cultivo/ganado (FAOSTAT).
+        Step(
+            "agri",
+            [_fetcher("faostat", "FaostatFetcher")],
             [],
         ),
     ],

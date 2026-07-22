@@ -29,6 +29,7 @@ SCHEMAS = [
     "country",
     "trade",
     "energy",
+    "agri",
     "bronze",
     "gold",
 ]

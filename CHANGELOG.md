@@ -25,6 +25,17 @@ y el versionado [Semantic Versioning](https://semver.org/lang/es/).
   `gold.mart_trade_matrix` y catálogo `gold.dim_indicator`.
 - Comandos CLI `world`, `indicators`, `update`; checks `meta.data_quality`.
 - README definitivo con la estructura completa de la BD.
+- **Profundidad máxima por activo**:
+  - Fundamentales US point-in-time con **todos los conceptos XBRL**
+    (~9.500 métricas, 12,8M hechos) en `gold.fact_fundamentals_pit`.
+  - Ficha **360°** de empresa: `equity.holder`, `insider_transaction`,
+    `upgrade_downgrade`, `recommendation_trend`, `shares_history`,
+    `earnings_date`, perfil completo en `bronze.yf_profile`.
+  - Macro completo: **World Bank WDI (~1.500 indicadores)**; índices de
+    bonos/spreads e inmobiliario (FRED).
+  - **Agricultura** (`agri.production`, FAOSTAT) y **opciones**
+    (`deriv.option_snapshot`, snapshots diarios).
+  - Comando CLI `asset <ticker>` (ficha 360°) y matriz de cobertura.
 
 ### Cambiado
 - `pyproject.toml`: `pytest` en dependencias dev; CI ejecuta la suite.

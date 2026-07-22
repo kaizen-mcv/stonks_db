@@ -147,8 +147,9 @@ class FactFundamentalsPit(Base):
     period_end_date: Mapped[date] = mapped_column(Date, nullable=False)
     filed_date: Mapped[date] = mapped_column(Date, nullable=False)
     publish_date: Mapped[date | None] = mapped_column(Date)
-    metric: Mapped[str] = mapped_column(String(60), nullable=False)
-    value: Mapped[float | None] = mapped_column(Numeric(20, 4))
+    # metric = métrica amigable (net_income...) o concepto XBRL completo
+    metric: Mapped[str] = mapped_column(String(150), nullable=False)
+    value: Mapped[float | None] = mapped_column(Numeric(28, 6))
     currency_code: Mapped[str | None] = mapped_column(String(3))
     form: Mapped[str | None] = mapped_column(String(10))
     source_id: Mapped[int | None] = mapped_column(Integer)

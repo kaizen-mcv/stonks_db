@@ -93,6 +93,49 @@ AGGREGATES = {
 }
 
 
+# Prefijo de código WDI → dominio (categoría del indicador).
+_WB_CATEGORY = [
+    ("SE.", "education"),
+    ("SH.", "health"),
+    ("SP.DYN", "health"),
+    ("SP.", "demography"),
+    ("SL.", "labor"),
+    ("SI.POV", "poverty"),
+    ("SI.", "poverty"),
+    ("EN.", "environment"),
+    ("ER.", "environment"),
+    ("EG.", "energy"),
+    ("AG.", "agriculture"),
+    ("NY.", "national_accounts"),
+    ("NE.", "national_accounts"),
+    ("NV.", "national_accounts"),
+    ("FP.", "prices"),
+    ("FR.", "financial"),
+    ("FM.", "financial"),
+    ("FS.", "financial"),
+    ("CM.", "financial"),
+    ("GC.", "fiscal"),
+    ("GB.", "fiscal"),
+    ("DT.", "external"),
+    ("BX.", "external"),
+    ("BM.", "external"),
+    ("BN.", "external"),
+    ("TX.", "trade"),
+    ("TM.", "trade"),
+    ("TG.", "trade"),
+    ("IT.", "infrastructure"),
+    ("IS.", "infrastructure"),
+]
+
+
+def _wb_category(code: str) -> str:
+    """Dominio del indicador WDI a partir del código."""
+    for prefijo, cat in _WB_CATEGORY:
+        if code.startswith(prefijo):
+            return cat
+    return "development"
+
+
 class WorldBankFetcher(BaseFetcher):
     """Descarga indicadores macro del World Bank."""
 
@@ -100,6 +143,90 @@ class WorldBankFetcher(BaseFetcher):
     DOMAIN = "macro"
     RATE_LIMIT = 0.2
     BASE_URL = "https://api.worldbank.org/v2"
+
+    def fetch_catalog(self) -> dict:
+        """Registrar TODO el catálogo WDI (~1500 indicadores).
+
+        Descarga la lista de indicadores de la fuente WDI (source=2) y los
+        auto-registra en macro.indicator/indicator_source (code WB_<id>),
+        omitiendo los external_code ya registrados. Así no hay que
+        mantener la lista a mano.
+        """
+        from stonks.models.macro import Indicator, IndicatorSource
+
+        run_id = self._start_run(params={"dataset": "catalog"})
+        nuevos = 0
+        try:
+            page, pages = 1, 1
+            registrar: list[tuple[str, str]] = []
+            while page <= pages:
+                data = self._get(
+                    f"{self.BASE_URL}/source/2/indicator",
+                    {"format": "json", "per_page": 1000, "page": page},
+                )
+                if not data or len(data) < 2 or not data[1]:
+                    break
+                pages = data[0].get("pages", 1)
+                for ind in data[1]:
+                    registrar.append((ind["id"], ind.get("name") or ind["id"]))
+                page += 1
+
+            session = get_session()
+            try:
+                src = (
+                    session.query(DataSource)
+                    .filter_by(name=self.SOURCE_NAME)
+                    .first()
+                )
+                if not src:
+                    raise ValueError("Fuente world_bank no registrada")
+                existentes = {
+                    r[0]
+                    for r in session.query(IndicatorSource.external_code)
+                    .filter_by(source_id=src.id)
+                    .all()
+                }
+                for code, name in registrar:
+                    if code in existentes:
+                        continue
+                    ind = Indicator(
+                        code=f"WB_{code}"[:100],
+                        name=name[:300],
+                        category=_wb_category(code),
+                        frequency="annual",
+                    )
+                    session.add(ind)
+                    session.flush()
+                    session.add(
+                        IndicatorSource(
+                            indicator_id=ind.id,
+                            source_id=src.id,
+                            external_code=code,
+                            external_name=name[:500],
+                        )
+                    )
+                    existentes.add(code)
+                    nuevos += 1
+                session.commit()
+            finally:
+                session.close()
+            self._finish_run(
+                run_id, "success", fetched=len(registrar), inserted=nuevos
+            )
+            logger.info(
+                "WDI catálogo: %d indicadores, %d nuevos",
+                len(registrar),
+                nuevos,
+            )
+        except Exception as e:  # noqa: BLE001
+            self._finish_run(run_id, "failed", error_log={"msg": str(e)})
+            logger.error("WDI catálogo falló: %s", e)
+        return {"nuevos": nuevos}
+
+    def fetch(self, countries: list[str] | None = None) -> dict:
+        """Para el pipeline: catálogo completo + datos de todo."""
+        self.fetch_catalog()
+        return self.fetch_all_indicators(countries=countries)
 
     def fetch_indicator(
         self,

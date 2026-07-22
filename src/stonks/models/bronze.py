@@ -49,6 +49,25 @@ class ApiResponse(Base):
     payload: Mapped[dict] = mapped_column(JSONB, nullable=False)
 
 
+class YfProfile(Base):
+    """Volcado completo del `.info` de yfinance por empresa (foto)."""
+
+    __tablename__ = "yf_profile"
+    __table_args__ = (
+        UniqueConstraint("ticker", "snapshot_date"),
+        {"schema": "bronze"},
+    )
+
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+    fetch_run_id: Mapped[int | None] = mapped_column(Integer)
+    ingested_at: Mapped[datetime] = mapped_column(
+        DateTime, default=datetime.now
+    )
+    ticker: Mapped[str] = mapped_column(String(20), nullable=False)
+    snapshot_date: Mapped[date] = mapped_column(Date, nullable=False)
+    payload: Mapped[dict] = mapped_column(JSONB, nullable=False)
+
+
 class SecCompanyFacts(Base):
     """JSON crudo de la API companyfacts de SEC EDGAR (por empresa).
 

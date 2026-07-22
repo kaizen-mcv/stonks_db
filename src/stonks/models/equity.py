@@ -339,6 +339,135 @@ class EarningsRevision(Base):
     )
 
 
+class Holder(Base):
+    """Accionista institucional o fondo (foto por captura)."""
+
+    __tablename__ = "holder"
+    __table_args__ = (
+        UniqueConstraint(
+            "company_id", "holder_type", "holder_name", "snapshot_date"
+        ),
+        Index("ix_eq_holder_company", "company_id"),
+        {"schema": "equity"},
+    )
+
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+    company_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("equity.company.id"), nullable=False
+    )
+    holder_type: Mapped[str] = mapped_column(String(20), nullable=False)
+    holder_name: Mapped[str] = mapped_column(String(200), nullable=False)
+    snapshot_date: Mapped[date] = mapped_column(Date, nullable=False)
+    date_reported: Mapped[date | None] = mapped_column(Date)
+    pct_held: Mapped[float | None] = mapped_column(Numeric(9, 6))
+    shares: Mapped[int | None] = mapped_column(BigInteger)
+    value_usd: Mapped[float | None] = mapped_column(Numeric(20, 2))
+
+
+class InsiderTransaction(Base):
+    """Operación de un insider (compra/venta)."""
+
+    __tablename__ = "insider_transaction"
+    __table_args__ = (
+        UniqueConstraint(
+            "company_id", "insider", "start_date", "shares", "transaction"
+        ),
+        Index("ix_eq_insider_company", "company_id"),
+        {"schema": "equity"},
+    )
+
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+    company_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("equity.company.id"), nullable=False
+    )
+    insider: Mapped[str] = mapped_column(String(200), nullable=False)
+    position: Mapped[str | None] = mapped_column(String(200))
+    transaction: Mapped[str | None] = mapped_column(String(100))
+    start_date: Mapped[date | None] = mapped_column(Date)
+    shares: Mapped[int | None] = mapped_column(BigInteger)
+    value_usd: Mapped[float | None] = mapped_column(Numeric(20, 2))
+
+
+class UpgradeDowngrade(Base):
+    """Cambio de recomendación/precio objetivo de una firma."""
+
+    __tablename__ = "upgrade_downgrade"
+    __table_args__ = (
+        UniqueConstraint("company_id", "date", "firm", "to_grade"),
+        Index("ix_eq_upgrade_company", "company_id", "date"),
+        {"schema": "equity"},
+    )
+
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+    company_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("equity.company.id"), nullable=False
+    )
+    date: Mapped[date] = mapped_column(Date, nullable=False)
+    firm: Mapped[str] = mapped_column(String(200), nullable=False)
+    to_grade: Mapped[str | None] = mapped_column(String(100))
+    from_grade: Mapped[str | None] = mapped_column(String(100))
+    action: Mapped[str | None] = mapped_column(String(50))
+    price_target: Mapped[float | None] = mapped_column(Numeric(14, 4))
+
+
+class RecommendationTrend(Base):
+    """Resumen de recomendaciones (nº de analistas por categoría)."""
+
+    __tablename__ = "recommendation_trend"
+    __table_args__ = (
+        UniqueConstraint("company_id", "snapshot_date", "period"),
+        {"schema": "equity"},
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    company_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("equity.company.id"), nullable=False
+    )
+    snapshot_date: Mapped[date] = mapped_column(Date, nullable=False)
+    period: Mapped[str] = mapped_column(String(10), nullable=False)
+    strong_buy: Mapped[int | None] = mapped_column(SmallInteger)
+    buy: Mapped[int | None] = mapped_column(SmallInteger)
+    hold: Mapped[int | None] = mapped_column(SmallInteger)
+    sell: Mapped[int | None] = mapped_column(SmallInteger)
+    strong_sell: Mapped[int | None] = mapped_column(SmallInteger)
+
+
+class SharesHistory(Base):
+    """Acciones en circulación a lo largo del tiempo."""
+
+    __tablename__ = "shares_history"
+    __table_args__ = (
+        UniqueConstraint("company_id", "date"),
+        {"schema": "equity"},
+    )
+
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+    company_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("equity.company.id"), nullable=False
+    )
+    date: Mapped[date] = mapped_column(Date, nullable=False)
+    shares: Mapped[int | None] = mapped_column(BigInteger)
+
+
+class EarningsDate(Base):
+    """Fecha de resultados: estimado vs reportado."""
+
+    __tablename__ = "earnings_date"
+    __table_args__ = (
+        UniqueConstraint("company_id", "date"),
+        {"schema": "equity"},
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    company_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("equity.company.id"), nullable=False
+    )
+    date: Mapped[date] = mapped_column(Date, nullable=False)
+    eps_estimate: Mapped[float | None] = mapped_column(Numeric(12, 4))
+    reported_eps: Mapped[float | None] = mapped_column(Numeric(12, 4))
+    surprise_pct: Mapped[float | None] = mapped_column(Numeric(10, 4))
+
+
 class MarketIndex(Base):
     """Índice de mercado."""
 

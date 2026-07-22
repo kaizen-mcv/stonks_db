@@ -121,3 +121,13 @@ owid:
   domains:
     - energy
     - macro
+
+faostat:
+  enabled: true
+  display_name: "FAOSTAT (FAO)"
+  base_url: "https://bulks-faostat.fao.org"
+  api_key_env: null
+  rate_limit: 1.0
+  daily_limit: null
+  domains:
+    - agri

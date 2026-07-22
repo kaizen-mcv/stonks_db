@@ -3,11 +3,13 @@
 # Importar todos los modelos para registrarlos
 # en Base.metadata (orden importa para FKs)
 from stonks.models import (
+    agri,  # noqa: F401
     alternative,  # noqa: F401
     bronze,  # noqa: F401
     commodity,  # noqa: F401
     country,  # noqa: F401
     crypto,  # noqa: F401
+    deriv,  # noqa: F401
     energy,  # noqa: F401
     equity,  # noqa: F401
     fixed_income,  # noqa: F401

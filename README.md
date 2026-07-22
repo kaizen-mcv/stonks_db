@@ -187,6 +187,7 @@ Configuración vía `STONKS_*` en `.env` (ver `config.py`): `STONKS_DB_URL`,
 stonks status                    # conteos por tabla
 stonks world ESP                 # panel de un país (PIB, CO2, comercio...)
 stonks world CHN -n 10
+stonks asset AAPL                # ficha 360° de una empresa (profundidad)
 stonks indicators -s inflation   # catálogo de indicadores macro
 stonks indicators -c fiscal
 
@@ -267,6 +268,31 @@ Los tests de BD se **omiten** automáticamente si no hay conexión, así que
 la suite corre también en CI sin PostgreSQL.
 
 ---
+
+## Matriz de cobertura
+
+Honesta sobre qué hay con fuentes gratuitas (✅ completo · ⚠️ parcial ·
+❌ no viable gratis):
+
+| Área | Estado | Detalle |
+|---|---|---|
+| Acciones (precios) | ✅ | ~3.000 empresas, histórico 1962+ |
+| Fundamentales US | ✅ | **point-in-time, ~9.500 conceptos XBRL** (SEC) |
+| Empresa 360° | ✅ | holders, insiders, upgrades, recomendaciones, calendario, shares |
+| Fundamentales no-US | ⚠️ | foto yfinance (sin PIT) |
+| ETFs / índices | ✅ / ⚠️ | precios; universo de fondos limitado |
+| Bonos | ⚠️ | índices y spreads (FRED); universo corp. ❌ |
+| Commodities | ✅ / ⚠️ | spot; curvas de futuros ❌ |
+| Forex / crypto | ✅ / ⚠️ | pares y coins principales |
+| Opciones | ⚠️ | snapshots diarios (top líquidas); histórico profundo ❌ |
+| Inmobiliario | ⚠️ | índices de precios (FRED); transacciones ❌ |
+| Macro mundial | ✅ | IMF + **World Bank WDI (~1.500 indicadores)**, ~200 países |
+| Comercio | ✅ | bilateral 1988+, país×país |
+| Energía / CO2 | ✅ | por fuente + emisiones (OWID) |
+| Agricultura | ✅ | producción por cultivo/ganado (FAOSTAT) |
+| Salud/educación/pobreza | ✅ | vía World Bank WDI |
+| Banca/riqueza detalladas | ⚠️ | headline en WB; BIS/WID detallados ❌ (difícil gratis) |
+| Derivados full, private equity, tick | ❌ | no existen en fuentes gratuitas |
 
 ## Limitaciones conocidas
 

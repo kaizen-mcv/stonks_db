@@ -190,59 +190,107 @@ class FundamentalsPitTransform(BaseTransform):
         )
         return row[0] if row else None
 
+    # Unidades numéricas que capturamos del XBRL (en orden de preferencia)
+    _UNITS = ("USD", "USD/shares", "shares", "pure")
+
     @staticmethod
     def _extract_rows(payload: dict, company_id: int) -> list[dict]:
-        """Aplanar companyfacts a filas long, con dedup en lote."""
-        usgaap = payload.get("facts", {}).get("us-gaap", {})
-        # Clave de dedup intra-lote (evita doble ON CONFLICT)
+        """Aplanar companyfacts a filas long (dedup en lote).
+
+        Dos pasadas: (1) métricas amigables curadas (net_income, ...) que
+        consumen factores y panel; (2) **todos** los conceptos XBRL de
+        us-gaap y dei con metric=concepto (máxima profundidad).
+        """
+        facts = payload.get("facts", {})
+        usgaap = facts.get("us-gaap", {})
         dedup: dict[tuple, dict] = {}
+        # (1) Métricas amigables (compatibilidad con factors/panel)
         for metric, (stmt, unit, conceptos) in METRIC_CONCEPTS.items():
             concept = next((c for c in conceptos if c in usgaap), None)
             if concept is None:
                 continue
             items = usgaap[concept].get("units", {}).get(unit, [])
-            for it in items:
-                filed = it.get("filed")
-                end = it.get("end")
-                fy = it.get("fy")
-                if not (filed and end and fy):
+            FundamentalsPitTransform._collect(
+                items, stmt, metric, company_id, "USD", dedup
+            )
+        # (2) Todos los conceptos XBRL (profundidad completa)
+        for taxonomy in ("us-gaap", "dei"):
+            for concept, cdata in facts.get(taxonomy, {}).items():
+                units = cdata.get("units", {})
+                unit = next(
+                    (u for u in FundamentalsPitTransform._UNITS if u in units),
+                    None,
+                )
+                if unit is None:
                     continue
-                clasif = _classify_period(it.get("start"), end, it.get("fp"))
-                if clasif is None:
-                    continue
-                _, fq = clasif
-                key = (company_id, stmt, fy, fq, filed, metric)
-                dedup[key] = {
-                    "company_id": company_id,
-                    "statement_type": stmt,
-                    "fiscal_year": fy,
-                    "fiscal_quarter": fq,
-                    "period_end_date": date.fromisoformat(end),
-                    "filed_date": date.fromisoformat(filed),
-                    "publish_date": date.fromisoformat(filed),
-                    "metric": metric,
-                    "value": it.get("val"),
-                    "currency_code": "USD",
-                    "form": it.get("form"),
-                }
+                cur = "USD" if unit == "USD" else None
+                FundamentalsPitTransform._collect(
+                    units[unit],
+                    taxonomy,
+                    concept[:150],
+                    company_id,
+                    cur,
+                    dedup,
+                )
         return list(dedup.values())
 
     @staticmethod
+    def _collect(items, stmt, metric, company_id, currency, dedup) -> None:
+        """Añadir a `dedup` las filas válidas de un concepto."""
+        for it in items:
+            filed = it.get("filed")
+            end = it.get("end")
+            fy = it.get("fy")
+            val = it.get("val")
+            if not (filed and end and fy) or val is None:
+                continue
+            # Descartar valores no numéricos o absurdos (overflow).
+            if not isinstance(val, (int, float)) or abs(val) >= 1e26:
+                continue
+            clasif = _classify_period(it.get("start"), end, it.get("fp"))
+            if clasif is None:
+                continue
+            _, fq = clasif
+            key = (company_id, stmt, fy, fq, filed, metric)
+            dedup[key] = {
+                "company_id": company_id,
+                "statement_type": stmt,
+                "fiscal_year": fy,
+                "fiscal_quarter": fq,
+                "period_end_date": date.fromisoformat(end),
+                "filed_date": date.fromisoformat(filed),
+                "publish_date": date.fromisoformat(filed),
+                "metric": metric,
+                "value": val,
+                "currency_code": currency,
+                "form": it.get("form"),
+            }
+
+    @staticmethod
     def _upsert(session, rows: list[dict]) -> int:
-        """Upsert idempotente en gold.fact_fundamentals_pit."""
+        """Upsert idempotente en gold.fact_fundamentals_pit.
+
+        Troceado: con todos los conceptos XBRL hay miles de filas por
+        empresa y Postgres limita a 65535 parámetros por sentencia.
+        """
         if not rows:
             return 0
-        stmt = insert(FactFundamentalsPit).values(rows)
-        stmt = stmt.on_conflict_do_update(
-            index_elements=[
-                "company_id",
-                "statement_type",
-                "fiscal_year",
-                "fiscal_quarter",
-                "filed_date",
-                "metric",
-            ],
-            set_={"value": stmt.excluded.value, "form": stmt.excluded.form},
-        )
-        session.execute(stmt)
+        chunk = 4000
+        for i in range(0, len(rows), chunk):
+            stmt = insert(FactFundamentalsPit).values(rows[i : i + chunk])
+            stmt = stmt.on_conflict_do_update(
+                index_elements=[
+                    "company_id",
+                    "statement_type",
+                    "fiscal_year",
+                    "fiscal_quarter",
+                    "filed_date",
+                    "metric",
+                ],
+                set_={
+                    "value": stmt.excluded.value,
+                    "form": stmt.excluded.form,
+                },
+            )
+            session.execute(stmt)
         return len(rows)

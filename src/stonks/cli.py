@@ -164,6 +164,53 @@ def world(
 
 
 @app.command()
+def asset(
+    ticker: str = typer.Argument(..., help="Ticker (p.ej. AAPL)"),
+) -> None:
+    """Ficha 360° de una empresa (profundidad de datos)."""
+    from sqlalchemy import text
+
+    from stonks.db import get_session
+
+    session = get_session()
+    tk = ticker.upper()
+    row = session.execute(
+        text(
+            "SELECT c.id, c.name, c.country_code, c.market_cap_usd, "
+            "s.name FROM equity.company c "
+            "LEFT JOIN ref.sector s ON s.id = c.sector_id "
+            "WHERE c.ticker = :t"
+        ),
+        {"t": tk},
+    ).first()
+    if not row:
+        console.print(f"[yellow]Sin datos para {tk}[/yellow]")
+        session.close()
+        return
+    cid = row[0]
+
+    def _n(sql: str) -> int:
+        return session.execute(text(sql), {"c": cid}).scalar() or 0
+
+    console.print(f"[bold cyan]{tk}[/bold cyan] — {row[1]}")
+    mc = f"{float(row[3]) / 1e9:,.1f} bn USD" if row[3] else "-"
+    console.print(
+        f"  Sector: {row[4] or '-'} · País: {row[2] or '-'} · Market cap: {mc}"
+    )
+    console.print(
+        "  Profundidad de datos:\n"
+        f"    · Fundamentales PIT: {_n('SELECT count(*) FROM gold.fact_fundamentals_pit WHERE company_id=:c'):,} hechos, "
+        f"{_n('SELECT count(DISTINCT metric) FROM gold.fact_fundamentals_pit WHERE company_id=:c')} métricas\n"
+        f"    · Precios diarios: {_n('SELECT count(*) FROM equity.price_daily WHERE company_id=:c'):,}\n"
+        f"    · Accionistas: {_n('SELECT count(*) FROM equity.holder WHERE company_id=:c')}"
+        f" · Insiders: {_n('SELECT count(*) FROM equity.insider_transaction WHERE company_id=:c')}\n"
+        f"    · Upgrades/downgrades: {_n('SELECT count(*) FROM equity.upgrade_downgrade WHERE company_id=:c')}"
+        f" · Opciones: {_n('SELECT count(*) FROM deriv.option_snapshot WHERE company_id=:c')}"
+    )
+    session.close()
+
+
+@app.command()
 def indicators(
     search: str = typer.Option(
         "", "-s", help="Filtrar por texto en código o nombre"

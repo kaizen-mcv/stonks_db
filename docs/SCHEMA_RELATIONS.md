@@ -19,10 +19,17 @@
 | **fund** | 2 | 132.303 | ~15 MB | ETFs/fondos y NAV |
 | **country** | 3 | 1.038 | ~656 KB | Perfiles de país, demografía, impuestos |
 | **alt** | 4 | 5.635 | ~760 KB | Datos alternativos: sentimiento, vivienda |
-| **macro** | 4 | **~750K** | — | Economía mundial: indicadores país×año (IMF WEO, World Bank), ~207 países |
-| **trade** | 1 | — | — | Comercio bilateral país×socio (World Bank WITS) |
-| **bronze** | 4 | — | — | Aterrizaje crudo JSONB (SEC, constituyentes, analistas, APIs macro) |
-| **gold** | 7 | — | — | Analítica: PIT financiero + panel país-año + matriz de comercio |
+| **macro** | 4 | **~2,9M** | — | Economía mundial: **~1.670 indicadores** país×año (IMF WEO, World Bank WDI completo, OWID, FRED), ~200 países |
+| **trade** | 1 | ~973K | — | Comercio bilateral país×socio (World Bank WITS) |
+| **energy** | 1 | ~186K | — | Balance energético país×fuente (OWID) |
+| **agri** | 1 | ~4M | — | Producción agrícola país×cultivo (FAOSTAT) |
+| **deriv** | 1 | — | — | Snapshots de cadenas de opciones (yfinance) |
+| **bronze** | 6 | — | — | Aterrizaje crudo JSONB (SEC, constituyentes, analistas, APIs, perfiles) |
+| **gold** | 9 | **~13M** | — | Analítica: **PIT XBRL completo (12,8M)** + panel país-año + comercio + factores |
+
+`equity` incorpora además la ficha **360°**: `holder`, `insider_transaction`,
+`upgrade_downgrade`, `recommendation_trend`, `shares_history`,
+`earnings_date` (más `analyst_estimate` / `earnings_revision`).
 
 ---
 
