@@ -98,6 +98,24 @@ PIPELINE: dict[str, list[Step]] = {
             [],
             [_transform("factors", "FactorScoreTransform")],
         ),
+        # Macro de alta frecuencia (mensual/trimestral): tipos y crédito
+        # (BIS) e inflación/paro/IP/PIB de la UE (Eurostat).
+        Step(
+            "macro-hf",
+            [
+                _fetcher("sdmx", "BISFetcher"),
+                _fetcher("sdmx", "OECDFetcher"),
+                _fetcher("eurostat", "EurostatFetcher"),
+            ],
+            [],
+        ),
+        # Vintages point-in-time (FRED/ALFRED) de las macro US clave:
+        # reconstruye qué se sabía en cada momento (backtests sin sesgo).
+        Step(
+            "vintages",
+            [_fetcher("fred", "FredFetcher", method="fetch_all_vintages")],
+            [],
+        ),
     ],
     "yearly": [
         # Economía mundial: cuentas nacionales, precios, fiscal,
@@ -118,6 +136,13 @@ PIPELINE: dict[str, list[Step]] = {
             "trade",
             [_fetcher("wits", "WITSFetcher")],
             [_transform("trade", "TradeTransform")],
+        ),
+        # Comercio por producto HS2 (UN Comtrade). Requiere
+        # STONKS_COMTRADE_KEY; si falta, el paso se salta sin romper.
+        Step(
+            "trade-hs",
+            [_fetcher("comtrade", "ComtradeFetcher")],
+            [],
         ),
         # Energía mundial por fuente (Our World in Data).
         Step(
@@ -148,6 +173,21 @@ PIPELINE: dict[str, list[Step]] = {
         Step(
             "agri",
             [_fetcher("faostat", "FaostatFetcher")],
+            [],
+        ),
+        # Salud global (WHO GHO) y desigualdad renta/riqueza (WID.world).
+        Step(
+            "health-wealth",
+            [
+                _fetcher("who", "WHOFetcher"),
+                _fetcher("wid", "WIDFetcher"),
+            ],
+            [],
+        ),
+        # Trabajo: paro y participación (ILOSTAT, ~200-275 áreas).
+        Step(
+            "labor",
+            [_fetcher("sdmx", "ILOFetcher")],
             [],
         ),
     ],

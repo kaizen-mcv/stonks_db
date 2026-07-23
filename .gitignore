@@ -27,3 +27,4 @@ dist/
 # Sistema
 .DS_Store
 data/universe/
+data/cache/

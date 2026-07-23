@@ -150,7 +150,26 @@ WITH macro_p AS (
             AS co2_per_capita_t,
         max(dp.value) FILTER (WHERE i.code = 'OWID_CO2_SHARE')
             AS co2_share_global_pct,
-        max(dp.value) FILTER (WHERE i.code = 'OWID_GHG') AS ghg_mt
+        max(dp.value) FILTER (WHERE i.code = 'OWID_GHG') AS ghg_mt,
+        -- Salud (WHO GHO)
+        max(dp.value) FILTER (WHERE i.code = 'WHO_WHOSIS_000001')
+            AS life_expectancy_yrs,
+        max(dp.value) FILTER (WHERE i.code = 'WHO_MDG_0000000001')
+            AS infant_mortality_per_1000,
+        max(dp.value) FILTER (WHERE i.code = 'WHO_GHED_CHEGDP_SHA2011')
+            AS health_exp_pct_gdp,
+        -- Desigualdad renta/riqueza (WID.world; cuotas ×100 a %)
+        max(dp.value) FILTER (WHERE i.code = 'WID_INC_TOP1') * 100
+            AS income_top1_pct,
+        max(dp.value) FILTER (WHERE i.code = 'WID_INC_TOP10') * 100
+            AS income_top10_pct,
+        max(dp.value) FILTER (WHERE i.code = 'WID_WEALTH_TOP1') * 100
+            AS wealth_top1_pct,
+        max(dp.value) FILTER (WHERE i.code = 'WID_INC_GINI')
+            AS income_gini,
+        -- Tipo de política monetaria (BIS)
+        max(dp.value) FILTER (WHERE i.code = 'BIS_POLICY_RATE')
+            AS policy_rate_pct
     FROM macro.data_point dp
     JOIN macro.series s ON s.id = dp.series_id
     JOIN macro.indicator i ON i.id = s.indicator_id
@@ -258,6 +277,13 @@ def build_gold() -> dict:
             conn.execute(text(_VIEW_POOL))
             conn.execute(text(_MV_BENCHMARK))
             conn.execute(text(_MV_INDEX))
+            # Recrear el mart país×año para incorporar columnas nuevas.
+            conn.execute(
+                text(
+                    "DROP MATERIALIZED VIEW IF EXISTS "
+                    "gold.mart_country_year CASCADE"
+                )
+            )
             conn.execute(text(_MV_COUNTRY_YEAR))
             conn.execute(text(_MV_COUNTRY_YEAR_INDEX))
             conn.execute(text(_MV_TRADE))

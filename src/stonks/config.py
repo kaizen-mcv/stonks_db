@@ -21,6 +21,8 @@ class Settings(BaseSettings):
     fred_api_key: str = ""
     alpha_vantage_key: str = ""
     coingecko_key: str = ""
+    # UN Comtrade: clave gratuita en comtradedeveloper.un.org
+    comtrade_key: str = ""
 
     # SEC EDGAR exige User-Agent con email de contacto (o devuelve 403)
     sec_contact_email: str = "jvcsan@gmail.com"

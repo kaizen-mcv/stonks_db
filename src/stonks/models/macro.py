@@ -119,3 +119,36 @@ class DataPoint(Base):
     fetched_at: Mapped[datetime] = mapped_column(
         DateTime, default=datetime.now
     )
+
+
+class DataPointVintage(Base):
+    """Valor point-in-time de una serie (ALFRED): qué se sabía y cuándo.
+
+    Cada fila registra el valor de una observación (`obs_date`) tal como
+    se conocía a partir de una fecha de publicación (`vintage_date`). Así
+    se pueden reconstruir los datos disponibles en cualquier momento del
+    pasado (backtests macro sin sesgo de revisión).
+    """
+
+    __tablename__ = "data_point_vintage"
+    __table_args__ = (
+        UniqueConstraint("series_id", "obs_date", "vintage_date"),
+        Index(
+            "ix_macro_dpv_series_obs",
+            "series_id",
+            "obs_date",
+        ),
+        {"schema": "macro"},
+    )
+
+    id: Mapped[int] = mapped_column(
+        Integer, primary_key=True, autoincrement=True
+    )
+    series_id: Mapped[int] = mapped_column(
+        Integer,
+        ForeignKey("macro.series.id"),
+        nullable=False,
+    )
+    obs_date: Mapped[date] = mapped_column(Date, nullable=False)
+    vintage_date: Mapped[date] = mapped_column(Date, nullable=False)
+    value: Mapped[float] = mapped_column(Numeric(20, 6), nullable=False)

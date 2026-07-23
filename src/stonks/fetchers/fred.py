@@ -312,6 +312,22 @@ FRED_SERIES = [
     ),
 ]
 
+# Series clave para vintages point-in-time (ALFRED). Son las macro
+# que más se revisan y las que interesa reconstruir sin sesgo de
+# revisión en backtests: (code_interno, fred_series_id).
+VINTAGE_SERIES = [
+    ("US_GDP_QUARTERLY", "GDP"),
+    ("US_GDP_GROWTH", "A191RL1Q225SBEA"),
+    ("US_CPI_MOM", "CPIAUCSL"),
+    ("US_CORE_CPI", "CPILFESL"),
+    ("US_PCE", "PCEPI"),
+    ("US_CORE_PCE", "PCEPILFE"),
+    ("US_UNEMPLOYMENT", "UNRATE"),
+    ("US_NONFARM_PAYROLLS", "PAYEMS"),
+    ("US_INDUSTRIAL_PROD", "INDPRO"),
+    ("US_RETAIL_SALES", "RSXFS"),
+]
+
 # Mapeo maturity para yields -> meses
 YIELD_MATURITY = {
     "UST_3M": 3,
@@ -549,6 +565,110 @@ class FredFetcher(BaseFetcher):
             session.close()
 
         return stats
+
+    def fetch_vintages(
+        self,
+        fred_id: str,
+        code: str,
+    ) -> dict[str, int]:
+        """Descargar todas las vintages (ALFRED) de una serie a macro.
+
+        Pide el histórico real-time completo: la API devuelve una fila
+        por (fecha_obs, fecha_publicación). Se guarda en
+        `macro.data_point_vintage` con upsert idempotente.
+        """
+        from sqlalchemy.dialects.postgresql import insert
+
+        from stonks.models.macro import DataPointVintage
+
+        stats = {"fetched": 0, "inserted": 0, "errors": 0}
+        session = get_session()
+        try:
+            ind = session.query(Indicator).filter_by(code=code).first()
+            if not ind:
+                logger.warning("vintages: indicador %s no existe aún", code)
+                return stats
+            series = (
+                session.query(Series)
+                .filter_by(
+                    indicator_id=ind.id,
+                    country_code="USA",
+                    region_code=None,
+                )
+                .first()
+            )
+            if not series:
+                logger.warning("vintages: serie %s/USA no existe aún", code)
+                return stats
+
+            data = self._fred_get(
+                "series/observations",
+                params={
+                    "series_id": fred_id,
+                    "realtime_start": "1776-07-04",
+                    "realtime_end": "9999-12-31",
+                    "sort_order": "asc",
+                },
+            )
+            observations = data.get("observations", [])
+            filas = []
+            for obs in observations:
+                val = obs.get("value", ".")
+                if val == ".":
+                    continue
+                stats["fetched"] += 1
+                filas.append(
+                    {
+                        "series_id": series.id,
+                        "obs_date": date.fromisoformat(obs["date"]),
+                        "vintage_date": date.fromisoformat(
+                            obs["realtime_start"]
+                        ),
+                        "value": float(val),
+                    }
+                )
+            # Upsert por lotes (límite de 65535 parámetros de Postgres).
+            for i in range(0, len(filas), 5000):
+                chunk = filas[i : i + 5000]
+                stmt = insert(DataPointVintage).values(chunk)
+                stmt = stmt.on_conflict_do_update(
+                    index_elements=["series_id", "obs_date", "vintage_date"],
+                    set_={"value": stmt.excluded.value},
+                )
+                session.execute(stmt)
+            session.commit()
+            stats["inserted"] = len(filas)
+        except Exception as e:  # noqa: BLE001
+            session.rollback()
+            stats["errors"] += 1
+            logger.error("Error vintages FRED %s: %s", fred_id, e)
+        finally:
+            session.close()
+        return stats
+
+    def fetch_all_vintages(self) -> dict[str, dict]:
+        """Descargar vintages ALFRED de todas las series clave."""
+        if not self.api_key:
+            logger.error("STONKS_FRED_API_KEY no configurada")
+            return {}
+        run_id = self._start_run(params={"type": "vintages"})
+        results = {}
+        total_ins = total_err = 0
+        for code, fred_id in VINTAGE_SERIES:
+            logger.info("ALFRED vintages: %s (%s)...", code, fred_id)
+            stats = self.fetch_vintages(fred_id, code)
+            results[code] = stats
+            total_ins += stats["inserted"]
+            total_err += stats["errors"]
+            logger.info("  → %d vintages", stats["inserted"])
+        self._finish_run(
+            run_id,
+            "success" if total_err == 0 else "partial",
+            fetched=sum(r["fetched"] for r in results.values()),
+            inserted=total_ins,
+            errors=total_err,
+        )
+        return results
 
     def fetch_all(
         self,

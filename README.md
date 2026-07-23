@@ -173,8 +173,16 @@ Todas **gratuitas y oficiales**:
 | US Treasury / Fitch | Bonos, ratings | No |
 | Wikipedia + GitHub (fja05680) | Constituyentes S&P 500 históricos | No |
 | **IMF DataMapper** | Macro mundial (132 indicadores WEO) | No |
-| **World Bank** (WDI) | Indicadores de desarrollo | No |
+| **World Bank** (WDI) | Indicadores de desarrollo (~200 países) | No |
 | **World Bank WITS** | Comercio bilateral | No |
+| **UN Comtrade** | Comercio por producto HS | Sí (gratis) |
+| **OECD** (SDMX) | Precios mensuales (CPI) | No |
+| **Eurostat** (JSON-stat) | Macro mensual/trimestral UE | No |
+| **BIS** (SDMX) | Tipos de política, crédito, REER | No |
+| **ILOSTAT** (SDMX) | Empleo y paro (~200-275 áreas) | No |
+| **WHO GHO** | Salud (esperanza vida, mortalidad...) | No |
+| **WID.world** | Desigualdad renta/riqueza (desde 1800) | No |
+| **FRED/ALFRED** | Macro US + vintages point-in-time | Sí (gratis) |
 | **Our World in Data** | Energía y emisiones CO2/GHG | No |
 | CoinGecko | Crypto | Opcional |
 
@@ -304,26 +312,31 @@ Honesta sobre qué hay con fuentes gratuitas (✅ completo · ⚠️ parcial ·
 | Opciones | ⚠️ | snapshots diarios (top líquidas); histórico profundo ❌ |
 | Inmobiliario | ⚠️ | índices de precios (FRED); transacciones ❌ |
 | Macro mundial | ✅ | IMF + **World Bank WDI (~1.500 indicadores)**, ~200 países |
-| Comercio | ✅ | bilateral 1988+, país×país |
+| Macro mensual/trimestral | ✅ | CPI (OECD), HICP/paro/IP/PIB (Eurostat), tipos/crédito (BIS) |
+| Vintages point-in-time macro | ✅ | 10 series US clave (FRED/ALFRED) |
+| Comercio | ✅ | bilateral 1988+ país×país + **por producto HS (Comtrade)** |
 | Energía / CO2 | ✅ | por fuente + emisiones (OWID) |
 | Agricultura | ✅ | producción por cultivo/ganado (FAOSTAT) |
-| Salud/educación/pobreza | ✅ | vía World Bank WDI |
-| Banca/riqueza detalladas | ⚠️ | headline en WB; BIS/WID detallados ❌ (difícil gratis) |
+| Salud | ✅ | esperanza de vida, mortalidad, gasto sanitario (WHO) |
+| Trabajo | ✅ | paro y participación (ILOSTAT, ~200-275 áreas) |
+| Desigualdad renta/riqueza | ✅ | top 1%/10%, Gini desde 1800 (WID.world) |
+| Educación/pobreza | ✅ | vía World Bank WDI |
 | Derivados full, private equity, tick | ❌ | no existen en fuentes gratuitas |
 
 ## Limitaciones conocidas
 
 Todas derivadas de usar solo fuentes gratuitas:
 
-- **Frecuencia macro**: la economía real es **anual** (los mercados son
-  diarios). No hay macro mensual/trimestral.
-- **Sin vintages macro**: guardamos la última versión de cada dato
-  (el crudo original queda en `bronze`); no es point-in-time como los
-  fundamentales de equity.
+- **Macro mensual limitada a países OECD/UE** (OECD, Eurostat, BIS); el
+  resto del mundo tiene la macro anual de IMF + World Bank.
+- **Vintages point-in-time solo de 10 series US clave** (FRED/ALFRED);
+  para el resto guardamos la última versión (el crudo queda en `bronze`).
 - **Fundamentales PIT solo US** (SEC EDGAR); el resto usa la foto de
   yfinance.
-- **Comercio a nivel producto 'Total'** (matriz país×país); el detalle
-  por producto HS y FAOSTAT/WHO detallados quedan como extensión futura.
+- **Comercio por producto a nivel HS2 frente al Mundo** (Comtrade,
+  requiere clave gratuita); el bilateral país×país sigue a nivel 'Total'.
+- **Cobertura a nivel de organismos internacionales**, no de oficinas
+  nacionales de estadística ni datos sub-nacionales (cola infinita).
 - **Deslistadas antiguas sin precios**: ~198/563 tienen histórico en
   yfinance; el resto (quiebras/absorciones antiguas) no es recuperable
   gratis.

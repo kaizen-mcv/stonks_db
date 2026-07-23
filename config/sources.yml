@@ -131,3 +131,63 @@ faostat:
   daily_limit: null
   domains:
     - agri
+
+bis:
+  enabled: true
+  display_name: "Bank for International Settlements"
+  base_url: "https://stats.bis.org/api/v2"
+  api_key_env: null
+  rate_limit: 1.0
+  daily_limit: null
+  domains:
+    - macro
+
+eurostat:
+  enabled: true
+  display_name: "Eurostat"
+  base_url: "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0"
+  api_key_env: null
+  rate_limit: 1.0
+  daily_limit: null
+  domains:
+    - macro
+
+who:
+  enabled: true
+  display_name: "WHO Global Health Observatory"
+  base_url: "https://ghoapi.azureedge.net/api"
+  api_key_env: null
+  rate_limit: 1.0
+  daily_limit: null
+  domains:
+    - macro
+
+wid:
+  enabled: true
+  display_name: "World Inequality Database (WID.world)"
+  base_url: "https://wid.world/bulk_download"
+  api_key_env: null
+  rate_limit: 1.0
+  daily_limit: null
+  domains:
+    - macro
+
+comtrade:
+  enabled: true
+  display_name: "UN Comtrade (comercio por producto HS)"
+  base_url: "https://comtradeapi.un.org/data/v1/get"
+  api_key_env: "STONKS_COMTRADE_KEY"
+  rate_limit: 1.0
+  daily_limit: null
+  domains:
+    - trade
+
+ilostat:
+  enabled: true
+  display_name: "ILOSTAT (Organización Internacional del Trabajo)"
+  base_url: "https://sdmx.ilo.org/rest"
+  api_key_env: null
+  rate_limit: 1.0
+  daily_limit: null
+  domains:
+    - macro

@@ -90,6 +90,17 @@ class SecEdgarFetcher(BaseFetcher):
         logger.info("SEC EDGAR: %d/%d con datos", stats["con_datos"], total)
         return stats
 
+    def fetch_all_filers(self) -> dict:
+        """Descargar companyfacts de TODOS los emisores SEC (~10k).
+
+        Recorre company_tickers.json completo (no solo las empresas ya en
+        equity.company). Es un volumen grande (~horas, ~30 GB en el PIT
+        posterior): pensado para lanzarse deliberadamente en background.
+        """
+        tickers = list(self._load_cik_map().keys())
+        logger.info("SEC: universo completo de %d emisores", len(tickers))
+        return self.fetch_batch(tickers)
+
     @staticmethod
     def _us_company_tickers() -> list[str]:
         """Tickers de empresas US activas (probables emisores SEC)."""

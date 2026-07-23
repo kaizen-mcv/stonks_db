@@ -61,6 +61,16 @@ Bolsas de valores (Nasdaq, NYSE...).
 | `close_time` | Hora de cierre. | time without time zone | sí |  |
 | `website` | Web de la empresa. | character varying(300) | sí |  |
 
+#### `ref.hs_product` · tabla · ~97 filas
+Catálogo de productos del Sistema Armonizado (HS): el código de cada tipo de mercancía (p.ej. '27' = combustibles) con su descripción. Da nombre a los productos del comercio.
+
+| Columna | Qué es | Tipo | Nulo | Clave |
+|---|---|---|---|---|
+| `code` | Código HS del producto (2, 4 o 6 dígitos). | character varying(6) | no | PK |
+| `description` | Nombre del producto. | character varying(500) | no |  |
+| `level` | Nivel de detalle: 2, 4 o 6 dígitos. | smallint | no |  |
+| `parent_code` | Producto padre (para la jerarquía HS). | character varying(6) | sí |  |
+
 #### `ref.sector` · tabla · ~0 filas
 Sectores económicos GICS (Tecnología, Salud...).
 
@@ -104,7 +114,7 @@ Las fuentes de donde sacamos los datos (IMF, yfinance, SEC...).
 | `is_enabled` | Si la fuente está activa. | boolean | no |  |
 | `notes` | Notas. | text | sí |  |
 
-#### `meta.fetch_run` · tabla · ~71,134 filas
+#### `meta.fetch_run` · tabla · ~82,734 filas
 Un registro por cada descarga hecha: cuándo, qué fuente, cuántos datos y si hubo errores. Es el 'diario' de descargas.
 
 | Columna | Qué es | Tipo | Nulo | Clave |
@@ -214,7 +224,7 @@ Flujos de caja anuales de cada empresa.
 | `source_id` | Fuente de la que procede el dato. | integer | sí | FK → meta.data_source.id |
 | `fetched_at` | Cuándo se descargó. | timestamp without time zone | no |  |
 
-#### `equity.company` · tabla · ~2,446 filas
+#### `equity.company` · tabla · ~10,491 filas
 Cada empresa cotizada que seguimos.
 
 | Columna | Qué es | Tipo | Nulo | Clave |
@@ -721,7 +731,7 @@ Valor diario de indicador de sentimiento.
 ### Esquema `macro`
 _Economía mundial como series país × indicador × fecha._
 
-#### `macro.data_point` · tabla · ~2,870,193 filas
+#### `macro.data_point` · tabla · ~7,999,253 filas
 El dato en sí: el valor de una serie en una fecha (p.ej. inflación de España en 2022 = 8,3%).
 
 | Columna | Qué es | Tipo | Nulo | Clave |
@@ -732,6 +742,17 @@ El dato en sí: el valor de una serie en una fecha (p.ej. inflación de España 
 | `value` | El valor del indicador en esa fecha. | numeric(20,6) | no |  |
 | `source_id` | Fuente de la que procede el dato. | integer | sí | FK → meta.data_source.id |
 | `fetched_at` | Cuándo se descargó. | timestamp without time zone | no |  |
+
+#### `macro.data_point_vintage` · tabla · ~85,459 filas
+Como data_point pero 'point-in-time': guarda qué valor se conocía en cada fecha de publicación. Permite reconstruir los datos disponibles en el pasado sin sesgo de revisión (p.ej. el PIB de EE.UU. que se sabía en 2008, antes de revisarse).
+
+| Columna | Qué es | Tipo | Nulo | Clave |
+|---|---|---|---|---|
+| `id` | Identificador único de la fila. | integer | no | PK |
+| `series_id` | Serie temporal a la que pertenece. | integer | no | FK → macro.series.id |
+| `obs_date` | Fecha a la que se refiere el dato (p.ej. el trimestre medido). | date | no |  |
+| `vintage_date` | Fecha de publicación: desde cuándo se conocía ese valor. | date | no |  |
+| `value` | El valor tal como se publicó en esa fecha (luego puede haberse revisado). | numeric(20,6) | no |  |
 
 #### `macro.indicator` · tabla · ~1,669 filas
 El catálogo de indicadores económicos que seguimos (PIB, inflación, paro...). Cada fila es un indicador.
@@ -760,7 +781,7 @@ Cómo se llama cada indicador en cada fuente (el mismo 'PIB' tiene códigos dist
 | `external_name` | Nombre en la fuente. | character varying(500) | sí |  |
 | `priority` | Prioridad si hay varias fuentes. | smallint | no |  |
 
-#### `macro.series` · tabla · ~87,854 filas
+#### `macro.series` · tabla · ~433,455 filas
 Una serie = un indicador para un país concreto (p.ej. 'inflación de España'). Agrupa sus valores en el tiempo.
 
 | Columna | Qué es | Tipo | Nulo | Clave |
@@ -776,8 +797,8 @@ Una serie = un indicador para un país concreto (p.ej. 'inflación de España').
 ### Esquema `trade`
 _Comercio internacional bilateral (país × socio)._
 
-#### `trade.flow` · tabla · ~973,418 filas
-Comercio entre dos países: cuánto exporta/importa un país a otro cada año.
+#### `trade.flow` · tabla · ~1,075,295 filas
+Comercio entre dos países: cuánto exporta/importa un país a otro cada año (a nivel total o por producto HS).
 
 | Columna | Qué es | Tipo | Nulo | Clave |
 |---|---|---|---|---|
@@ -941,7 +962,7 @@ Foto cruda de constituyentes de un índice (Wikipedia/GitHub).
 | `source_kind` | Origen (wikipedia/github). | character varying(30) | no |  |
 | `payload` | Respuesta cruda de la API (JSON), tal cual llegó. | jsonb | no |  |
 
-#### `bronze.sec_companyfacts` · tabla · ~1,420 filas
+#### `bronze.sec_companyfacts` · tabla · ~10,263 filas
 El JSON crudo con todos los datos financieros que publica la SEC de cada empresa.
 
 | Columna | Qué es | Tipo | Nulo | Clave |
@@ -968,7 +989,7 @@ El perfil completo de una empresa tal cual lo devuelve yfinance.
 ### Esquema `gold`
 _Capa analítica point-in-time: hechos, dimensiones y marts._
 
-#### `gold.dim_company` · tabla · ~3,014 filas
+#### `gold.dim_company` · tabla · ~10,491 filas
 Ficha resumida de cada empresa para análisis (con su sector ya incorporado).
 
 | Columna | Qué es | Tipo | Nulo | Clave |
@@ -1041,7 +1062,7 @@ Puntuaciones de factores de inversión (Value/Quality/Momentum) de cada empresa,
 | `percentile` | Percentil dentro del universo. | numeric(6,4) | sí |  |
 | `source_id` | Fuente de la que procede el dato. | integer | sí |  |
 
-#### `gold.fact_fundamentals_pit` · tabla · ~12,826,841 filas
+#### `gold.fact_fundamentals_pit` · tabla · ~31,615,424 filas
 Todos los datos financieros de las empresas US con la fecha en que se publicaron (para saber qué se sabía en cada momento). Es la tabla más grande.
 
 | Columna | Qué es | Tipo | Nulo | Clave |
@@ -1073,7 +1094,7 @@ Qué empresas estaban en el S&P 500 en cada momento del pasado (para análisis s
 | `end_date` | Cuándo salió (vacío = sigue dentro). | date | sí |  |
 | `source_id` | Fuente de la que procede el dato. | integer | sí |  |
 
-#### `gold.mart_benchmark_returns` · materializada · ~32,440 filas
+#### `gold.mart_benchmark_returns` · materializada · ~32,442 filas
 Retorno diario del pool S&P 500 equiponderado (survivorship-free) vs SPY.
 
 | Columna | Qué es | Tipo | Nulo | Clave |
@@ -1082,7 +1103,7 @@ Retorno diario del pool S&P 500 equiponderado (survivorship-free) vs SPY.
 | `method` | Método: equal_weight (pool) o spy. | character varying(20) | sí |  |
 | `ret` | Retorno diario. | numeric | sí |  |
 
-#### `gold.mart_country_year` · materializada · ~38,444 filas
+#### `gold.mart_country_year` · materializada · ~39,398 filas
 La tabla estrella: una fila por país y año con TODO junto (PIB, inflación, paro, CO2, energía, comercio...).
 
 | Columna | Qué es | Tipo | Nulo | Clave |
@@ -1109,6 +1130,14 @@ La tabla estrella: una fila por país y año con TODO junto (PIB, inflación, pa
 | `co2_per_capita_t` | CO2 por habitante (toneladas). | numeric | sí |  |
 | `co2_share_global_pct` | % del CO2 mundial. | numeric | sí |  |
 | `ghg_mt` | Gases de efecto invernadero totales (Mt CO2 eq.). | numeric | sí |  |
+| `life_expectancy_yrs` | Esperanza de vida al nacer, en años (WHO). | numeric | sí |  |
+| `infant_mortality_per_1000` | Mortalidad infantil por cada 1.000 nacidos vivos (WHO). | numeric | sí |  |
+| `health_exp_pct_gdp` | Gasto sanitario como % del PIB (WHO). | numeric | sí |  |
+| `income_top1_pct` | % de la renta nacional que se lleva el 1% más rico (WID). | numeric | sí |  |
+| `income_top10_pct` | % de la renta del 10% más rico (WID). | numeric | sí |  |
+| `wealth_top1_pct` | % de la riqueza en manos del 1% más rico (WID). | numeric | sí |  |
+| `income_gini` | Índice de Gini de la renta (0 = igualdad total, 1 = desigualdad máxima) (WID). | numeric | sí |  |
+| `policy_rate_pct` | Tipo de interés oficial del banco central, en % (BIS). | numeric | sí |  |
 | `primary_energy_twh` | Energía primaria consumida (TWh). | numeric | sí |  |
 | `electricity_twh` | Electricidad generada (TWh). | numeric | sí |  |
 | `renewables_elec_twh` | Electricidad renovable (TWh). | numeric | sí |  |

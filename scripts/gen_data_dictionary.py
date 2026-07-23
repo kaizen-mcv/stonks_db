@@ -84,6 +84,10 @@ TABLE_DESC = {
     "(p.ej. 'inflación de España'). Agrupa sus valores en el tiempo.",
     "macro.data_point": "El dato en sí: el valor de una serie en una "
     "fecha (p.ej. inflación de España en 2022 = 8,3%).",
+    "macro.data_point_vintage": "Como data_point pero 'point-in-time': "
+    "guarda qué valor se conocía en cada fecha de publicación. Permite "
+    "reconstruir los datos disponibles en el pasado sin sesgo de revisión "
+    "(p.ej. el PIB de EE.UU. que se sabía en 2008, antes de revisarse).",
     "equity.company": "Cada empresa cotizada que seguimos.",
     "equity.price_daily": "El precio de cierre diario de cada acción "
     "(y máximo, mínimo, volumen...).",
@@ -130,7 +134,10 @@ TABLE_DESC = {
     "fund.fund": "ETFs y fondos de inversión.",
     "fund.nav_daily": "Valor liquidativo (NAV) diario de cada fondo.",
     "trade.flow": "Comercio entre dos países: cuánto exporta/importa un "
-    "país a otro cada año.",
+    "país a otro cada año (a nivel total o por producto HS).",
+    "ref.hs_product": "Catálogo de productos del Sistema Armonizado (HS): "
+    "el código de cada tipo de mercancía (p.ej. '27' = combustibles) con "
+    "su descripción. Da nombre a los productos del comercio.",
     "energy.balance": "Energía por país y fuente (carbón, gas, solar...): "
     "cuánto se produce y consume.",
     "agri.production": "Producción agrícola: cuánto trigo, maíz, carne... "
@@ -288,12 +295,38 @@ COMMON_COLS = {
 # Explicación de columnas específicas (clave: 'esquema.tabla.columna').
 COL_DESC = {
     "macro.data_point.value": "El valor del indicador en esa fecha.",
+    "macro.data_point_vintage.obs_date": "Fecha a la que se refiere el "
+    "dato (p.ej. el trimestre medido).",
+    "macro.data_point_vintage.vintage_date": "Fecha de publicación: desde "
+    "cuándo se conocía ese valor.",
+    "macro.data_point_vintage.value": "El valor tal como se publicó en esa "
+    "fecha (luego puede haberse revisado).",
+    "ref.hs_product.code": "Código HS del producto (2, 4 o 6 dígitos).",
+    "ref.hs_product.description": "Nombre del producto.",
+    "ref.hs_product.level": "Nivel de detalle: 2, 4 o 6 dígitos.",
+    "ref.hs_product.parent_code": "Producto padre (para la jerarquía HS).",
     "macro.series.last_value": "Último valor conocido de la serie.",
     "macro.series.point_count": "Cuántos datos tiene la serie.",
     "macro.indicator.unit": "En qué se mide (%, USD, personas...).",
     "trade.flow.flow": "Sentido: X = exportación, M = importación.",
     "trade.flow.value_usd_k": "Valor comerciado en miles de dólares.",
     "trade.flow.product_code": "Producto (Total = todos los productos).",
+    "gold.mart_country_year.life_expectancy_yrs": "Esperanza de vida al "
+    "nacer, en años (WHO).",
+    "gold.mart_country_year.infant_mortality_per_1000": "Mortalidad "
+    "infantil por cada 1.000 nacidos vivos (WHO).",
+    "gold.mart_country_year.health_exp_pct_gdp": "Gasto sanitario como % "
+    "del PIB (WHO).",
+    "gold.mart_country_year.income_top1_pct": "% de la renta nacional que "
+    "se lleva el 1% más rico (WID).",
+    "gold.mart_country_year.income_top10_pct": "% de la renta del 10% más "
+    "rico (WID).",
+    "gold.mart_country_year.wealth_top1_pct": "% de la riqueza en manos "
+    "del 1% más rico (WID).",
+    "gold.mart_country_year.income_gini": "Índice de Gini de la renta "
+    "(0 = igualdad total, 1 = desigualdad máxima) (WID).",
+    "gold.mart_country_year.policy_rate_pct": "Tipo de interés oficial del "
+    "banco central, en % (BIS).",
     "energy.balance.product_code": "Fuente de energía (coal, gas, solar...).",
     "energy.balance.flow": "consumption / production / electricity.",
     "agri.production.item_code": "Código del cultivo o ganado.",

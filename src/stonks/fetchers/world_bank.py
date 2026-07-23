@@ -239,8 +239,10 @@ class WorldBankFetcher(BaseFetcher):
         Returns:
             {"fetched": N, "inserted": N, "updated": N}
         """
+        # None → 'all': la API devuelve todas las economías; luego
+        # filtramos a países ISO-3 reales (descartando agregados).
         if countries is None:
-            countries = DEFAULT_COUNTRIES
+            countries = ["all"]
 
         run_id = self._start_run(
             params={
@@ -267,6 +269,14 @@ class WorldBankFetcher(BaseFetcher):
             )
             if not src:
                 raise ValueError("Fuente world_bank no encontrada")
+
+            # Países ISO-3 válidos (para descartar agregados regionales)
+            from sqlalchemy import text as _text
+
+            valid_countries = {
+                r[0]
+                for r in session.execute(_text("SELECT code FROM ref.country"))
+            }
 
             ind_src = (
                 session.query(IndicatorSource)
@@ -317,7 +327,7 @@ class WorldBankFetcher(BaseFetcher):
                 params = {
                     "format": "json",
                     "date": date_range,
-                    "per_page": 1000,
+                    "per_page": 20000,
                     "page": page,
                 }
 
@@ -334,9 +344,12 @@ class WorldBankFetcher(BaseFetcher):
                     val = rec.get("value")
                     if val is None:
                         continue
+                    country_code = rec["countryiso3code"]
+                    # Descartar agregados (WLD, EUU...) no-país
+                    if country_code not in valid_countries:
+                        continue
 
                     stats["fetched"] += 1
-                    country_code = rec["countryiso3code"]
                     year = int(rec["date"])
                     dt = date(year, 12, 31)
 
