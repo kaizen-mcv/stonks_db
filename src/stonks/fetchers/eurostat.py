@@ -51,6 +51,13 @@ class EurostatFetcher(BaseSDMXFetcher):
             "GDP growth, quarterly (Eurostat)",
             "national_accounts",
         ),
+        (
+            "sts_trtu_m",
+            {"nace_r2": "G47", "unit": "I21", "s_adj": "SCA"},
+            "ESTAT_RETAIL_SALES",
+            "Retail trade volume index (Eurostat)",
+            "consumption",
+        ),
     ]
 
     def fetch(self) -> dict:

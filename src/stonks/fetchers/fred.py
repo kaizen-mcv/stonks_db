@@ -310,6 +310,54 @@ FRED_SERIES = [
         "real_estate",
         "quarterly",
     ),
+    # Gas natural Henry Hub (más histórico que yfinance)
+    (
+        "NATGAS_HH",
+        "DHHNGSP",
+        "Henry Hub Natural Gas Spot",
+        "commodity",
+        "daily",
+    ),
+    # Índice de precios de commodities del FMI
+    (
+        "IMF_COMMODITY_IDX",
+        "PALLFNFINDEXM",
+        "All Commodity Price Index (IMF)",
+        "commodity",
+        "monthly",
+    ),
+    # USD trade-weighted (proxy DXY)
+    (
+        "USD_INDEX",
+        "DTWEXBGS",
+        "Trade Weighted USD Index (Broad)",
+        "macro",
+        "daily",
+    ),
+    # Leading Economic Index (indicador adelantado US)
+    (
+        "US_LEI",
+        "USSLIND",
+        "Leading Economic Index (US)",
+        "macro",
+        "monthly",
+    ),
+    # Confianza del consumidor (OECD via FRED)
+    (
+        "US_CONSUMER_CONF",
+        "CSCICP03USM665S",
+        "Consumer Confidence (OECD/US)",
+        "alt",
+        "monthly",
+    ),
+    # Tipo real a 1 año
+    (
+        "REAL_RATE_1Y",
+        "REAINTRATREARAT1YE",
+        "1-Year Real Interest Rate",
+        "fi",
+        "monthly",
+    ),
 ]
 
 # Series clave para vintages point-in-time (ALFRED). Son las macro

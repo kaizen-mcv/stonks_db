@@ -167,6 +167,21 @@ TABLE_DESC = {
     "con TODO junto (PIB, inflación, paro, CO2, energía, comercio...).",
     "gold.mart_trade_matrix": "Matriz de comercio: exportaciones e "
     "importaciones entre cada par de países.",
+    "gold.mart_company_macro": "Cada empresa cruzada con la macro de su "
+    "país: PIB, inflación, paro, tipos... por año. Para correlacionar "
+    "rendimiento empresarial con el ciclo económico.",
+    "gold.mart_sovereign_risk": "Riesgo soberano: combina el rating "
+    "crediticio del país, su deuda, balance fiscal y volatilidad del "
+    "PIB en los últimos 5 años.",
+    "gold.mart_trade_dependency": "Dependencia comercial: quiénes son "
+    "los 3 socios principales de cada país, cuánto concentra en ellos "
+    "y con cuántos países comercia.",
+    "gold.mart_earnings_surprise": "Sorpresas de beneficios: lo que "
+    "los analistas esperaban vs lo que reportó la empresa, con el "
+    "porcentaje de sorpresa.",
+    "gold.mart_sector_country": "Cuántas empresas hay de cada sector "
+    "en cada país, cuántas están activas y su capitalización media. "
+    "Muestra dónde se concentra cada industria.",
 }
 
 # Explicación de columnas comunes (se aplican en todas las tablas).

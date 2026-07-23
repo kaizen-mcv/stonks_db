@@ -85,7 +85,7 @@ Sectores económicos GICS (Tecnología, Salud...).
 ### Esquema `meta`
 _Metadatos y auditoría: fuentes, ejecuciones, calidad._
 
-#### `meta.data_quality` · tabla · ~4 filas
+#### `meta.data_quality` · tabla · ~42 filas
 Nota de calidad por dominio: cuántos países cubrimos y cómo de reciente es el dato.
 
 | Columna | Qué es | Tipo | Nulo | Clave |
@@ -989,7 +989,7 @@ El perfil completo de una empresa tal cual lo devuelve yfinance.
 ### Esquema `gold`
 _Capa analítica point-in-time: hechos, dimensiones y marts._
 
-#### `gold.dim_company` · tabla · ~10,491 filas
+#### `gold.dim_company` · tabla · ~12,783 filas
 Ficha resumida de cada empresa para análisis (con su sector ya incorporado).
 
 | Columna | Qué es | Tipo | Nulo | Clave |
@@ -1103,6 +1103,28 @@ Retorno diario del pool S&P 500 equiponderado (survivorship-free) vs SPY.
 | `method` | Método: equal_weight (pool) o spy. | character varying(20) | sí |  |
 | `ret` | Retorno diario. | numeric | sí |  |
 
+#### `gold.mart_company_macro` · materializada · ~2,261,520 filas
+Cada empresa cruzada con la macro de su país: PIB, inflación, paro, tipos... por año. Para correlacionar rendimiento empresarial con el ciclo económico.
+
+| Columna | Qué es | Tipo | Nulo | Clave |
+|---|---|---|---|---|
+| `company_id` | Empresa a la que pertenece. | integer | sí |  |
+| `ticker` | Símbolo bursátil (p.ej. AAPL). | character varying(20) | sí |  |
+| `company_name` |  | character varying(500) | sí |  |
+| `sector_name` |  | character varying(200) | sí |  |
+| `country_code` | País (código ISO-3, p.ej. ESP). | character varying(3) | sí |  |
+| `year` | Año. | smallint | sí |  |
+| `gdp_growth_pct` |  | numeric | sí |  |
+| `inflation_pct` |  | numeric | sí |  |
+| `unemployment_pct` |  | numeric | sí |  |
+| `policy_rate_pct` |  | numeric | sí |  |
+| `gov_debt_pct_gdp` |  | numeric | sí |  |
+| `current_account_pct_gdp` |  | numeric | sí |  |
+| `life_expectancy_yrs` |  | numeric | sí |  |
+| `income_gini` |  | numeric | sí |  |
+| `exports_usd_bn` |  | numeric | sí |  |
+| `imports_usd_bn` |  | numeric | sí |  |
+
 #### `gold.mart_country_year` · materializada · ~39,398 filas
 La tabla estrella: una fila por país y año con TODO junto (PIB, inflación, paro, CO2, energía, comercio...).
 
@@ -1146,6 +1168,20 @@ La tabla estrella: una fila por país y año con TODO junto (PIB, inflación, pa
 | `imports_usd_bn` | Importaciones de bienes (miles de millones USD). | numeric | sí |  |
 | `trade_balance_usd_bn` | Balanza comercial (exportaciones − importaciones). | numeric | sí |  |
 
+#### `gold.mart_earnings_surprise` · materializada · ~97,814 filas
+Sorpresas de beneficios: lo que los analistas esperaban vs lo que reportó la empresa, con el porcentaje de sorpresa.
+
+| Columna | Qué es | Tipo | Nulo | Clave |
+|---|---|---|---|---|
+| `company_id` | Empresa a la que pertenece. | integer | sí |  |
+| `ticker` | Símbolo bursátil (p.ej. AAPL). | character varying(20) | sí |  |
+| `year` | Año. | smallint | sí |  |
+| `announcement_date` |  | date | sí |  |
+| `eps_estimate` |  | numeric(12,4) | sí |  |
+| `reported_eps` |  | numeric(12,4) | sí |  |
+| `surprise` |  | numeric | sí |  |
+| `surprise_pct` |  | numeric(10,4) | sí |  |
+
 #### `gold.mart_pool_membership` · vista · ~0 filas
 Universo S&P 500 point-in-time expandido a días de cotización.
 
@@ -1154,6 +1190,51 @@ Universo S&P 500 point-in-time expandido a días de cotización.
 | `index_id` | Índice de mercado. | integer | sí |  |
 | `company_id` | Empresa a la que pertenece. | integer | sí |  |
 | `date` | Fecha del dato. | date | sí |  |
+
+#### `gold.mart_sector_country` · materializada · ~250 filas
+Cuántas empresas hay de cada sector en cada país, cuántas están activas y su capitalización media. Muestra dónde se concentra cada industria.
+
+| Columna | Qué es | Tipo | Nulo | Clave |
+|---|---|---|---|---|
+| `sector_name` |  | character varying(200) | sí |  |
+| `country_code` | País (código ISO-3, p.ej. ESP). | character varying(3) | sí |  |
+| `country_name` |  | character varying(200) | sí |  |
+| `region` |  | character varying(100) | sí |  |
+| `n_companies` |  | bigint | sí |  |
+| `n_active` |  | bigint | sí |  |
+| `avg_market_cap` |  | numeric | sí |  |
+
+#### `gold.mart_sovereign_risk` · materializada · ~39,398 filas
+Riesgo soberano: combina el rating crediticio del país, su deuda, balance fiscal y volatilidad del PIB en los últimos 5 años.
+
+| Columna | Qué es | Tipo | Nulo | Clave |
+|---|---|---|---|---|
+| `country_code` | País (código ISO-3, p.ej. ESP). | character varying(3) | sí |  |
+| `year` | Año. | smallint | sí |  |
+| `gdp_growth_pct` |  | numeric | sí |  |
+| `inflation_pct` |  | numeric | sí |  |
+| `unemployment_pct` |  | numeric | sí |  |
+| `gov_debt_pct_gdp` |  | numeric | sí |  |
+| `gov_balance_pct_gdp` |  | numeric | sí |  |
+| `current_account_pct_gdp` |  | numeric | sí |  |
+| `rating_agency` |  | character varying(20) | sí |  |
+| `sovereign_rating` |  | character varying(10) | sí |  |
+| `rating_outlook` |  | character varying(20) | sí |  |
+| `gdp_vol_5y` |  | numeric | sí |  |
+
+#### `gold.mart_trade_dependency` · materializada · ~2,638 filas
+Dependencia comercial: quiénes son los 3 socios principales de cada país, cuánto concentra en ellos y con cuántos países comercia.
+
+| Columna | Qué es | Tipo | Nulo | Clave |
+|---|---|---|---|---|
+| `reporter_code` | País que declara (exporta/importa). | character varying(3) | sí |  |
+| `year` | Año. | smallint | sí |  |
+| `top1_partner` |  | text | sí |  |
+| `top1_trade_k` |  | numeric | sí |  |
+| `top2_partner` |  | text | sí |  |
+| `top3_partner` |  | text | sí |  |
+| `top3_concentration_pct` |  | numeric | sí |  |
+| `n_partners` |  | bigint | sí |  |
 
 #### `gold.mart_trade_matrix` · materializada · ~442,027 filas
 Matriz de comercio: exportaciones e importaciones entre cada par de países.

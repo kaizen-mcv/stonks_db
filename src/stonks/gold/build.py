@@ -169,7 +169,29 @@ WITH macro_p AS (
             AS income_gini,
         -- Tipo de política monetaria (BIS)
         max(dp.value) FILTER (WHERE i.code = 'BIS_POLICY_RATE')
-            AS policy_rate_pct
+            AS policy_rate_pct,
+        -- Educación (World Bank WDI)
+        max(dp.value) FILTER (
+            WHERE i.code = 'WB_SE.XPD.TOTL.GD.ZS')
+            AS education_exp_pct_gdp,
+        max(dp.value) FILTER (
+            WHERE i.code = 'WB_SE.TER.ENRR')
+            AS tertiary_enrollment_pct,
+        -- Infraestructura (World Bank WDI)
+        max(dp.value) FILTER (
+            WHERE i.code = 'WB_IT.NET.USER.ZS')
+            AS internet_users_pct,
+        max(dp.value) FILTER (
+            WHERE i.code = 'WB_IT.CEL.SETS.P2')
+            AS mobile_per_100,
+        -- I+D (World Bank WDI)
+        max(dp.value) FILTER (
+            WHERE i.code = 'WB_GB.XPD.RSDV.GD.ZS')
+            AS rd_exp_pct_gdp,
+        -- Pobreza (World Bank WDI)
+        max(dp.value) FILTER (
+            WHERE i.code = 'WB_SI.POV.DDAY')
+            AS poverty_190_pct
     FROM macro.data_point dp
     JOIN macro.series s ON s.id = dp.series_id
     JOIN macro.indicator i ON i.id = s.indicator_id
@@ -240,6 +262,147 @@ CREATE UNIQUE INDEX IF NOT EXISTS ix_gold_trade_matrix
 ON gold.mart_trade_matrix (reporter_code, partner_code, year)
 """
 
+# --- Empresa + macro de su país (cruce empresa↔economía) --------
+_MV_COMPANY_MACRO = """
+CREATE MATERIALIZED VIEW IF NOT EXISTS gold.mart_company_macro AS
+SELECT
+    dc.company_id, dc.ticker, dc.name AS company_name,
+    dc.sector_name, dc.country_code, mcy.year,
+    mcy.gdp_growth_pct, mcy.inflation_pct,
+    mcy.unemployment_pct, mcy.policy_rate_pct,
+    mcy.gov_debt_pct_gdp, mcy.current_account_pct_gdp,
+    mcy.life_expectancy_yrs, mcy.income_gini,
+    mcy.exports_usd_bn, mcy.imports_usd_bn
+FROM gold.dim_company dc
+JOIN gold.mart_country_year mcy
+  ON mcy.country_code = dc.country_code
+WHERE dc.country_code IS NOT NULL
+"""
+
+_MV_COMPANY_MACRO_IX = """
+CREATE UNIQUE INDEX IF NOT EXISTS ix_gold_company_macro
+ON gold.mart_company_macro (company_id, year)
+"""
+
+# --- Riesgo soberano (rating + deuda + volatilidad macro) --------
+_MV_SOVEREIGN_RISK = """
+CREATE MATERIALIZED VIEW IF NOT EXISTS gold.mart_sovereign_risk AS
+WITH latest_rating AS (
+    SELECT bi.country_code, cr.agency, cr.rating,
+           cr.outlook, cr.rating_date,
+           ROW_NUMBER() OVER (
+               PARTITION BY bi.country_code, cr.agency
+               ORDER BY cr.rating_date DESC
+           ) AS rn
+    FROM fi.credit_rating cr
+    JOIN fi.bond_issuer bi ON bi.id = cr.issuer_id
+    WHERE bi.issuer_type = 'government'
+)
+SELECT
+    mcy.country_code, mcy.year,
+    mcy.gdp_growth_pct, mcy.inflation_pct,
+    mcy.unemployment_pct,
+    mcy.gov_debt_pct_gdp, mcy.gov_balance_pct_gdp,
+    mcy.current_account_pct_gdp,
+    lr.agency AS rating_agency,
+    lr.rating AS sovereign_rating,
+    lr.outlook AS rating_outlook,
+    stddev(mcy.gdp_growth_pct) OVER (
+        PARTITION BY mcy.country_code
+        ORDER BY mcy.year
+        ROWS BETWEEN 4 PRECEDING AND CURRENT ROW
+    ) AS gdp_vol_5y
+FROM gold.mart_country_year mcy
+LEFT JOIN latest_rating lr
+  ON lr.country_code = mcy.country_code AND lr.rn = 1
+"""
+
+_MV_SOVEREIGN_RISK_IX = """
+CREATE UNIQUE INDEX IF NOT EXISTS ix_gold_sovereign_risk
+ON gold.mart_sovereign_risk (country_code, year, rating_agency)
+"""
+
+# --- Dependencia comercial (top partners, concentración) ---------
+_MV_TRADE_DEP = """
+CREATE MATERIALIZED VIEW IF NOT EXISTS gold.mart_trade_dependency AS
+WITH ranked AS (
+    SELECT reporter_code, partner_code, year,
+           coalesce(exports_usd_k, 0)
+           + coalesce(imports_usd_k, 0) AS total_k,
+           ROW_NUMBER() OVER (
+               PARTITION BY reporter_code, year
+               ORDER BY coalesce(exports_usd_k,0)
+                      + coalesce(imports_usd_k,0) DESC
+           ) AS rk
+    FROM gold.mart_trade_matrix
+)
+SELECT reporter_code, year,
+    max(partner_code) FILTER (WHERE rk = 1) AS top1_partner,
+    max(total_k)      FILTER (WHERE rk = 1) AS top1_trade_k,
+    max(partner_code) FILTER (WHERE rk = 2) AS top2_partner,
+    max(partner_code) FILTER (WHERE rk = 3) AS top3_partner,
+    round(
+        sum(total_k) FILTER (WHERE rk <= 3)::numeric
+        / NULLIF(sum(total_k), 0) * 100, 1
+    ) AS top3_concentration_pct,
+    count(DISTINCT partner_code) AS n_partners
+FROM ranked
+GROUP BY reporter_code, year
+"""
+
+_MV_TRADE_DEP_IX = """
+CREATE UNIQUE INDEX IF NOT EXISTS ix_gold_trade_dep
+ON gold.mart_trade_dependency (reporter_code, year)
+"""
+
+# --- Sorpresas de beneficios (estimado vs reportado) -------------
+_MV_EARNINGS_SURPRISE = """
+CREATE MATERIALIZED VIEW IF NOT EXISTS gold.mart_earnings_surprise AS
+SELECT
+    ed.company_id,
+    dc.ticker,
+    extract(year FROM ed.date)::smallint AS year,
+    ed.date AS announcement_date,
+    ed.eps_estimate,
+    ed.reported_eps,
+    ed.reported_eps - ed.eps_estimate AS surprise,
+    ed.surprise_pct
+FROM equity.earnings_date ed
+JOIN gold.dim_company dc ON dc.company_id = ed.company_id
+WHERE ed.eps_estimate IS NOT NULL
+  AND ed.reported_eps IS NOT NULL
+"""
+
+_MV_EARNINGS_SURPRISE_IX = """
+CREATE UNIQUE INDEX IF NOT EXISTS ix_gold_earnings_surprise
+ON gold.mart_earnings_surprise (company_id, announcement_date)
+"""
+
+# --- Sector × país (exposición sectorial geográfica) -------------
+_MV_SECTOR_COUNTRY = """
+CREATE MATERIALIZED VIEW IF NOT EXISTS gold.mart_sector_country AS
+SELECT
+    dc.sector_name,
+    dc.country_code,
+    dco.name AS country_name,
+    dco.region,
+    count(*) AS n_companies,
+    sum(CASE WHEN dc.is_active THEN 1 ELSE 0 END) AS n_active,
+    round(avg(c.market_cap_usd)::numeric, 0) AS avg_market_cap
+FROM gold.dim_company dc
+JOIN equity.company c ON c.id = dc.company_id
+LEFT JOIN gold.dim_country dco
+  ON dco.country_code = dc.country_code
+WHERE dc.sector_name IS NOT NULL
+  AND dc.country_code IS NOT NULL
+GROUP BY dc.sector_name, dc.country_code, dco.name, dco.region
+"""
+
+_MV_SECTOR_COUNTRY_IX = """
+CREATE UNIQUE INDEX IF NOT EXISTS ix_gold_sector_country
+ON gold.mart_sector_country (sector_name, country_code)
+"""
+
 # --- Catálogo autodocumentado de indicadores macro ---
 _VIEW_INDICATOR = """
 CREATE OR REPLACE VIEW gold.dim_indicator AS
@@ -288,6 +451,16 @@ def build_gold() -> dict:
             conn.execute(text(_MV_COUNTRY_YEAR_INDEX))
             conn.execute(text(_MV_TRADE))
             conn.execute(text(_MV_TRADE_INDEX))
+            # Marts cruzados (empresa↔macro, riesgo, trade, earnings, sector)
+            for mv_sql, ix_sql in [
+                (_MV_COMPANY_MACRO, _MV_COMPANY_MACRO_IX),
+                (_MV_SOVEREIGN_RISK, _MV_SOVEREIGN_RISK_IX),
+                (_MV_TRADE_DEP, _MV_TRADE_DEP_IX),
+                (_MV_EARNINGS_SURPRISE, _MV_EARNINGS_SURPRISE_IX),
+                (_MV_SECTOR_COUNTRY, _MV_SECTOR_COUNTRY_IX),
+            ]:
+                conn.execute(text(mv_sql))
+                conn.execute(text(ix_sql))
             conn.execute(text(_VIEW_INDICATOR))
         # Refrescar las materializadas fuera de la transacción DDL
         with engine.connect() as conn:
@@ -300,12 +473,22 @@ def build_gold() -> dict:
             conn.execute(
                 text("REFRESH MATERIALIZED VIEW gold.mart_trade_matrix")
             )
+            for mv in (
+                "gold.mart_company_macro",
+                "gold.mart_sovereign_risk",
+                "gold.mart_trade_dependency",
+                "gold.mart_earnings_surprise",
+                "gold.mart_sector_country",
+            ):
+                conn.execute(
+                    text(f"REFRESH MATERIALIZED VIEW {mv}")
+                )
             conn.commit()
-        # Checks de calidad de la economía mundial (informativo).
+        # Checks de calidad completos (informativo, no bloquea).
         try:
-            from stonks.quality import check_world_quality
+            from stonks.quality import run_all_checks
 
-            check_world_quality()
+            run_all_checks()
         except Exception as e:  # noqa: BLE001
             logger.warning("Checks de calidad fallaron: %s", e)
         resumen["status"] = "ok"
