@@ -340,7 +340,7 @@ def update(
         "daily",
         "-c",
         "--cadence",
-        help="Cadencia: daily | weekly | monthly | all",
+        help="Cadencia: daily | weekly | monthly | yearly | all",
     ),
     dry_run: bool = typer.Option(
         False,
