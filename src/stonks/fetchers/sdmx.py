@@ -258,6 +258,42 @@ class OECDFetcher(BaseSDMXFetcher):
             "CPI inflation YoY, monthly (OECD)",
             "prices",
         ),
+        # KEI (Key Economic Indicators) — 7 posiciones de clave
+        (
+            "OECD.SDD.STES,DSD_KEI@DF_KEI,4.0",
+            ".M.LI....",
+            "OECD_CLI",
+            "Composite Leading Indicator (OECD)",
+            "leading",
+        ),
+        (
+            "OECD.SDD.STES,DSD_KEI@DF_KEI,4.0",
+            ".M.CCICP....",
+            "OECD_CONSUMER_CONF",
+            "Consumer confidence (OECD)",
+            "sentiment",
+        ),
+        (
+            "OECD.SDD.STES,DSD_KEI@DF_KEI,4.0",
+            ".M.BCICP....",
+            "OECD_BUSINESS_CONF",
+            "Business confidence (OECD)",
+            "sentiment",
+        ),
+        (
+            "OECD.SDD.STES,DSD_KEI@DF_KEI,4.0",
+            ".M.PRVM....",
+            "OECD_IND_PROD",
+            "Industrial production volume (OECD)",
+            "production",
+        ),
+        (
+            "OECD.SDD.STES,DSD_KEI@DF_KEI,4.0",
+            ".M.TOVM....",
+            "OECD_RETAIL_VOL",
+            "Retail trade volume (OECD)",
+            "consumption",
+        ),
     ]
 
 
