@@ -191,7 +191,26 @@ WITH macro_p AS (
         -- Pobreza (World Bank WDI)
         max(dp.value) FILTER (
             WHERE i.code = 'WB_SI.POV.DDAY')
-            AS poverty_190_pct
+            AS poverty_190_pct,
+        -- Governance (World Bank WGI, score 0-100)
+        max(dp.value) FILTER (
+            WHERE i.code = 'WB_GOV_WGI_CC_SC')
+            AS corruption_control_score,
+        max(dp.value) FILTER (
+            WHERE i.code = 'WB_GOV_WGI_GE_SC')
+            AS gov_effectiveness_score,
+        max(dp.value) FILTER (
+            WHERE i.code = 'WB_GOV_WGI_PV_SC')
+            AS political_stability_score,
+        max(dp.value) FILTER (
+            WHERE i.code = 'WB_GOV_WGI_RL_SC')
+            AS rule_of_law_score,
+        max(dp.value) FILTER (
+            WHERE i.code = 'WB_GOV_WGI_RQ_SC')
+            AS regulatory_quality_score,
+        max(dp.value) FILTER (
+            WHERE i.code = 'WB_GOV_WGI_VA_SC')
+            AS voice_accountability_score
     FROM macro.data_point dp
     JOIN macro.series s ON s.id = dp.series_id
     JOIN macro.indicator i ON i.id = s.indicator_id

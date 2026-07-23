@@ -358,6 +358,63 @@ FRED_SERIES = [
         "fi",
         "monthly",
     ),
+    # Forex USD pairs (complementa ECB EUR-only)
+    (
+        "USD_EUR",
+        "DEXUSEU",
+        "USD/EUR Exchange Rate",
+        "macro",
+        "daily",
+    ),
+    (
+        "USD_JPY",
+        "DEXJPUS",
+        "USD/JPY Exchange Rate",
+        "macro",
+        "daily",
+    ),
+    (
+        "USD_GBP",
+        "DEXUSUK",
+        "USD/GBP Exchange Rate",
+        "macro",
+        "daily",
+    ),
+    (
+        "USD_CHF",
+        "DEXSZUS",
+        "USD/CHF Exchange Rate",
+        "macro",
+        "daily",
+    ),
+    (
+        "USD_CNY",
+        "DEXCHUS",
+        "USD/CNY Exchange Rate",
+        "macro",
+        "daily",
+    ),
+    (
+        "USD_BRL",
+        "DEXBZUS",
+        "USD/BRL Exchange Rate",
+        "macro",
+        "daily",
+    ),
+    (
+        "USD_INR",
+        "DEXINUS",
+        "USD/INR Exchange Rate",
+        "macro",
+        "daily",
+    ),
+    (
+        "USD_MXN",
+        "DEXMXUS",
+        "USD/MXN Exchange Rate",
+        "macro",
+        "daily",
+    ),
 ]
 
 # Series clave para vintages point-in-time (ALFRED). Son las macro

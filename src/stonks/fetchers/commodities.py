@@ -34,7 +34,14 @@ COMMODITIES = [
     ("COTTON", "Cotton", "agriculture", "softs", "pound", "CT=F"),
     # Metales industriales
     ("COPPER", "Copper", "industrial_metal", None, "pound", "HG=F"),
-    ("ALUMINUM", "Aluminum", "industrial_metal", None, "metric_ton", "ALI=F"),
+    # Ganado
+    ("LIVE_CATTLE", "Live Cattle", "agriculture", "livestock", "pound", "LE=F"),
+    ("LEAN_HOGS", "Lean Hogs", "agriculture", "livestock", "pound", "HE=F"),
+    # Otros agrícolas
+    ("RICE", "Rough Rice", "agriculture", "grains", "cwt", "ZR=F"),
+    ("OATS", "Oats", "agriculture", "grains", "bushel", "ZO=F"),
+    ("LUMBER", "Lumber", "agriculture", "forest", "mbf", "LBS=F"),
+    ("OJ", "Orange Juice", "agriculture", "softs", "pound", "OJ=F"),
 ]
 
 

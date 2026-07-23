@@ -342,6 +342,31 @@ COL_DESC = {
     "(0 = igualdad total, 1 = desigualdad máxima) (WID).",
     "gold.mart_country_year.policy_rate_pct": "Tipo de interés oficial del "
     "banco central, en % (BIS).",
+    "gold.mart_country_year.corruption_control_score": "Control de la "
+    "corrupción (0-100): cuánto se controlan los sobornos y la corrupción "
+    "pública (World Bank WGI).",
+    "gold.mart_country_year.gov_effectiveness_score": "Eficacia del "
+    "gobierno (0-100): calidad de servicios públicos y burocracia.",
+    "gold.mart_country_year.political_stability_score": "Estabilidad "
+    "política (0-100): ausencia de violencia y terrorismo.",
+    "gold.mart_country_year.rule_of_law_score": "Estado de derecho "
+    "(0-100): confianza en contratos, policía, tribunales.",
+    "gold.mart_country_year.regulatory_quality_score": "Calidad "
+    "regulatoria (0-100): políticas que favorecen el sector privado.",
+    "gold.mart_country_year.voice_accountability_score": "Voz y "
+    "rendición de cuentas (0-100): libertad de expresión, prensa y voto.",
+    "gold.mart_country_year.education_exp_pct_gdp": "Gasto público en "
+    "educación como % del PIB (World Bank).",
+    "gold.mart_country_year.tertiary_enrollment_pct": "Matrícula "
+    "universitaria bruta, % de la población en edad (World Bank).",
+    "gold.mart_country_year.internet_users_pct": "Personas que usan "
+    "internet, % de la población (World Bank).",
+    "gold.mart_country_year.mobile_per_100": "Suscripciones de "
+    "telefonía móvil por cada 100 personas (World Bank).",
+    "gold.mart_country_year.rd_exp_pct_gdp": "Gasto en investigación "
+    "y desarrollo como % del PIB (World Bank).",
+    "gold.mart_country_year.poverty_190_pct": "Población bajo la línea "
+    "de pobreza de 3 USD/día (World Bank).",
     "energy.balance.product_code": "Fuente de energía (coal, gas, solar...).",
     "energy.balance.flow": "consumption / production / electricity.",
     "agri.production.item_code": "Código del cultivo o ganado.",
