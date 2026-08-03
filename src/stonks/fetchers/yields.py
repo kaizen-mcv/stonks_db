@@ -23,12 +23,15 @@ US_TREASURY_TICKERS = {
     360: "^TYX",  # 30-Year Treasury Yield
 }
 
-# Usamos los tickers reales disponibles
+# Tickers yfinance disponibles para yields
+# (ticker, maturity_meses, country_code)
 YIELD_TICKERS = [
-    ("^IRX", 3, "USA"),  # 3-month T-Bill
+    ("^IRX", 3, "USA"),  # 13-week T-Bill
     ("^FVX", 60, "USA"),  # 5-year Treasury
     ("^TNX", 120, "USA"),  # 10-year Treasury
     ("^TYX", 360, "USA"),  # 30-year Treasury
+    # Intl vía FRED: DE_10Y, JP_10Y, GB_10Y
+    # (ver fred.py FRED_SERIES para yields intl)
 ]
 
 

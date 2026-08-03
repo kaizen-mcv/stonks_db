@@ -1,0 +1,32 @@
+# ── Stonks DB v0.4.0: crontab recomendado ────────
+# Servidor en UTC. España = UTC+2 (verano CEST)
+# Instalar: crontab -e, pegar las líneas deseadas
+#
+# NOTA: los crons de intraday 1m consumen mucho
+# disco (~55 GB/año). Activar solo si necesario.
+
+# ── Daily: tras cierre Wall Street ──────────────
+# 20:30 UTC = 22:30 España (L-V)
+30 20 * * 1-5 /mnt/storage/Projects/db-projects/stonks/scripts/daily_update.sh
+
+# ── Weekly: domingos ────────────────────────────
+# 08:00 UTC = 10:00 España
+0 8 * * 0 /mnt/storage/Projects/db-projects/stonks/scripts/weekly_update.sh
+
+# ── Intraday 1m: cada 5 min L-V ────────────────
+# Equity top 500, crypto, forex majors
+# Descomentar para activar:
+# */5 * * * 1-5 /mnt/storage/Projects/db-projects/stonks/scripts/intraday_update.sh 1m
+
+# ── Intraday 1m crypto: fin de semana ──────────
+# Crypto opera 24/7
+# */5 * * * 0,6 /mnt/storage/Projects/db-projects/stonks/scripts/intraday_crypto.sh
+
+# ── Intraday 5m: cada hora L-V ─────────────────
+# Equity top 5000, todos crypto/forex/commodity
+# Descomentar para activar:
+# 0 * * * 1-5 /mnt/storage/Projects/db-projects/stonks/scripts/intraday_update.sh 5m
+
+# ── Cleanup intraday: diario 3am UTC ───────────
+# Borrar datos expirados (1m>30d, 5m>6m, 1h>3a)
+# 0 3 * * * cd /mnt/storage/Projects/db-projects/stonks && .venv/bin/stonks intraday cleanup

@@ -1,4 +1,5 @@
-"""Modelos de referencia: países, divisas, bolsas, sectores."""
+"""Modelos de referencia: países, divisas, bolsas, sectores,
+catálogo HS."""
 
 from sqlalchemy import (
     Boolean,
@@ -81,3 +82,21 @@ class Sector(Base):
         Integer, ForeignKey("ref.sector.id")
     )
     level: Mapped[int | None] = mapped_column(SmallInteger)
+
+
+class HsProduct(Base):
+    """Catálogo de códigos HS (Sistema Armonizado).
+
+    Códigos de 2-4-6 dígitos con su descripción. Sirve
+    para dar nombre a `trade.flow.product_code` cuando se
+    carga comercio por producto (UN Comtrade).
+    `level` = número de dígitos.
+    """
+
+    __tablename__ = "hs_product"
+    __table_args__ = {"schema": "ref"}
+
+    code: Mapped[str] = mapped_column(String(6), primary_key=True)
+    description: Mapped[str] = mapped_column(String(500), nullable=False)
+    level: Mapped[int] = mapped_column(SmallInteger, nullable=False)
+    parent_code: Mapped[str | None] = mapped_column(String(6))

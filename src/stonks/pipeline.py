@@ -12,6 +12,7 @@ nuevas del medallion (sectores, y en fases B/C constituyentes, PIT,
 analistas y macro no-US) más la reconstrucción de gold.
 """
 
+import time
 from collections.abc import Callable
 from dataclasses import dataclass, field
 
@@ -54,17 +55,94 @@ def _transform(module: str, cls: str, **kwargs):
 
 PIPELINE: dict[str, list[Step]] = {
     "daily": [
-        # Foto diaria de analistas: el histórico se acumula hacia
-        # adelante (yfinance no da serie retroactiva), por eso va a diario.
         Step(
             "analyst-snap",
             [_fetcher("analyst", "AnalystFetcher")],
             [_transform("analyst", "AnalystTransform")],
         ),
-        # Foto diaria de cadenas de opciones (top empresas líquidas).
         Step(
             "options",
             [_fetcher("options", "OptionsFetcher")],
+            [],
+        ),
+        Step(
+            "forex-yfinance",
+            [
+                _fetcher(
+                    "yfinance_forex",
+                    "YFinanceForexFetcher",
+                )
+            ],
+            [],
+        ),
+        Step(
+            "volatility",
+            [
+                _fetcher(
+                    "volatility",
+                    "VolatilityFetcher",
+                    method="seed_indices",
+                ),
+                _fetcher(
+                    "volatility",
+                    "VolatilityFetcher",
+                    method="fetch_prices",
+                    period="1y",
+                ),
+            ],
+            [],
+        ),
+        Step(
+            "index-futures",
+            [
+                _fetcher(
+                    "index_futures",
+                    "IndexFuturesFetcher",
+                    method="seed_contracts",
+                ),
+                _fetcher(
+                    "index_futures",
+                    "IndexFuturesFetcher",
+                    method="fetch_prices",
+                    period="1y",
+                ),
+            ],
+            [],
+        ),
+        Step(
+            "intraday-crypto-1h",
+            [
+                _fetcher(
+                    "intraday_multi",
+                    "IntradayMultiFetcher",
+                    domain="crypto",
+                    interval="1h",
+                ),
+            ],
+            [],
+        ),
+        Step(
+            "intraday-forex-1h",
+            [
+                _fetcher(
+                    "intraday_multi",
+                    "IntradayMultiFetcher",
+                    domain="forex",
+                    interval="1h",
+                ),
+            ],
+            [],
+        ),
+        Step(
+            "intraday-commodity-1h",
+            [
+                _fetcher(
+                    "intraday_multi",
+                    "IntradayMultiFetcher",
+                    domain="commodity",
+                    interval="1h",
+                ),
+            ],
             [],
         ),
     ],
@@ -81,14 +159,43 @@ PIPELINE: dict[str, list[Step]] = {
         ),
         Step(
             "sec-pit",
-            [_fetcher("sec_edgar", "SecEdgarFetcher", method="fetch_batch")],
-            [_transform("fundamentals_pit", "FundamentalsPitTransform")],
+            [
+                _fetcher(
+                    "sec_edgar",
+                    "SecEdgarFetcher",
+                    method="fetch_batch",
+                )
+            ],
+            [
+                _transform(
+                    "fundamentals_pit",
+                    "FundamentalsPitTransform",
+                )
+            ],
         ),
-        # Ficha 360° de cada empresa (holders, insiders, upgrades,
-        # recomendaciones, calendario, acciones, perfil).
         Step(
             "equity-deep",
             [_fetcher("equity_deep", "EquityDeepFetcher")],
+            [],
+        ),
+        Step(
+            "crypto-yfinance",
+            [
+                _fetcher(
+                    "crypto_yfinance",
+                    "CryptoYFinanceFetcher",
+                )
+            ],
+            [],
+        ),
+        Step(
+            "commodities",
+            [_fetcher("commodities", "CommodityFetcher")],
+            [],
+        ),
+        Step(
+            "funds",
+            [_fetcher("funds", "FundFetcher")],
             [],
         ),
     ],
@@ -106,6 +213,9 @@ PIPELINE: dict[str, list[Step]] = {
                 _fetcher("sdmx", "BISFetcher"),
                 _fetcher("sdmx", "OECDFetcher"),
                 _fetcher("eurostat", "EurostatFetcher"),
+                _fetcher("ecb_sdw", "ECBSDWFetcher"),
+                _fetcher("imf_ifs", "IMFIFSFetcher"),
+                _fetcher("imf_bop", "IMFBOPFetcher"),
             ],
             [],
         ),
@@ -150,6 +260,13 @@ PIPELINE: dict[str, list[Step]] = {
             [_fetcher("owid", "OWIDEnergyFetcher")],
             [],
         ),
+        # Energía internacional desglosada (EIA). Requiere
+        # STONKS_EIA_KEY; si falta, el paso se salta sin romper.
+        Step(
+            "energy-eia",
+            [_fetcher("eia", "EIAFetcher")],
+            [],
+        ),
         # Emisiones CO2/GHG (Our World in Data → macro).
         Step(
             "co2",
@@ -190,10 +307,137 @@ PIPELINE: dict[str, list[Step]] = {
             [_fetcher("sdmx", "ILOFetcher")],
             [],
         ),
+        # Productividad: TFP, capital humano (Penn World Table).
+        Step(
+            "productivity",
+            [_fetcher("pwt", "PWTFetcher")],
+            [],
+        ),
+        # Gobernanza: corrupción (TI CPI) y libertad (Freedom House).
+        Step(
+            "governance",
+            [
+                _fetcher("ti_cpi", "TICPIFetcher"),
+                _fetcher(
+                    "freedom_house",
+                    "FreedomHouseFetcher",
+                ),
+            ],
+            [],
+        ),
+        # Gobernanza extendida: libertad económica (Heritage),
+        # fragilidad estatal (FSI).
+        Step(
+            "governance-ext",
+            [
+                _fetcher("heritage", "HeritageFetcher"),
+                _fetcher("fsi", "FSIFetcher"),
+            ],
+            [],
+        ),
+        # Gasto militar (SIPRI).
+        Step(
+            "military",
+            [_fetcher("sipri", "SIPRIFetcher")],
+            [],
+        ),
+        # Desarrollo humano (UNDP HDI/GDI/GII/MPI).
+        Step(
+            "development",
+            [_fetcher("undp", "UNDPFetcher")],
+            [],
+        ),
+        # Vulnerabilidad climática (ND-GAIN).
+        Step(
+            "climate",
+            [_fetcher("ndgain", "NDGAINFetcher")],
+            [],
+        ),
+        # Democracia detallada (V-Dem, 202 países).
+        Step(
+            "democracy",
+            [_fetcher("vdem", "VDemFetcher")],
+            [],
+        ),
+        # Demografía y proyecciones (UN DESA).
+        Step(
+            "population",
+            [
+                _fetcher(
+                    "un_population",
+                    "UNPopulationFetcher",
+                ),
+            ],
+            [],
+        ),
+        # Innovación (WIPO patentes).
+        Step(
+            "innovation",
+            [_fetcher("wipo", "WIPOFetcher")],
+            [],
+        ),
+        # Educación detallada (UNESCO UIS).
+        Step(
+            "education",
+            [_fetcher("unesco", "UNESCOFetcher")],
+            [],
+        ),
+        # FDI y conectividad (UNCTAD).
+        Step(
+            "trade-detail",
+            [_fetcher("unctad", "UNCTADFetcher")],
+            [],
+        ),
+        # Comercio bilateral mensual (IMF DOTS).
+        Step(
+            "trade-dots",
+            [_fetcher("imf_dots", "IMFDOTSFetcher")],
+            [],
+        ),
+        # Finanzas públicas detalladas (IMF GFS).
+        Step(
+            "fiscal-detail",
+            [_fetcher("imf_gfs", "IMFGFSFetcher")],
+            [],
+        ),
+        # Emisiones sectoriales (EDGAR JRC).
+        Step(
+            "emissions",
+            [
+                _fetcher(
+                    "edgar_emissions",
+                    "EDGAREmissionsFetcher",
+                ),
+            ],
+            [],
+        ),
     ],
 }
 
 CADENCES = ("daily", "weekly", "monthly", "yearly")
+
+MAX_STEP_RETRIES = 1
+RETRY_DELAY = 5
+
+
+def _run_step(step: Step) -> None:
+    """Ejecutar un paso con 1 reintento."""
+    for attempt in range(1, MAX_STEP_RETRIES + 2):
+        try:
+            for fn in step.fetches:
+                fn()
+            for fn in step.transforms:
+                fn()
+            return
+        except Exception:
+            if attempt > MAX_STEP_RETRIES:
+                raise
+            logger.warning(
+                "Reintentando %s en %ds...",
+                step.name,
+                RETRY_DELAY,
+            )
+            time.sleep(RETRY_DELAY)
 
 
 def run_update(
@@ -215,15 +459,16 @@ def run_update(
                 logger.info("[dry-run] %s", step.name)
                 continue
             try:
-                for fn in step.fetches:
-                    fn()
-                for fn in step.transforms:
-                    fn()
+                _run_step(step)
                 resumen[step.name] = "ok"
                 logger.info("Paso OK: %s", step.name)
             except Exception as e:  # noqa: BLE001
                 resumen[step.name] = f"error: {e}"
-                logger.error("Paso fallido %s: %s", step.name, e)
+                logger.error(
+                    "Paso fallido %s: %s",
+                    step.name,
+                    e,
+                )
 
     # Reconstruir gold una vez al final (idempotente).
     if not dry_run and build:

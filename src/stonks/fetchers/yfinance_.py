@@ -4,15 +4,40 @@ from datetime import datetime
 
 import yaml
 import yfinance as yf
-from sqlalchemy import and_
+from sqlalchemy import and_, text
 
 # Importar todos los modelos para resolver FKs
 import stonks.models  # noqa: F401
 from stonks.config import settings
-from stonks.db import get_session
+from stonks.db import engine, get_session
 from stonks.fetchers.base import BaseFetcher, logger
 from stonks.models.equity import Company, PriceDaily
 from stonks.models.meta import DataSource
+from stonks.utils.batch import batch_download
+
+UPSERT_CHUNK = 10_000
+
+
+def _safe_float(val) -> float | None:
+    """Convierte a float, None si NaN."""
+    if val is None:
+        return None
+    try:
+        f = float(val)
+        if f != f:  # NaN check
+            return None
+        return f
+    except (TypeError, ValueError):
+        return None
+
+
+def _safe_int(val) -> int | None:
+    """Convierte a int, None si NaN."""
+    f = _safe_float(val)
+    if f is None:
+        return None
+    return int(f)
+
 
 # S&P500 principales (top 50 por peso)
 SP500_TOP = [
@@ -333,6 +358,136 @@ class YFinanceFetcher(BaseFetcher):
             )
 
         return results
+
+    def fetch_prices_bulk(
+        self,
+        tickers: list[str],
+        period: str = "max",
+    ) -> dict[str, int]:
+        """Descarga batch + upsert masivo SQL.
+
+        Usa yf.download() para descargar en lotes y
+        INSERT...ON CONFLICT DO UPDATE para upsert
+        en chunks de UPSERT_CHUNK filas.
+
+        Returns:
+            {"fetched": N, "upserted": N, "errors": N}
+        """
+        run_id = self._start_run(
+            params={
+                "tickers_count": len(tickers),
+                "period": period,
+                "mode": "bulk",
+            }
+        )
+        stats = {
+            "fetched": 0,
+            "upserted": 0,
+            "errors": 0,
+        }
+
+        try:
+            # Mapa ticker → company_id
+            with engine.connect() as conn:
+                rows = conn.execute(
+                    text("SELECT ticker, id FROM equity.company")
+                ).fetchall()
+            ticker_to_id = {r[0]: r[1] for r in rows}
+
+            # Obtener source_id
+            with engine.connect() as conn:
+                src = conn.execute(
+                    text(
+                        "SELECT id FROM meta.data_source "
+                        "WHERE name = 'yfinance' LIMIT 1"
+                    )
+                ).scalar()
+            src_id = src
+
+            # Descarga batch
+            df = batch_download(tickers, period=period, interval="1d")
+            if df.empty:
+                logger.warning("batch_download vacío")
+                self._finish_run(run_id, "success", **stats)
+                return stats
+
+            stats["fetched"] = len(df)
+
+            # Preparar filas para upsert
+            upsert_rows = []
+            for _, row in df.iterrows():
+                ticker = row.get("Ticker", "")
+                cid = ticker_to_id.get(ticker)
+                if cid is None:
+                    continue
+                close = row.get("Close")
+                if close is None or (
+                    hasattr(close, "__float__") and str(close) == "nan"
+                ):
+                    continue
+                dt = row.get("Date")
+                if hasattr(dt, "date"):
+                    dt = dt.date()
+                upsert_rows.append(
+                    {
+                        "company_id": cid,
+                        "date": dt,
+                        "open": _safe_float(row.get("Open")),
+                        "high": _safe_float(row.get("High")),
+                        "low": _safe_float(row.get("Low")),
+                        "close": float(close),
+                        "volume": _safe_int(row.get("Volume")),
+                        "source_id": src_id,
+                    }
+                )
+
+            # Upsert en chunks
+            upsert_sql = text("""
+                INSERT INTO equity.price_daily
+                    (company_id, date, open, high, low,
+                     close, volume, source_id)
+                VALUES
+                    (:company_id, :date, :open, :high,
+                     :low, :close, :volume, :source_id)
+                ON CONFLICT (company_id, date) DO UPDATE SET
+                    open = EXCLUDED.open,
+                    high = EXCLUDED.high,
+                    low = EXCLUDED.low,
+                    close = EXCLUDED.close,
+                    volume = EXCLUDED.volume,
+                    source_id = EXCLUDED.source_id
+            """)
+
+            total_rows = len(upsert_rows)
+            with engine.begin() as conn:
+                for j in range(0, total_rows, UPSERT_CHUNK):
+                    chunk = upsert_rows[j : j + UPSERT_CHUNK]
+                    conn.execute(upsert_sql, chunk)
+                    stats["upserted"] += len(chunk)
+                    logger.info(
+                        "Upsert %d/%d filas",
+                        stats["upserted"],
+                        total_rows,
+                    )
+
+            self._finish_run(
+                run_id,
+                "success",
+                fetched=stats["fetched"],
+                inserted=stats["upserted"],
+            )
+
+        except Exception as e:
+            stats["errors"] += 1
+            logger.error("Error bulk: %s", e)
+            self._finish_run(
+                run_id,
+                "failed",
+                **stats,
+                error_log={"msg": str(e)},
+            )
+
+        return stats
 
     @staticmethod
     def _resolve_country(

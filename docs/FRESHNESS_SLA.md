@@ -19,7 +19,10 @@ Lag esperado de cada tipo de dato según su cadencia de actualización.
 | **Mensual** (día 2, 6:00) | pipeline monthly | Factores (Value/Quality/Mom) | T+30 días | Calculado |
 | | pipeline monthly | BIS tipos/crédito/REER | T+30-60 días | BIS |
 | | pipeline monthly | OECD CPI mensual | T+30-60 días | OECD |
-| | pipeline monthly | Eurostat HICP/paro/IP/PIB/retail | T+30-90 días | Eurostat |
+| | pipeline monthly | Eurostat HICP/paro/IP/PIB/retail/PPI/vivienda | T+30-90 días | Eurostat |
+| | pipeline monthly | ECB SDW (M1/M2/M3, EURIBOR, MRR/DFR, lending) | T+30 días | ECB |
+| | pipeline monthly | IMF IFS (tipos interés, CPI, broad money, 190+ países) | T+30-90 días | IMF IFS |
+| | pipeline monthly | IMF BOP (9 componentes trimestrales, 200 países) | T+90-180 días | IMF BOP |
 | | pipeline monthly | Vintages ALFRED | T+30 días | FRED |
 | **Semestral** (20 abr + 20 oct) | pipeline yearly | IMF WEO (proyecciones) | T-12 meses (proyecta) | IMF |
 | | pipeline yearly | World Bank WDI (~1.500 indic.) | T+6-12 meses | World Bank |
@@ -30,6 +33,22 @@ Lag esperado de cada tipo de dato según su cadencia de actualización.
 | | pipeline yearly | Salud (WHO GHO) | T+6-12 meses | WHO |
 | | pipeline yearly | Desigualdad (WID.world) | T+6-12 meses | WID |
 | | pipeline yearly | Trabajo (ILOSTAT) | T+6-12 meses | ILO |
+| | pipeline yearly | Productividad TFP (Penn World Table) | T+12-24 meses | PWT |
+| | pipeline yearly | Transparency International CPI (180 países) | T+2-3 meses | TI |
+| | pipeline yearly | Freedom House PR/CL/Total (190 países) | T+2-3 meses | FH |
+| | pipeline yearly | Heritage Economic Freedom (184 países) | T+1-2 meses | Heritage |
+| | pipeline yearly | FSI Fragile States Index (178 países) | T+3-6 meses | Fund for Peace |
+| | pipeline yearly | SIPRI gasto militar (170+ países) | T+4-6 meses | SIPRI |
+| | pipeline yearly | UNDP HDI/GDI/GII/MPI (190 países) | T+6-12 meses | UNDP |
+| | pipeline yearly | ND-GAIN vulnerabilidad climática (192 países) | T+12-18 meses | ND-GAIN |
+| | pipeline yearly | V-Dem democracia (202 países) | T+3-6 meses | V-Dem |
+| | pipeline yearly | UN DESA población/demografía (237 países) | T+12-24 meses | UN DESA |
+| | pipeline yearly | UNCTAD FDI + LSCI | T+6-12 meses | UNCTAD |
+| | pipeline yearly | WIPO patentes (200+ países) | T+12-18 meses | WIPO |
+| | pipeline yearly | UNESCO educación | T+12-24 meses | UNESCO |
+| | pipeline yearly | IMF DOTS comercio bilateral | T+3-6 meses | IMF |
+| | pipeline yearly | IMF GFS finanzas públicas | T+6-12 meses | IMF |
+| | pipeline yearly | EDGAR emisiones sectoriales | T+12-18 meses | JRC |
 
 ## Cómo comprobar la frescura
 

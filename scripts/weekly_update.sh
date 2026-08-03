@@ -29,7 +29,21 @@ stonks country fetch >> "$LOG" 2>&1 || true
 echo "[$(date +%H:%M)] Actualizando fundamentales..." >> "$LOG"
 stonks equity fundamentals --all >> "$LOG" 2>&1 || true
 
-# 4. Refrescar vista materializada de ratios (consumida por kairos_bot)
+# 4. Pipeline weekly (sectores, constituents,
+#    sec-pit, equity-deep, crypto-yf, commodities,
+#    funds)
+echo "[$(date +%H:%M)] Pipeline weekly..." >> "$LOG"
+stonks update -c weekly --no-build >> "$LOG" 2>&1 || true
+
+# 5. Cleanup intraday (borrar datos expirados)
+echo "[$(date +%H:%M)] Cleanup intraday..." >> "$LOG"
+stonks intraday cleanup >> "$LOG" 2>&1 || true
+
+# 6. Asegurar particiones futuras
+echo "[$(date +%H:%M)] Crear particiones..." >> "$LOG"
+stonks intraday partitions --ahead 3 >> "$LOG" 2>&1 || true
+
+# 7. Refrescar vista materializada de ratios
 echo "[$(date +%H:%M)] Refrescando equity.ratios_mv..." >> "$LOG"
 psql -d stonks_db -c \
     "REFRESH MATERIALIZED VIEW CONCURRENTLY equity.ratios_mv;" \

@@ -34,14 +34,92 @@ COMMODITIES = [
     ("COTTON", "Cotton", "agriculture", "softs", "pound", "CT=F"),
     # Metales industriales
     ("COPPER", "Copper", "industrial_metal", None, "pound", "HG=F"),
+    ("ALUMINUM", "Aluminum", "industrial_metal", None, "metric_ton", "ALI=F"),
+    ("ZINC", "Zinc", "industrial_metal", None, "metric_ton", "ZN=F"),
+    ("IRON_ORE", "Iron Ore", "industrial_metal", None, "metric_ton", "TIO=F"),
     # Ganado
-    ("LIVE_CATTLE", "Live Cattle", "agriculture", "livestock", "pound", "LE=F"),
+    (
+        "LIVE_CATTLE",
+        "Live Cattle",
+        "agriculture",
+        "livestock",
+        "pound",
+        "LE=F",
+    ),
     ("LEAN_HOGS", "Lean Hogs", "agriculture", "livestock", "pound", "HE=F"),
     # Otros agrícolas
     ("RICE", "Rough Rice", "agriculture", "grains", "cwt", "ZR=F"),
     ("OATS", "Oats", "agriculture", "grains", "bushel", "ZO=F"),
     ("LUMBER", "Lumber", "agriculture", "forest", "mbf", "LBS=F"),
     ("OJ", "Orange Juice", "agriculture", "softs", "pound", "OJ=F"),
+    # Energía adicional
+    (
+        "RBOB_GAS",
+        "RBOB Gasoline",
+        "energy",
+        "refined",
+        "gallon",
+        "RB=F",
+    ),
+    (
+        "ETHANOL",
+        "Ethanol",
+        "energy",
+        "biofuel",
+        "gallon",
+        "EH=F",
+    ),
+    # Agricultura adicional
+    (
+        "SOYBEAN_OIL",
+        "Soybean Oil",
+        "agriculture",
+        "oilseeds",
+        "pound",
+        "ZL=F",
+    ),
+    (
+        "SOYBEAN_MEAL",
+        "Soybean Meal",
+        "agriculture",
+        "oilseeds",
+        "short_ton",
+        "ZM=F",
+    ),
+    (
+        "KC_WHEAT",
+        "KC HRW Wheat",
+        "agriculture",
+        "grains",
+        "bushel",
+        "KE=F",
+    ),
+    (
+        "CANOLA",
+        "Canola",
+        "agriculture",
+        "oilseeds",
+        "metric_ton",
+        "RS=F",
+    ),
+    # Ganado adicional
+    (
+        "FEEDER_CATTLE",
+        "Feeder Cattle",
+        "agriculture",
+        "livestock",
+        "pound",
+        "GF=F",
+    ),
+    # Lácteos
+    (
+        "MILK",
+        "Class III Milk",
+        "agriculture",
+        "dairy",
+        "cwt",
+        "DC=F",
+    ),
 ]
 
 

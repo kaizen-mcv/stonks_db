@@ -12,6 +12,7 @@ from sqlalchemy import (
     String,
     UniqueConstraint,
 )
+from sqlalchemy.dialects.postgresql import TIMESTAMP
 from sqlalchemy.orm import Mapped, mapped_column
 
 from stonks.db import Base
@@ -65,3 +66,35 @@ class CommodityPrice(Base):
     source_id: Mapped[int | None] = mapped_column(
         Integer, ForeignKey("meta.data_source.id")
     )
+
+
+class CommodityPriceIntraday(Base):
+    """Precio intraday commodity (particionado por ts)."""
+
+    __tablename__ = "price_intraday"
+    __table_args__ = (
+        Index(
+            "ix_comm_intraday_interval_ts",
+            "interval",
+            "ts",
+        ),
+        {
+            "schema": "commodity",
+            "postgresql_partition_by": "RANGE (ts)",
+        },
+    )
+
+    commodity_id: Mapped[int] = mapped_column(
+        Integer,
+        ForeignKey("commodity.commodity.id"),
+        primary_key=True,
+    )
+    ts: Mapped[date] = mapped_column(
+        TIMESTAMP(timezone=True), primary_key=True
+    )
+    interval: Mapped[str] = mapped_column(String(3), primary_key=True)
+    open: Mapped[float | None] = mapped_column(Numeric(14, 4))
+    high: Mapped[float | None] = mapped_column(Numeric(14, 4))
+    low: Mapped[float | None] = mapped_column(Numeric(14, 4))
+    close: Mapped[float | None] = mapped_column(Numeric(14, 4))
+    volume: Mapped[int | None] = mapped_column(BigInteger)

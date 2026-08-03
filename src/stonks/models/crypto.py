@@ -4,6 +4,7 @@ from datetime import date
 
 from sqlalchemy import (
     Date,
+    ForeignKey,
     Index,
     Integer,
     Numeric,
@@ -11,6 +12,7 @@ from sqlalchemy import (
     String,
     UniqueConstraint,
 )
+from sqlalchemy.dialects.postgresql import TIMESTAMP
 from sqlalchemy.orm import Mapped, mapped_column
 
 from stonks.db import Base
@@ -49,7 +51,11 @@ class CryptoPrice(Base):
     id: Mapped[int] = mapped_column(
         Integer, primary_key=True, autoincrement=True
     )
-    coin_id: Mapped[int] = mapped_column(Integer, nullable=False)
+    coin_id: Mapped[int] = mapped_column(
+        Integer,
+        ForeignKey("crypto.coin.id"),
+        nullable=False,
+    )
     date: Mapped[date] = mapped_column(Date, nullable=False)
     open: Mapped[float | None] = mapped_column(Numeric(18, 8))
     high: Mapped[float | None] = mapped_column(Numeric(18, 8))
@@ -70,3 +76,35 @@ class MarketDominance(Base):
     total_market_cap_usd: Mapped[float | None] = mapped_column(Numeric(18, 2))
     btc_dominance_pct: Mapped[float | None] = mapped_column(Numeric(6, 3))
     eth_dominance_pct: Mapped[float | None] = mapped_column(Numeric(6, 3))
+
+
+class CryptoPriceIntraday(Base):
+    """Precio intraday crypto (particionado por ts)."""
+
+    __tablename__ = "price_intraday"
+    __table_args__ = (
+        Index(
+            "ix_crypto_intraday_interval_ts",
+            "interval",
+            "ts",
+        ),
+        {
+            "schema": "crypto",
+            "postgresql_partition_by": "RANGE (ts)",
+        },
+    )
+
+    coin_id: Mapped[int] = mapped_column(
+        Integer,
+        ForeignKey("crypto.coin.id"),
+        primary_key=True,
+    )
+    ts: Mapped[date] = mapped_column(
+        TIMESTAMP(timezone=True), primary_key=True
+    )
+    interval: Mapped[str] = mapped_column(String(3), primary_key=True)
+    open: Mapped[float | None] = mapped_column(Numeric(18, 8))
+    high: Mapped[float | None] = mapped_column(Numeric(18, 8))
+    low: Mapped[float | None] = mapped_column(Numeric(18, 8))
+    close: Mapped[float | None] = mapped_column(Numeric(18, 8))
+    volume_usd: Mapped[float | None] = mapped_column(Numeric(18, 2))

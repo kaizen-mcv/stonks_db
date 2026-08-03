@@ -106,6 +106,8 @@ class BaseSDMXFetcher(BaseFetcher):
         dims = struct["dimensions"]["observation"]
         pos = {dim["id"]: i for i, dim in enumerate(dims)}
         cpos = pos.get(self.COUNTRY_DIM)
+        if cpos is None:
+            cpos = pos.get("BORROWERS_CTY")
         tpos = pos.get("TIME_PERIOD")
         if cpos is None or tpos is None:
             return []
@@ -237,6 +239,13 @@ class ILOFetcher(BaseSDMXFetcher):
             "Labour force participation rate (ILO)",
             "labor",
         ),
+        (
+            "ILO,DF_EMP_TEMP_SEX_AGE_NB,1.0",
+            "...SEX_T.AGE_YTHADULT_YGE15",
+            "ILO_EMPLOYMENT",
+            "Employment total (ILO, thousands)",
+            "labor",
+        ),
     ]
 
 
@@ -294,6 +303,54 @@ class OECDFetcher(BaseSDMXFetcher):
             "Retail trade volume (OECD)",
             "consumption",
         ),
+        # Precios vivienda (trimestral)
+        (
+            "OECD.ECO.MPD,DSD_AN_HOUSE_PRICES@DF_HOUSE_PRICES,1.0",
+            ".Q.RHP.IX",
+            "OECD_HOUSE_PRICE_REAL",
+            "Real house price index (OECD)",
+            "housing",
+        ),
+        # Productividad laboral
+        (
+            "OECD.SDD.TPS,DSD_PDB@DF_PDB,2.0",
+            ".A.GDPHRS._T.USD_PPP_H.LR.N._Z.PPP",
+            "OECD_GDP_PER_HOUR",
+            "GDP per hour worked (OECD, PPP USD)",
+            "productivity",
+        ),
+        # Gasto social total (% PIB)
+        (
+            "OECD.ELS.SPD,DSD_SOCX_AGG@DF_SOCX_AGG,1.0",
+            ".A.SOCX.PT_B1GQ.ES10._T._T._Z",
+            "OECD_SOCIAL_SPENDING",
+            "Public social spending % GDP (OECD)",
+            "fiscal",
+        ),
+        # Pensiones (% PIB)
+        (
+            "OECD.ELS.SPD,DSD_SOCX_AGG@DF_SOCX_AGG,1.0",
+            ".A.SOCX.PT_B1GQ.ES10._T.TP01._Z",
+            "OECD_PENSION_SPEND",
+            "Pension spending % GDP (OECD)",
+            "fiscal",
+        ),
+        # I+D total (% PIB)
+        (
+            "OECD.STI.STP,DSD_MSTI@DF_MSTI,1.3",
+            ".A.G.PT_B1GQ._Z._Z",
+            "OECD_RD_GDP",
+            "R&D expenditure % GDP (OECD)",
+            "innovation",
+        ),
+        # Gini (desigualdad ingreso)
+        (
+            "OECD.WISE.INE,DSD_WISE_IDD@DF_IDD,1.0",
+            ".A.INC_DISP_GINI._Z.0_TO_1._T.METH2012.D_CUR._Z",
+            "OECD_GINI",
+            "Gini coefficient (OECD)",
+            "inequality",
+        ),
     ]
 
 
@@ -331,6 +388,27 @@ class BISFetcher(BaseSDMXFetcher):
             "M.N.B.",
             "BIS_REER",
             "Real effective exchange rate",
+            "financial",
+        ),
+        (
+            "BIS/WS_SPP/1.0",
+            "Q..R.771",
+            "BIS_HOUSE_PRICE",
+            "Residential property prices YoY%",
+            "housing",
+        ),
+        (
+            "BIS/WS_TC/2.0",
+            "Q..P.A.M.770.A",
+            "BIS_CREDIT_GDP",
+            "Credit to private sector % GDP",
+            "financial",
+        ),
+        (
+            "BIS/WS_DSR/1.0",
+            "Q..P",
+            "BIS_DEBT_SERVICE",
+            "Private sector debt service ratio",
             "financial",
         ),
     ]

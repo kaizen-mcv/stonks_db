@@ -12,7 +12,7 @@ financieros** y **economía mundial** en un modelo **medallion**
 | [SCHEMA_RELATIONS.md](SCHEMA_RELATIONS.md) | **Mapa de relaciones**: diagrama ER, esquemas y claves foráneas. |
 | [DATA_DICTIONARY.md](DATA_DICTIONARY.md) | **Diccionario de datos**: cada tabla y columna (tipo, nulo, PK/FK, nº de filas). Generado desde el esquema real. |
 | [TUTORIALS.md](TUTORIALS.md) | **Tutoriales**: backtests PIT, panel mundial, factores de inversión. |
-| [JOIN_PATTERNS.md](JOIN_PATTERNS.md) | **10 patrones de JOIN** entre esquemas con SQL listo para copiar. |
+| [JOIN_PATTERNS.md](JOIN_PATTERNS.md) | **15 patrones de JOIN** entre esquemas con SQL listo para copiar. |
 | [FRESHNESS_SLA.md](FRESHNESS_SLA.md) | **SLAs de frescura**: lag esperado de cada dato por cadencia. |
 | [QUERY_OPTIMIZATION.md](QUERY_OPTIMIZATION.md) | **Rendimiento**: tips para consultar las tablas grandes (31M+ filas). |
 | [../README.md](../README.md) | Visión general, instalación, uso y matriz de cobertura. |

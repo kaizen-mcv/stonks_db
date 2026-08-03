@@ -358,6 +358,28 @@ FRED_SERIES = [
         "fi",
         "monthly",
     ),
+    # Money market
+    (
+        "SOFR",
+        "SOFR",
+        "Secured Overnight Financing Rate",
+        "fi",
+        "daily",
+    ),
+    (
+        "FED_FUNDS_DAILY",
+        "DFF",
+        "Federal Funds Effective Rate (daily)",
+        "fi",
+        "daily",
+    ),
+    (
+        "TED_SPREAD",
+        "TEDRATE",
+        "TED Spread (disc. 2021)",
+        "fi",
+        "daily",
+    ),
     # Forex USD pairs (complementa ECB EUR-only)
     (
         "USD_EUR",
@@ -414,6 +436,28 @@ FRED_SERIES = [
         "USD/MXN Exchange Rate",
         "macro",
         "daily",
+    ),
+    # Eurozona vía OECD/FRED
+    (
+        "EURIBOR_3M",
+        "IR3TIB01EZM156N",
+        "3-Month EURIBOR (Eurozone)",
+        "fi",
+        "monthly",
+    ),
+    (
+        "ESTR_RATE",
+        "ECBESTRVOLWGTTRMDMNRT",
+        "Euro Short-Term Rate (daily)",
+        "fi",
+        "daily",
+    ),
+    (
+        "EZ_10Y",
+        "IRLTLT01EZM156N",
+        "Eurozone 10-Year Bond Yield",
+        "fi",
+        "monthly",
     ),
 ]
 

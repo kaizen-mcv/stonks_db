@@ -16,6 +16,7 @@ from sqlalchemy import (
     Text,
     UniqueConstraint,
 )
+from sqlalchemy.dialects.postgresql import TIMESTAMP
 from sqlalchemy.orm import Mapped, mapped_column
 
 from stonks.db import Base
@@ -95,6 +96,56 @@ class PriceDaily(Base):
     source_id: Mapped[int | None] = mapped_column(
         Integer, ForeignKey("meta.data_source.id")
     )
+
+
+class PriceIntraday(Base):
+    """Precio intraday OHLCV particionado por mes.
+
+    interval: '1m', '5m', '1h'. Particionado por ts.
+    PK compuesta (company_id, ts, interval) porque
+    PG requiere que la partition key esté en todos
+    los constraints únicos.
+    """
+
+    __tablename__ = "price_intraday"
+    __table_args__ = (
+        Index(
+            "ix_eq_intra_interval_ts",
+            "interval",
+            "ts",
+        ),
+        {
+            "schema": "equity",
+            "postgresql_partition_by": "RANGE (ts)",
+        },
+    )
+
+    company_id: Mapped[int] = mapped_column(
+        Integer,
+        primary_key=True,
+    )
+    ts: Mapped[datetime] = mapped_column(
+        TIMESTAMP(timezone=True),
+        primary_key=True,
+    )
+    interval: Mapped[str] = mapped_column(
+        String(3),
+        primary_key=True,
+    )
+    open: Mapped[float | None] = mapped_column(
+        Numeric(14, 4),
+    )
+    high: Mapped[float | None] = mapped_column(
+        Numeric(14, 4),
+    )
+    low: Mapped[float | None] = mapped_column(
+        Numeric(14, 4),
+    )
+    close: Mapped[float] = mapped_column(
+        Numeric(14, 4),
+        nullable=False,
+    )
+    volume: Mapped[int | None] = mapped_column(BigInteger)
 
 
 class IncomeStatement(Base):

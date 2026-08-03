@@ -34,6 +34,7 @@ yfinance:
     - commodity
     - forex
     - fund
+    - crypto
 
 ecb:
   enabled: true
@@ -60,7 +61,7 @@ fred:
     - alt
 
 coingecko:
-  enabled: false
+  enabled: true
   display_name: "CoinGecko"
   base_url: "https://api.coingecko.com/api/v3"
   api_key_env: "STONKS_COINGECKO_KEY"
@@ -69,16 +70,6 @@ coingecko:
   domains:
     - crypto
 
-alpha_vantage:
-  enabled: false
-  display_name: "Alpha Vantage"
-  base_url: "https://www.alphavantage.co/query"
-  api_key_env: "STONKS_ALPHA_VANTAGE_KEY"
-  rate_limit: 0.08
-  daily_limit: 25
-  domains:
-    - equity
-
 sec_edgar:
   enabled: true
   display_name: "SEC EDGAR"
@@ -86,9 +77,9 @@ sec_edgar:
   api_key_env: null
   rate_limit: 10.0
   daily_limit: null
-  user_agent: "stonks marc@localhost"
   domains:
-    - alt
+    - equity
+    - bronze
 
 oecd:
   enabled: true
@@ -186,6 +177,156 @@ ilostat:
   enabled: true
   display_name: "ILOSTAT (Organización Internacional del Trabajo)"
   base_url: "https://sdmx.ilo.org/rest"
+  api_key_env: null
+  rate_limit: 1.0
+  daily_limit: null
+  domains:
+    - macro
+
+eia:
+  enabled: true
+  display_name: "US Energy Information Administration"
+  base_url: "https://api.eia.gov/v2"
+  api_key_env: "STONKS_EIA_KEY"
+  rate_limit: 1.0
+  daily_limit: null
+  domains:
+    - energy
+
+pwt:
+  enabled: true
+  display_name: "Penn World Table 11.0"
+  base_url: "https://dataverse.nl/api/access"
+  api_key_env: null
+  rate_limit: 0
+  daily_limit: null
+  domains:
+    - macro
+
+sipri:
+  enabled: true
+  display_name: "SIPRI Military Expenditure Database"
+  base_url: "https://milex.sipri.org"
+  api_key_env: null
+  rate_limit: 1.0
+  daily_limit: null
+  domains:
+    - macro
+
+undp:
+  enabled: true
+  display_name: "UNDP Human Development Report"
+  base_url: "https://hdr.undp.org"
+  api_key_env: null
+  rate_limit: 0
+  daily_limit: null
+  domains:
+    - macro
+
+heritage:
+  enabled: true
+  display_name: "Heritage Foundation Economic Freedom"
+  base_url: "https://www.heritage.org/index"
+  api_key_env: null
+  rate_limit: 1.0
+  daily_limit: null
+  domains:
+    - macro
+
+ndgain:
+  enabled: true
+  display_name: "ND-GAIN Country Index"
+  base_url: "https://gain.nd.edu"
+  api_key_env: null
+  rate_limit: 0
+  daily_limit: null
+  domains:
+    - macro
+
+fsi:
+  enabled: true
+  display_name: "Fund for Peace Fragile States Index"
+  base_url: "https://fragilestatesindex.org"
+  api_key_env: null
+  rate_limit: 1.0
+  daily_limit: null
+  domains:
+    - macro
+
+vdem:
+  enabled: true
+  display_name: "V-Dem Varieties of Democracy"
+  base_url: "https://v-dem.net"
+  api_key_env: null
+  rate_limit: 0
+  daily_limit: null
+  domains:
+    - macro
+
+un_population:
+  enabled: true
+  display_name: "UN DESA World Population Prospects"
+  base_url: "https://population.un.org"
+  api_key_env: null
+  rate_limit: 1.0
+  daily_limit: null
+  domains:
+    - macro
+
+unctad:
+  enabled: true
+  display_name: "UNCTAD FDI & LSCI"
+  base_url: "https://unctadstat.unctad.org"
+  api_key_env: null
+  rate_limit: 1.0
+  daily_limit: null
+  domains:
+    - macro
+
+wipo:
+  enabled: true
+  display_name: "WIPO IP Statistics"
+  base_url: "https://www3.wipo.int/ipstats"
+  api_key_env: null
+  rate_limit: 1.0
+  daily_limit: null
+  domains:
+    - macro
+
+unesco:
+  enabled: true
+  display_name: "UNESCO Institute for Statistics"
+  base_url: "http://data.uis.unesco.org"
+  api_key_env: null
+  rate_limit: 1.0
+  daily_limit: null
+  domains:
+    - macro
+
+imf_dots:
+  enabled: true
+  display_name: "IMF Direction of Trade Statistics"
+  base_url: "https://api.imf.org/external/sdmx/3.0"
+  api_key_env: null
+  rate_limit: 3.0
+  daily_limit: null
+  domains:
+    - trade
+
+imf_gfs:
+  enabled: true
+  display_name: "IMF Government Finance Statistics"
+  base_url: "https://api.imf.org/external/sdmx/3.0"
+  api_key_env: null
+  rate_limit: 3.0
+  daily_limit: null
+  domains:
+    - macro
+
+edgar:
+  enabled: true
+  display_name: "EDGAR JRC Emissions Database"
+  base_url: "https://edgar.jrc.ec.europa.eu"
   api_key_env: null
   rate_limit: 1.0
   daily_limit: null

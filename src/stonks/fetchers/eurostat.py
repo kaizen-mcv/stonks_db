@@ -58,6 +58,120 @@ class EurostatFetcher(BaseSDMXFetcher):
             "Retail trade volume index (Eurostat)",
             "consumption",
         ),
+        # Gobierno: déficit/superávit (% PIB, anual)
+        (
+            "gov_10dd_edpt1",
+            {
+                "unit": "PC_GDP",
+                "sector": "S13",
+                "na_item": "B9",
+            },
+            "ESTAT_GOV_DEFICIT",
+            "Gov. net lending/borrowing % GDP",
+            "fiscal",
+        ),
+        # Gobierno: gasto total (% PIB, anual)
+        (
+            "gov_10a_exp",
+            {
+                "unit": "PC_GDP",
+                "cofog99": "TOTAL",
+                "sector": "S13",
+                "na_item": "TE",
+            },
+            "ESTAT_GOV_EXPENDITURE",
+            "Gov. total expenditure % GDP",
+            "fiscal",
+        ),
+        # Gobierno: ingresos totales (% PIB, anual)
+        (
+            "gov_10a_main",
+            {
+                "unit": "PC_GDP",
+                "sector": "S13",
+                "na_item": "TR",
+            },
+            "ESTAT_GOV_REVENUE",
+            "Gov. total revenue % GDP",
+            "fiscal",
+        ),
+        # Turismo: noches en alojamiento (anual)
+        (
+            "tour_occ_ninat",
+            {"unit": "NR", "c_resid": "TOTAL"},
+            "ESTAT_TOURISM_NIGHTS",
+            "Tourism nights in accommodation",
+            "tourism",
+        ),
+        # Economía digital: uso internet (% individuos)
+        (
+            "isoc_ci_ifp_iu",
+            {
+                "unit": "PC_IND",
+                "ind_type": "IND_TOTAL",
+                "indic_is": "I_IU3",
+            },
+            "ESTAT_INTERNET_USE",
+            "Internet use last 3 months (%)",
+            "digital",
+        ),
+        # E-commerce (% individuos, 2020+)
+        (
+            "isoc_ec_ib20",
+            {
+                "unit": "PC_IND",
+                "ind_type": "IND_TOTAL",
+                "indic_is": "I_BUY3",
+            },
+            "ESTAT_ECOMMERCE",
+            "E-commerce last 3 months (%)",
+            "digital",
+        ),
+        # Precios vivienda (trimestral, 2015=100)
+        (
+            "prc_hpi_q",
+            {"unit": "I15_Q", "purchase": "TOTAL"},
+            "ESTAT_HOUSE_PRICE",
+            "House price index (2015=100, Q)",
+            "housing",
+        ),
+        # Producción construcción (mensual, 2015=100)
+        (
+            "sts_copr_m",
+            {
+                "unit": "I15",
+                "s_adj": "SCA",
+                "nace_r2": "F",
+            },
+            "ESTAT_CONSTRUCTION",
+            "Construction production index",
+            "production",
+        ),
+        # Precios al productor (mensual, 2015=100)
+        (
+            "sts_inppd_m",
+            {
+                "unit": "I15",
+                "s_adj": "NSA",
+                "nace_r2": "B-D",
+            },
+            "ESTAT_PPI",
+            "Producer price index (domestic)",
+            "prices",
+        ),
+        # Coste laboral (trimestral, 2020=100)
+        (
+            "lc_lci_r2_q",
+            {
+                "unit": "I20",
+                "s_adj": "SCA",
+                "lcstruct": "D1_D4_MD5",
+                "nace_r2": "B-S",
+            },
+            "ESTAT_LABOUR_COST",
+            "Labour cost index (2020=100, Q)",
+            "labor",
+        ),
     ]
 
     def fetch(self) -> dict:

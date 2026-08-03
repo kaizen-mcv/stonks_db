@@ -49,6 +49,14 @@ index_app = typer.Typer(
     help="Índices de mercado",
     no_args_is_help=True,
 )
+deriv_app = typer.Typer(
+    help="Derivados (volatilidad, futuros)",
+    no_args_is_help=True,
+)
+intraday_app = typer.Typer(
+    help="Datos intraday (1m/5m/1h)",
+    no_args_is_help=True,
+)
 app.add_typer(macro_app, name="macro")
 app.add_typer(equity_app, name="equity")
 app.add_typer(fi_app, name="fi")
@@ -59,6 +67,8 @@ app.add_typer(fund_app, name="fund")
 app.add_typer(country_app, name="country")
 app.add_typer(alt_app, name="alt")
 app.add_typer(index_app, name="index")
+app.add_typer(deriv_app, name="deriv")
+app.add_typer(intraday_app, name="intraday")
 
 console = Console()
 
@@ -254,6 +264,82 @@ def indicators(
             str(r[5].year if r[5] else "-"),
         )
     console.print(table)
+
+
+@app.command()
+def audit() -> None:
+    """Auditoría completa de calidad de datos."""
+    from stonks.logger import setup_logger
+    from stonks.quality import (
+        check_indicator_emptiness,
+        check_mart_column_coverage,
+        check_temporal_gaps,
+    )
+
+    setup_logger("stonks.cli")
+
+    # Indicadores fantasma
+    console.print("\n[bold]1. Indicadores fantasma[/bold]")
+    fantasma = check_indicator_emptiness()
+    t1 = Table(title="Sin data_points")
+    t1.add_column("Categoría", style="cyan")
+    t1.add_column("Cantidad", justify="right")
+    for cat, n in sorted(
+        fantasma["por_categoria"].items(),
+        key=lambda x: -x[1],
+    ):
+        t1.add_row(cat, str(n))
+    t1.add_row(
+        "[bold]TOTAL[/bold]",
+        f"[bold]{fantasma['total_fantasma']}[/bold]",
+    )
+    console.print(t1)
+
+    # Cobertura mart
+    console.print("\n[bold]2. Cobertura mart_country_year[/bold]")
+    cob = check_mart_column_coverage()
+    t2 = Table(title="Columnas con baja cobertura (<50 países)")
+    t2.add_column("Columna", style="cyan")
+    t2.add_column("Países", justify="right")
+    t2.add_column("%", justify="right")
+    bajas = {k: v for k, v in cob.items() if v["countries"] < 50}
+    for col, info in sorted(
+        bajas.items(),
+        key=lambda x: x[1]["countries"],
+    ):
+        t2.add_row(
+            col,
+            str(info["countries"]),
+            f"{info['pct']}%",
+        )
+    if bajas:
+        console.print(t2)
+    else:
+        console.print("[green]Todas las columnas ≥50 países[/green]")
+    console.print(
+        f"  Total columnas: {len(cob)}, baja cobertura: {len(bajas)}"
+    )
+
+    # Huecos temporales
+    console.print("\n[bold]3. Huecos temporales (>2 años)[/bold]")
+    gaps = check_temporal_gaps()
+    for code, items in gaps.items():
+        if items:
+            t3 = Table(title=code)
+            t3.add_column("País", style="cyan")
+            t3.add_column("Año", justify="right")
+            t3.add_column("Gap", justify="right")
+            for g in items[:10]:
+                t3.add_row(
+                    g["country"],
+                    str(g["year"]),
+                    str(g["gap"]),
+                )
+            console.print(t3)
+        else:
+            console.print(f"  {code}: [green]sin huecos[/green]")
+
+    console.print("\n[green]✓ Auditoría completada[/green]")
 
 
 @app.command()
@@ -955,6 +1041,37 @@ def forex_list() -> None:
     console.print(table)
 
 
+@forex_app.command("fetch-yf")
+def forex_fetch_yf(
+    pair: str | None = typer.Option(
+        None,
+        "--pair",
+        "-p",
+        help="Par específico (ej: USDJPY)",
+    ),
+    period: str = typer.Option(
+        "max",
+        "--period",
+        help="Periodo yfinance",
+    ),
+) -> None:
+    """Descargar forex OHLC via yfinance (USD/XXX + crosses)."""
+    from stonks.fetchers.yfinance_forex import (
+        YFinanceForexFetcher,
+    )
+    from stonks.logger import setup_logger
+
+    setup_logger("stonks.fetch")
+
+    label = pair or "todos (25 pares)"
+    console.print(
+        f"Descargando forex yfinance [cyan]{label}[/cyan] period={period}..."
+    )
+    fetcher = YFinanceForexFetcher()
+    stats = fetcher.fetch(pair_code=pair, period=period)
+    console.print(f"  Puntos: {stats['puntos']}, Errores: {stats['errores']}")
+
+
 # ── Comandos crypto ──────────────────────────────
 
 
@@ -986,12 +1103,50 @@ def crypto_fetch(
     if n_seed:
         console.print(f"  Coins registradas: {n_seed}")
 
-    label = coin or "todas (top 30)"
+    label = coin or "todas (top 100)"
     console.print(f"Descargando crypto [cyan]{label}[/cyan]...")
     stats = fetcher.fetch_prices(coin_id=coin, days=days)
     console.print(
         f"  Insertados: {stats['inserted']}, Errores: {stats['errors']}"
     )
+
+
+@crypto_app.command("fetch-yf")
+def crypto_fetch_yf(
+    symbol: str | None = typer.Option(
+        None,
+        "--symbol",
+        "-s",
+        help="Símbolo (ej: BTC)",
+    ),
+    period: str = typer.Option(
+        "max",
+        "--period",
+        "-p",
+        help="Periodo yfinance (max, 5y, 1y...)",
+    ),
+) -> None:
+    """Descargar OHLCV crypto via yfinance (hist. completo)."""
+    from stonks.fetchers.coingecko import CoinGeckoFetcher
+    from stonks.fetchers.crypto_yfinance import (
+        CryptoYFinanceFetcher,
+    )
+    from stonks.logger import setup_logger
+
+    setup_logger("stonks.fetch")
+
+    cg = CoinGeckoFetcher()
+    n_seed = cg.seed_coins()
+    if n_seed:
+        console.print(f"  Coins registradas: {n_seed}")
+
+    label = symbol or "todas"
+    console.print(
+        f"Descargando crypto yfinance [cyan]{label}[/cyan] period={period}..."
+    )
+    fetcher = CryptoYFinanceFetcher()
+    stats = fetcher.fetch(symbol=symbol, period=period)
+    console.print(f"  Puntos: {stats['puntos']}, Errores: {stats['errores']}")
 
 
 # ── Comandos fund ────────────────────────────────
@@ -1174,3 +1329,282 @@ def index_list() -> None:
 
     session.close()
     console.print(table)
+
+
+# ── Comandos deriv ──────────────────────────────
+
+
+@deriv_app.command("vol-fetch")
+def deriv_vol_fetch(
+    code: str | None = typer.Option(
+        None,
+        "--code",
+        "-c",
+        help="Código índice (ej: VIX, VVIX)",
+    ),
+    period: str = typer.Option(
+        "5y",
+        "--period",
+        "-p",
+    ),
+) -> None:
+    """Descargar índices de volatilidad."""
+    from stonks.fetchers.volatility import (
+        VolatilityFetcher,
+    )
+    from stonks.logger import setup_logger
+
+    setup_logger("stonks.fetch")
+
+    fetcher = VolatilityFetcher()
+    n_seed = fetcher.seed_indices()
+    if n_seed:
+        console.print(f"  Índices vol registrados: {n_seed}")
+
+    label = code or "todos (12 índices)"
+    console.print(f"Descargando volatilidad [cyan]{label}[/cyan]...")
+    stats = fetcher.fetch_prices(code=code, period=period)
+    console.print(
+        f"  Insertados: {stats['inserted']}, Errores: {stats['errors']}"
+    )
+
+
+@deriv_app.command("futures-fetch")
+def deriv_futures_fetch(
+    code: str | None = typer.Option(
+        None,
+        "--code",
+        "-c",
+        help="Código contrato (ej: ES, NQ, ZN)",
+    ),
+    period: str = typer.Option(
+        "5y",
+        "--period",
+        "-p",
+    ),
+) -> None:
+    """Descargar precios de futuros."""
+    from stonks.fetchers.index_futures import (
+        IndexFuturesFetcher,
+    )
+    from stonks.logger import setup_logger
+
+    setup_logger("stonks.fetch")
+
+    fetcher = IndexFuturesFetcher()
+    n_seed = fetcher.seed_contracts()
+    if n_seed:
+        console.print(f"  Contratos registrados: {n_seed}")
+
+    label = code or "todos (16 contratos)"
+    console.print(f"Descargando futuros [cyan]{label}[/cyan]...")
+    stats = fetcher.fetch_prices(code=code, period=period)
+    console.print(
+        f"  Insertados: {stats['inserted']}, Errores: {stats['errors']}"
+    )
+
+
+@deriv_app.command("list")
+def deriv_list() -> None:
+    """Listar volatilidad y futuros en la BD."""
+    from stonks.db import get_session
+    from stonks.models.deriv import (
+        FuturesContract,
+        VolatilityIndex,
+    )
+
+    session = get_session()
+
+    vol_indices = (
+        session.query(VolatilityIndex).order_by(VolatilityIndex.code).all()
+    )
+    table = Table(title="Índices de Volatilidad")
+    table.add_column("Código", style="cyan")
+    table.add_column("Nombre")
+    table.add_column("Subyacente")
+    table.add_column("Ticker YF")
+    for v in vol_indices:
+        table.add_row(
+            v.code,
+            v.name,
+            v.underlying or "-",
+            v.yfinance_ticker or "-",
+        )
+    console.print(table)
+
+    contracts = (
+        session.query(FuturesContract)
+        .order_by(
+            FuturesContract.category,
+            FuturesContract.code,
+        )
+        .all()
+    )
+    table2 = Table(title="Contratos de Futuros")
+    table2.add_column("Código", style="cyan")
+    table2.add_column("Nombre")
+    table2.add_column("Categoría")
+    table2.add_column("Ticker YF")
+    for c in contracts:
+        table2.add_row(
+            c.code,
+            c.name,
+            c.category or "-",
+            c.yfinance_ticker or "-",
+        )
+    console.print(table2)
+
+    session.close()
+
+
+# ── Comandos intraday ───────────────────────────
+
+
+@intraday_app.command("fetch")
+def intraday_fetch(
+    domain: str = typer.Option(
+        "equity",
+        "--domain",
+        "-d",
+        help="Dominio: equity, crypto, forex, commodity",
+    ),
+    interval: str = typer.Option(
+        "1h",
+        "--interval",
+        "-i",
+        help="Intervalo: 1m, 5m, 1h",
+    ),
+    tickers: str | None = typer.Option(
+        None,
+        "--tickers",
+        "-t",
+        help="Tickers separados por coma (equity)",
+    ),
+    top: int | None = typer.Option(
+        None,
+        "--top",
+        "-n",
+        help="Top N tickers por volumen (equity)",
+    ),
+) -> None:
+    """Descargar datos intraday."""
+    from stonks.logger import setup_logger
+
+    setup_logger("stonks.fetch")
+
+    if domain == "equity":
+        from sqlalchemy import text
+
+        from stonks.db import engine
+        from stonks.fetchers.intraday import (
+            IntradayFetcher,
+        )
+
+        if tickers:
+            tk_list = [t.strip() for t in tickers.split(",")]
+        elif top:
+            with engine.connect() as conn:
+                rows = conn.execute(
+                    text(
+                        "SELECT c.ticker FROM "
+                        "equity.company c "
+                        "JOIN equity.price_daily p "
+                        "  ON p.company_id = c.id "
+                        "GROUP BY c.ticker "
+                        "ORDER BY AVG(p.volume) DESC "
+                        "LIMIT :n"
+                    ),
+                    {"n": top},
+                ).fetchall()
+            tk_list = [r[0] for r in rows]
+        else:
+            with engine.connect() as conn:
+                rows = conn.execute(
+                    text("SELECT ticker FROM equity.company")
+                ).fetchall()
+            tk_list = [r[0] for r in rows]
+
+        console.print(
+            f"Intraday equity {interval}: "
+            f"[cyan]{len(tk_list)} tickers[/cyan]..."
+        )
+        fetcher = IntradayFetcher()
+        stats = fetcher.fetch(tickers=tk_list, interval=interval)
+        console.print(
+            f"  Fetched: {stats['fetched']}, Upserted: {stats['upserted']}"
+        )
+    else:
+        from stonks.fetchers.intraday_multi import (
+            IntradayMultiFetcher,
+        )
+
+        tk_list_multi = None
+        if tickers:
+            tk_list_multi = [t.strip() for t in tickers.split(",")]
+        console.print(
+            f"Intraday {domain} {interval}: "
+            f"[cyan]{'custom' if tk_list_multi else 'todos'}[/cyan]..."
+        )
+        fetcher_m = IntradayMultiFetcher()
+        stats = fetcher_m.fetch(
+            domain=domain,
+            interval=interval,
+            tickers=tk_list_multi,
+        )
+        console.print(
+            f"  Fetched: {stats['fetched']}, Upserted: {stats['upserted']}"
+        )
+
+
+@intraday_app.command("cleanup")
+def intraday_cleanup() -> None:
+    """Eliminar datos intraday expirados."""
+    from stonks.db import engine
+    from stonks.logger import setup_logger
+    from stonks.utils.partitions import (
+        cleanup_intraday,
+        drop_empty_partitions,
+    )
+
+    setup_logger("stonks.partitions")
+
+    console.print("Limpiando datos intraday expirados...")
+    stats = cleanup_intraday(engine)
+    for k, v in stats.items():
+        if v > 0:
+            console.print(f"  {k}: {v:,}")
+
+    console.print("Eliminando particiones vacías...")
+    dropped = drop_empty_partitions(engine)
+    if dropped:
+        for p in dropped:
+            console.print(f"  Eliminada: {p}")
+    else:
+        console.print("  Sin particiones vacías")
+
+    console.print("[green]✓ Cleanup completado[/green]")
+
+
+@intraday_app.command("partitions")
+def intraday_partitions(
+    months_ahead: int = typer.Option(3, "--ahead", help="Meses a crear"),
+) -> None:
+    """Crear particiones mensuales intraday."""
+    from stonks.db import engine
+    from stonks.logger import setup_logger
+    from stonks.utils.partitions import (
+        ensure_partitions,
+    )
+
+    setup_logger("stonks.partitions")
+
+    console.print("Asegurando particiones intraday...")
+    created = ensure_partitions(engine, months_ahead=months_ahead)
+    if created:
+        console.print(f"  [green]{len(created)} particiones creadas[/green]")
+        for p in created[:10]:
+            console.print(f"    {p}")
+        if len(created) > 10:
+            console.print(f"    ... y {len(created) - 10} más")
+    else:
+        console.print("  Todas las particiones ya existen")

@@ -85,7 +85,7 @@ Sectores económicos GICS (Tecnología, Salud...).
 ### Esquema `meta`
 _Metadatos y auditoría: fuentes, ejecuciones, calidad._
 
-#### `meta.data_quality` · tabla · ~42 filas
+#### `meta.data_quality` · tabla · ~51 filas
 Nota de calidad por dominio: cuántos países cubrimos y cómo de reciente es el dato.
 
 | Columna | Qué es | Tipo | Nulo | Clave |
@@ -114,7 +114,7 @@ Las fuentes de donde sacamos los datos (IMF, yfinance, SEC...).
 | `is_enabled` | Si la fuente está activa. | boolean | no |  |
 | `notes` | Notas. | text | sí |  |
 
-#### `meta.fetch_run` · tabla · ~82,734 filas
+#### `meta.fetch_run` · tabla · ~184,009 filas
 Un registro por cada descarga hecha: cuándo, qué fuente, cuántos datos y si hubo errores. Es el 'diario' de descargas.
 
 | Columna | Qué es | Tipo | Nulo | Clave |
@@ -132,7 +132,7 @@ Un registro por cada descarga hecha: cuándo, qué fuente, cuántos datos y si h
 | `params` | Parámetros usados en la ejecución. | jsonb | sí |  |
 | `error_log` | Errores registrados, si los hubo. | jsonb | sí |  |
 
-#### `meta.transform_run` · tabla · ~84 filas
+#### `meta.transform_run` · tabla · ~147 filas
 Un registro por cada vez que transformamos datos crudos en datos limpios. El 'diario' de transformaciones.
 
 | Columna | Qué es | Tipo | Nulo | Clave |
@@ -154,7 +154,7 @@ Un registro por cada vez que transformamos datos crudos en datos limpios. El 'di
 ### Esquema `equity`
 _Renta variable: empresas, precios, fundamentales y 360°._
 
-#### `equity.analyst_estimate` · tabla · ~0 filas
+#### `equity.analyst_estimate` · tabla · ~141,496 filas
 Previsiones de los analistas sobre beneficios e ingresos futuros.
 
 | Columna | Qué es | Tipo | Nulo | Clave |
@@ -171,7 +171,7 @@ Previsiones de los analistas sobre beneficios e ingresos futuros.
 | `num_analysts` | Nº de analistas. | smallint | sí |  |
 | `source_id` | Fuente de la que procede el dato. | integer | sí | FK → meta.data_source.id |
 
-#### `equity.balance_sheet` · tabla · ~11,119 filas
+#### `equity.balance_sheet` · tabla · ~20,752 filas
 Balance anual (activos, deudas, patrimonio) de cada empresa.
 
 | Columna | Qué es | Tipo | Nulo | Clave |
@@ -200,7 +200,7 @@ Balance anual (activos, deudas, patrimonio) de cada empresa.
 | `source_id` | Fuente de la que procede el dato. | integer | sí | FK → meta.data_source.id |
 | `fetched_at` | Cuándo se descargó. | timestamp without time zone | no |  |
 
-#### `equity.cash_flow` · tabla · ~11,214 filas
+#### `equity.cash_flow` · tabla · ~21,092 filas
 Flujos de caja anuales de cada empresa.
 
 | Columna | Qué es | Tipo | Nulo | Clave |
@@ -247,7 +247,7 @@ Cada empresa cotizada que seguimos.
 | `employees` | Número de empleados. | integer | sí |  |
 | `last_updated` | Última actualización. | timestamp without time zone | no |  |
 
-#### `equity.dividend` · tabla · ~134,600 filas
+#### `equity.dividend` · tabla · ~187,621 filas
 Dividendos pagados por cada acción.
 
 | Columna | Qué es | Tipo | Nulo | Clave |
@@ -261,7 +261,7 @@ Dividendos pagados por cada acción.
 | `currency_code` | Moneda del importe. | character varying(3) | sí |  |
 | `dividend_type` | Tipo de dividendo. | character varying(20) | sí |  |
 
-#### `equity.earnings_date` · tabla · ~100,804 filas
+#### `equity.earnings_date` · tabla · ~191,208 filas
 Fechas de presentación de resultados, con lo esperado vs lo reportado.
 
 | Columna | Qué es | Tipo | Nulo | Clave |
@@ -273,7 +273,7 @@ Fechas de presentación de resultados, con lo esperado vs lo reportado.
 | `reported_eps` | Beneficio por acción real. | numeric(12,4) | sí |  |
 | `surprise_pct` | Sorpresa: desviación del real vs lo esperado (%). | numeric(10,4) | sí |  |
 
-#### `equity.earnings_revision` · tabla · ~0 filas
+#### `equity.earnings_revision` · tabla · ~141,496 filas
 Cómo van cambiando esas previsiones (si los analistas revisan al alza o a la baja).
 
 | Columna | Qué es | Tipo | Nulo | Clave |
@@ -289,7 +289,7 @@ Cómo van cambiando esas previsiones (si los analistas revisan al alza o a la ba
 | `down_last_30d` | Revisiones a la baja (30 días). | smallint | sí |  |
 | `source_id` | Fuente de la que procede el dato. | integer | sí | FK → meta.data_source.id |
 
-#### `equity.holder` · tabla · ~34,656 filas
+#### `equity.holder` · tabla · ~71,525 filas
 Quién posee cada empresa: grandes fondos e instituciones, con su porcentaje.
 
 | Columna | Qué es | Tipo | Nulo | Clave |
@@ -304,7 +304,7 @@ Quién posee cada empresa: grandes fondos e instituciones, con su porcentaje.
 | `shares` | Nº de acciones que posee. | bigint | sí |  |
 | `value_usd` | Valor de la participación (USD). | numeric(20,2) | sí |  |
 
-#### `equity.income_statement` · tabla · ~11,053 filas
+#### `equity.income_statement` · tabla · ~20,669 filas
 Cuenta de resultados anual (ingresos, beneficio...) de cada empresa.
 
 | Columna | Qué es | Tipo | Nulo | Clave |
@@ -332,7 +332,7 @@ Cuenta de resultados anual (ingresos, beneficio...) de cada empresa.
 | `source_id` | Fuente de la que procede el dato. | integer | sí | FK → meta.data_source.id |
 | `fetched_at` | Cuándo se descargó. | timestamp without time zone | no |  |
 
-#### `equity.index_constituent_current` · tabla · ~503 filas
+#### `equity.index_constituent_current` · tabla · ~507 filas
 Qué empresas componen hoy cada índice.
 
 | Columna | Qué es | Tipo | Nulo | Clave |
@@ -344,7 +344,7 @@ Qué empresas componen hoy cada índice.
 | `as_of_date` | Fecha de referencia del cálculo. | date | no |  |
 | `source_id` | Fuente de la que procede el dato. | integer | sí | FK → meta.data_source.id |
 
-#### `equity.index_price` · tabla · ~189,345 filas
+#### `equity.index_price` · tabla · ~248,106 filas
 Valor de cierre diario de cada índice.
 
 | Columna | Qué es | Tipo | Nulo | Clave |
@@ -358,7 +358,7 @@ Valor de cierre diario de cada índice.
 | `close` | Precio de cierre. | numeric(14,4) | no |  |
 | `volume` | Volumen negociado. | bigint | sí |  |
 
-#### `equity.insider_transaction` · tabla · ~121,912 filas
+#### `equity.insider_transaction` · tabla · ~203,387 filas
 Compras y ventas de acciones por parte de directivos e insiders de la empresa.
 
 | Columna | Qué es | Tipo | Nulo | Clave |
@@ -385,7 +385,7 @@ Compras y ventas de acciones por parte de directivos e insiders de la empresa.
 | `currency_code` | Moneda del importe. | character varying(3) | sí |  |
 | `description` | Descripción libre. | text | sí |  |
 
-#### `equity.price_daily` · tabla · ~9,332,877 filas
+#### `equity.price_daily` · tabla · ~9,477,965 filas
 El precio de cierre diario de cada acción (y máximo, mínimo, volumen...).
 
 | Columna | Qué es | Tipo | Nulo | Clave |
@@ -401,7 +401,7 @@ El precio de cierre diario de cada acción (y máximo, mínimo, volumen...).
 | `volume` | Volumen negociado. | bigint | sí |  |
 | `source_id` | Fuente de la que procede el dato. | integer | sí | FK → meta.data_source.id |
 
-#### `equity.ratios_mv` · materializada · ~2,412 filas
+#### `equity.ratios_mv` · materializada · ~9,928 filas
 Ratios de valoración calculados (PER, ROE...) — foto actual.
 
 | Columna | Qué es | Tipo | Nulo | Clave |
@@ -439,7 +439,7 @@ Ratios de valoración calculados (PER, ROE...) — foto actual.
 | `free_cash_flow` | Flujo de caja libre. | numeric(18,2) | sí |  |
 | `operating_cash_flow` | Flujo de caja de las operaciones. | numeric(18,2) | sí |  |
 
-#### `equity.recommendation_trend` · tabla · ~8,073 filas
+#### `equity.recommendation_trend` · tabla · ~12,300 filas
 Resumen de cuántos analistas recomiendan comprar, mantener o vender.
 
 | Columna | Qué es | Tipo | Nulo | Clave |
@@ -454,7 +454,7 @@ Resumen de cuántos analistas recomiendan comprar, mantener o vender.
 | `sell` | Analistas: vender. | smallint | sí |  |
 | `strong_sell` | Analistas: vender fuerte. | smallint | sí |  |
 
-#### `equity.shares_history` · tabla · ~1,287,132 filas
+#### `equity.shares_history` · tabla · ~3,160,811 filas
 Número de acciones en circulación de la empresa a lo largo del tiempo.
 
 | Columna | Qué es | Tipo | Nulo | Clave |
@@ -464,7 +464,7 @@ Número de acciones en circulación de la empresa a lo largo del tiempo.
 | `date` | Fecha del dato. | date | no |  |
 | `shares` | Número de acciones. | bigint | sí |  |
 
-#### `equity.split` · tabla · ~4,564 filas
+#### `equity.split` · tabla · ~6,300 filas
 Splits (desdoblamientos) de acciones.
 
 | Columna | Qué es | Tipo | Nulo | Clave |
@@ -475,7 +475,7 @@ Splits (desdoblamientos) de acciones.
 | `ratio_from` | Acciones antes del split. | numeric(10,4) | sí |  |
 | `ratio_to` | Acciones después del split. | numeric(10,4) | sí |  |
 
-#### `equity.upgrade_downgrade` · tabla · ~289,296 filas
+#### `equity.upgrade_downgrade` · tabla · ~323,208 filas
 Cambios de recomendación y precio objetivo que hacen los analistas (comprar/vender).
 
 | Columna | Qué es | Tipo | Nulo | Clave |
@@ -731,7 +731,7 @@ Valor diario de indicador de sentimiento.
 ### Esquema `macro`
 _Economía mundial como series país × indicador × fecha._
 
-#### `macro.data_point` · tabla · ~7,999,253 filas
+#### `macro.data_point` · tabla · ~9,066,970 filas
 El dato en sí: el valor de una serie en una fecha (p.ej. inflación de España en 2022 = 8,3%).
 
 | Columna | Qué es | Tipo | Nulo | Clave |
@@ -743,7 +743,7 @@ El dato en sí: el valor de una serie en una fecha (p.ej. inflación de España 
 | `source_id` | Fuente de la que procede el dato. | integer | sí | FK → meta.data_source.id |
 | `fetched_at` | Cuándo se descargó. | timestamp without time zone | no |  |
 
-#### `macro.data_point_vintage` · tabla · ~85,459 filas
+#### `macro.data_point_vintage` · tabla · ~85,467 filas
 Como data_point pero 'point-in-time': guarda qué valor se conocía en cada fecha de publicación. Permite reconstruir los datos disponibles en el pasado sin sesgo de revisión (p.ej. el PIB de EE.UU. que se sabía en 2008, antes de revisarse).
 
 | Columna | Qué es | Tipo | Nulo | Clave |
@@ -781,7 +781,7 @@ Cómo se llama cada indicador en cada fuente (el mismo 'PIB' tiene códigos dist
 | `external_name` | Nombre en la fuente. | character varying(500) | sí |  |
 | `priority` | Prioridad si hay varias fuentes. | smallint | no |  |
 
-#### `macro.series` · tabla · ~433,455 filas
+#### `macro.series` · tabla · ~268,745 filas
 Una serie = un indicador para un país concreto (p.ej. 'inflación de España'). Agrupa sus valores en el tiempo.
 
 | Columna | Qué es | Tipo | Nulo | Clave |
@@ -901,7 +901,7 @@ Tipos impositivos por país y año.
 ### Esquema `deriv`
 _Derivados: snapshots de cadenas de opciones._
 
-#### `deriv.option_snapshot` · tabla · ~2,113 filas
+#### `deriv.option_snapshot` · tabla · ~19,245 filas
 Foto diaria de las opciones (contratos de compra/venta) de las empresas más líquidas.
 
 | Columna | Qué es | Tipo | Nulo | Clave |
@@ -925,7 +925,7 @@ Foto diaria de las opciones (contratos de compra/venta) de las empresas más lí
 ### Esquema `bronze`
 _Aterrizaje crudo (JSONB) de las fuentes nuevas._
 
-#### `bronze.analyst_snapshot` · tabla · ~0 filas
+#### `bronze.analyst_snapshot` · tabla · ~62,766 filas
 Foto diaria de datos de analistas de yfinance (por ticker).
 
 | Columna | Qué es | Tipo | Nulo | Clave |
@@ -962,7 +962,7 @@ Foto cruda de constituyentes de un índice (Wikipedia/GitHub).
 | `source_kind` | Origen (wikipedia/github). | character varying(30) | no |  |
 | `payload` | Respuesta cruda de la API (JSON), tal cual llegó. | jsonb | no |  |
 
-#### `bronze.sec_companyfacts` · tabla · ~10,263 filas
+#### `bronze.sec_companyfacts` · tabla · ~26,329 filas
 El JSON crudo con todos los datos financieros que publica la SEC de cada empresa.
 
 | Columna | Qué es | Tipo | Nulo | Clave |
@@ -974,7 +974,7 @@ El JSON crudo con todos los datos financieros que publica la SEC de cada empresa
 | `ticker` | Símbolo bursátil (p.ej. AAPL). | character varying(20) | sí |  |
 | `payload` | Respuesta cruda de la API (JSON), tal cual llegó. | jsonb | no |  |
 
-#### `bronze.yf_profile` · tabla · ~2,170 filas
+#### `bronze.yf_profile` · tabla · ~4,967 filas
 El perfil completo de una empresa tal cual lo devuelve yfinance.
 
 | Columna | Qué es | Tipo | Nulo | Clave |
@@ -989,7 +989,7 @@ El perfil completo de una empresa tal cual lo devuelve yfinance.
 ### Esquema `gold`
 _Capa analítica point-in-time: hechos, dimensiones y marts._
 
-#### `gold.dim_company` · tabla · ~12,783 filas
+#### `gold.dim_company` · tabla · ~10,491 filas
 Ficha resumida de cada empresa para análisis (con su sector ya incorporado).
 
 | Columna | Qué es | Tipo | Nulo | Clave |
@@ -1006,7 +1006,7 @@ Ficha resumida de cada empresa para análisis (con su sector ya incorporado).
 | `is_active` | Si sigue cotizando (no deslistada). | boolean | no |  |
 | `delisted_date` | Fecha en que dejó de cotizar. | date | sí |  |
 
-#### `gold.dim_country` · tabla · ~249 filas
+#### `gold.dim_country` · tabla · ~250 filas
 Ficha de cada país (región, grupo de renta).
 
 | Columna | Qué es | Tipo | Nulo | Clave |
@@ -1016,6 +1016,18 @@ Ficha de cada país (región, grupo de renta).
 | `region` | Región. | character varying(100) | sí |  |
 | `sub_region` | Subregión. | character varying(100) | sí |  |
 | `income_group` | Grupo de renta. | character varying(50) | sí |  |
+
+#### `gold.dim_data_source` · vista · ~0 filas
+| Columna | Qué es | Tipo | Nulo | Clave |
+|---|---|---|---|---|
+| `name` | Nombre. | character varying(100) | sí |  |
+| `display_name` |  | character varying(200) | sí |  |
+| `base_url` |  | character varying(500) | sí |  |
+| `is_enabled` |  | boolean | sí |  |
+| `total_runs` |  | bigint | sí |  |
+| `successful_runs` |  | bigint | sí |  |
+| `last_run` |  | timestamp without time zone | sí |  |
+| `total_records` |  | bigint | sí |  |
 
 #### `gold.dim_date` · tabla · ~23,552 filas
 Calendario: una fila por día, con año, trimestre...
@@ -1081,7 +1093,7 @@ Todos los datos financieros de las empresas US con la fecha en que se publicaron
 | `form` | Formulario SEC (10-K, 10-Q...). | character varying(10) | sí |  |
 | `source_id` | Fuente de la que procede el dato. | integer | sí |  |
 
-#### `gold.index_membership` · tabla · ~1,255 filas
+#### `gold.index_membership` · tabla · ~1,264 filas
 Qué empresas estaban en el S&P 500 en cada momento del pasado (para análisis sin 'trampa').
 
 | Columna | Qué es | Tipo | Nulo | Clave |
@@ -1094,7 +1106,7 @@ Qué empresas estaban en el S&P 500 en cada momento del pasado (para análisis s
 | `end_date` | Cuándo salió (vacío = sigue dentro). | date | sí |  |
 | `source_id` | Fuente de la que procede el dato. | integer | sí |  |
 
-#### `gold.mart_benchmark_returns` · materializada · ~32,442 filas
+#### `gold.mart_benchmark_returns` · materializada · ~32,456 filas
 Retorno diario del pool S&P 500 equiponderado (survivorship-free) vs SPY.
 
 | Columna | Qué es | Tipo | Nulo | Clave |
@@ -1103,7 +1115,25 @@ Retorno diario del pool S&P 500 equiponderado (survivorship-free) vs SPY.
 | `method` | Método: equal_weight (pool) o spy. | character varying(20) | sí |  |
 | `ret` | Retorno diario. | numeric | sí |  |
 
-#### `gold.mart_company_macro` · materializada · ~2,261,520 filas
+#### `gold.mart_climate_risk` · materializada · ~40,516 filas
+| Columna | Qué es | Tipo | Nulo | Clave |
+|---|---|---|---|---|
+| `country_code` | País (código ISO-3, p.ej. ESP). | character varying(3) | sí |  |
+| `year` | Año. | smallint | sí |  |
+| `ndgain_score` |  | numeric | sí |  |
+| `ndgain_vulnerability` |  | numeric | sí |  |
+| `ndgain_readiness` |  | numeric | sí |  |
+| `co2_mt` |  | numeric | sí |  |
+| `co2_per_capita_t` |  | numeric | sí |  |
+| `co2_share_global_pct` |  | numeric | sí |  |
+| `ghg_mt` |  | numeric | sí |  |
+| `renewable_energy_pct` |  | numeric | sí |  |
+| `edgar_co2_energy_mt` |  | numeric | sí |  |
+| `edgar_co2_industry_mt` |  | numeric | sí |  |
+| `edgar_ch4_mt` |  | numeric | sí |  |
+| `edgar_n2o_mt` |  | numeric | sí |  |
+
+#### `gold.mart_company_macro` · materializada · ~2,261,610 filas
 Cada empresa cruzada con la macro de su país: PIB, inflación, paro, tipos... por año. Para correlacionar rendimiento empresarial con el ciclo económico.
 
 | Columna | Qué es | Tipo | Nulo | Clave |
@@ -1124,8 +1154,37 @@ Cada empresa cruzada con la macro de su país: PIB, inflación, paro, tipos... p
 | `income_gini` |  | numeric | sí |  |
 | `exports_usd_bn` |  | numeric | sí |  |
 | `imports_usd_bn` |  | numeric | sí |  |
+| `fdi_inflows_usd_bn` |  | numeric | sí |  |
+| `reserves_total_usd_bn` |  | numeric | sí |  |
 
-#### `gold.mart_country_year` · materializada · ~39,398 filas
+#### `gold.mart_country_governance` · materializada · ~11,227 filas
+| Columna | Qué es | Tipo | Nulo | Clave |
+|---|---|---|---|---|
+| `country_code` | País (código ISO-3, p.ej. ESP). | character varying(3) | sí |  |
+| `year` | Año. | smallint | sí |  |
+| `wgi_corruption_control` |  | numeric | sí |  |
+| `wgi_gov_effectiveness` |  | numeric | sí |  |
+| `wgi_political_stability` |  | numeric | sí |  |
+| `wgi_rule_of_law` |  | numeric | sí |  |
+| `wgi_regulatory_quality` |  | numeric | sí |  |
+| `wgi_voice_accountability` |  | numeric | sí |  |
+| `ti_cpi_score` |  | numeric | sí |  |
+| `fh_freedom_score` |  | numeric | sí |  |
+| `fh_political_rights` |  | numeric | sí |  |
+| `fh_civil_liberties` |  | numeric | sí |  |
+| `hf_econ_freedom` |  | numeric | sí |  |
+| `hf_trade_freedom` |  | numeric | sí |  |
+| `hf_fiscal_health` |  | numeric | sí |  |
+| `fsi_total` |  | numeric | sí |  |
+| `fsi_cohesion` |  | numeric | sí |  |
+| `fsi_economic` |  | numeric | sí |  |
+| `vdem_polyarchy` |  | numeric | sí |  |
+| `vdem_liberal` |  | numeric | sí |  |
+| `vdem_corruption` |  | numeric | sí |  |
+| `vdem_media_freedom` |  | numeric | sí |  |
+| `vdem_judicial_indep` |  | numeric | sí |  |
+
+#### `gold.mart_country_year` · materializada · ~40,516 filas
 La tabla estrella: una fila por país y año con TODO junto (PIB, inflación, paro, CO2, energía, comercio...).
 
 | Columna | Qué es | Tipo | Nulo | Clave |
@@ -1160,6 +1219,94 @@ La tabla estrella: una fila por país y año con TODO junto (PIB, inflación, pa
 | `wealth_top1_pct` | % de la riqueza en manos del 1% más rico (WID). | numeric | sí |  |
 | `income_gini` | Índice de Gini de la renta (0 = igualdad total, 1 = desigualdad máxima) (WID). | numeric | sí |  |
 | `policy_rate_pct` | Tipo de interés oficial del banco central, en % (BIS). | numeric | sí |  |
+| `education_exp_pct_gdp` | Gasto público en educación como % del PIB (World Bank). | numeric | sí |  |
+| `tertiary_enrollment_pct` | Matrícula universitaria bruta, % de la población en edad (World Bank). | numeric | sí |  |
+| `internet_users_pct` | Personas que usan internet, % de la población (World Bank). | numeric | sí |  |
+| `mobile_per_100` | Suscripciones de telefonía móvil por cada 100 personas (World Bank). | numeric | sí |  |
+| `rd_exp_pct_gdp` | Gasto en investigación y desarrollo como % del PIB (World Bank). | numeric | sí |  |
+| `poverty_190_pct` | Población bajo la línea de pobreza de 3 USD/día (World Bank). | numeric | sí |  |
+| `corruption_control_score` | Control de la corrupción (0-100): cuánto se controlan los sobornos y la corrupción pública (World Bank WGI). | numeric | sí |  |
+| `gov_effectiveness_score` | Eficacia del gobierno (0-100): calidad de servicios públicos y burocracia. | numeric | sí |  |
+| `political_stability_score` | Estabilidad política (0-100): ausencia de violencia y terrorismo. | numeric | sí |  |
+| `rule_of_law_score` | Estado de derecho (0-100): confianza en contratos, policía, tribunales. | numeric | sí |  |
+| `regulatory_quality_score` | Calidad regulatoria (0-100): políticas que favorecen el sector privado. | numeric | sí |  |
+| `voice_accountability_score` | Voz y rendición de cuentas (0-100): libertad de expresión, prensa y voto. | numeric | sí |  |
+| `tourism_arrivals` |  | numeric | sí |  |
+| `tourism_receipts_usd_bn` |  | numeric | sí |  |
+| `tourism_expenditure_usd_bn` |  | numeric | sí |  |
+| `net_migration` |  | numeric | sí |  |
+| `migrant_stock` |  | numeric | sí |  |
+| `migrant_stock_pct` |  | numeric | sí |  |
+| `refugees_hosted` |  | numeric | sí |  |
+| `fdi_inflows_usd_bn` |  | numeric | sí |  |
+| `fdi_outflows_usd_bn` |  | numeric | sí |  |
+| `fdi_net_usd_bn` |  | numeric | sí |  |
+| `bop_goods_exports_bn` |  | numeric | sí |  |
+| `bop_goods_imports_bn` |  | numeric | sí |  |
+| `bop_services_exports_bn` |  | numeric | sí |  |
+| `bop_services_imports_bn` |  | numeric | sí |  |
+| `bop_primary_income_net_bn` |  | numeric | sí |  |
+| `reserves_total_usd_bn` |  | numeric | sí |  |
+| `reserves_months_imports` |  | numeric | sí |  |
+| `remittances_received_usd_bn` |  | numeric | sí |  |
+| `ti_cpi_score` |  | numeric | sí |  |
+| `fh_freedom_score` |  | numeric | sí |  |
+| `fh_political_rights` |  | numeric | sí |  |
+| `fh_civil_liberties` |  | numeric | sí |  |
+| `population_total` |  | numeric | sí |  |
+| `pop_growth_pct` |  | numeric | sí |  |
+| `urban_pop_pct` |  | numeric | sí |  |
+| `fertility_rate` |  | numeric | sí |  |
+| `labor_force_total` |  | numeric | sí |  |
+| `labor_participation_pct` |  | numeric | sí |  |
+| `exports_pct_gdp` |  | numeric | sí |  |
+| `imports_pct_gdp` |  | numeric | sí |  |
+| `trade_openness_pct` |  | numeric | sí |  |
+| `tax_revenue_pct_gdp` |  | numeric | sí |  |
+| `market_cap_pct_gdp` |  | numeric | sí |  |
+| `broad_money_pct_gdp` |  | numeric | sí |  |
+| `credit_private_pct_gdp` |  | numeric | sí |  |
+| `lending_rate` |  | numeric | sí |  |
+| `deposit_rate` |  | numeric | sí |  |
+| `real_interest_rate` |  | numeric | sí |  |
+| `renewable_energy_pct` |  | numeric | sí |  |
+| `military_exp_usd_mn` |  | numeric | sí |  |
+| `military_exp_pct_gdp` |  | numeric | sí |  |
+| `military_exp_pc` |  | numeric | sí |  |
+| `hdi_score` |  | numeric | sí |  |
+| `gender_dev_index` |  | numeric | sí |  |
+| `gender_ineq_index` |  | numeric | sí |  |
+| `econ_freedom_score` |  | numeric | sí |  |
+| `trade_freedom_score` |  | numeric | sí |  |
+| `ndgain_score` |  | numeric | sí |  |
+| `ndgain_vulnerability` |  | numeric | sí |  |
+| `ndgain_readiness` |  | numeric | sí |  |
+| `fragile_state_index` |  | numeric | sí |  |
+| `vdem_polyarchy` |  | numeric | sí |  |
+| `vdem_liberal` |  | numeric | sí |  |
+| `vdem_corruption` |  | numeric | sí |  |
+| `vdem_media_freedom` |  | numeric | sí |  |
+| `vdem_judicial_indep` |  | numeric | sí |  |
+| `undesa_pop_total` |  | numeric | sí |  |
+| `median_age` |  | numeric | sí |  |
+| `old_depend_ratio` |  | numeric | sí |  |
+| `young_depend_ratio` |  | numeric | sí |  |
+| `undesa_fertility` |  | numeric | sí |  |
+| `patent_applications` |  | numeric | sí |  |
+| `patent_grants` |  | numeric | sí |  |
+| `literacy_rate_pct` |  | numeric | sí |  |
+| `mean_school_years` |  | numeric | sí |  |
+| `pupil_teacher_ratio` |  | numeric | sí |  |
+| `gfs_tax_total_pct` |  | numeric | sí |  |
+| `gfs_tax_income_pct` |  | numeric | sí |  |
+| `gfs_spend_defense_pct` |  | numeric | sí |  |
+| `gfs_spend_health_pct` |  | numeric | sí |  |
+| `gfs_spend_education_pct` |  | numeric | sí |  |
+| `gfs_spend_social_pct` |  | numeric | sí |  |
+| `edgar_co2_energy_mt` |  | numeric | sí |  |
+| `edgar_co2_industry_mt` |  | numeric | sí |  |
+| `edgar_ch4_mt` |  | numeric | sí |  |
+| `edgar_n2o_mt` |  | numeric | sí |  |
 | `primary_energy_twh` | Energía primaria consumida (TWh). | numeric | sí |  |
 | `electricity_twh` | Electricidad generada (TWh). | numeric | sí |  |
 | `renewables_elec_twh` | Electricidad renovable (TWh). | numeric | sí |  |
@@ -1168,7 +1315,7 @@ La tabla estrella: una fila por país y año con TODO junto (PIB, inflación, pa
 | `imports_usd_bn` | Importaciones de bienes (miles de millones USD). | numeric | sí |  |
 | `trade_balance_usd_bn` | Balanza comercial (exportaciones − importaciones). | numeric | sí |  |
 
-#### `gold.mart_earnings_surprise` · materializada · ~97,814 filas
+#### `gold.mart_earnings_surprise` · materializada · ~181,884 filas
 Sorpresas de beneficios: lo que los analistas esperaban vs lo que reportó la empresa, con el porcentaje de sorpresa.
 
 | Columna | Qué es | Tipo | Nulo | Clave |
@@ -1204,7 +1351,7 @@ Cuántas empresas hay de cada sector en cada país, cuántas están activas y su
 | `n_active` |  | bigint | sí |  |
 | `avg_market_cap` |  | numeric | sí |  |
 
-#### `gold.mart_sovereign_risk` · materializada · ~39,398 filas
+#### `gold.mart_sovereign_risk` · materializada · ~40,516 filas
 Riesgo soberano: combina el rating crediticio del país, su deuda, balance fiscal y volatilidad del PIB en los últimos 5 años.
 
 | Columna | Qué es | Tipo | Nulo | Clave |
@@ -1217,6 +1364,8 @@ Riesgo soberano: combina el rating crediticio del país, su deuda, balance fisca
 | `gov_debt_pct_gdp` |  | numeric | sí |  |
 | `gov_balance_pct_gdp` |  | numeric | sí |  |
 | `current_account_pct_gdp` |  | numeric | sí |  |
+| `reserves_total_usd_bn` |  | numeric | sí |  |
+| `reserves_months_imports` |  | numeric | sí |  |
 | `rating_agency` |  | character varying(20) | sí |  |
 | `sovereign_rating` |  | character varying(10) | sí |  |
 | `rating_outlook` |  | character varying(20) | sí |  |

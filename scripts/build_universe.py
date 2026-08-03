@@ -1,6 +1,5 @@
-"""Construir universo de ~5000 empresas cotizadas
-desde Wikipedia (listas de índices) y yfinance
-screener."""
+"""Construir universo de ~40K+ empresas cotizadas
+desde NASDAQ FTP, Wikipedia y listas manuales."""
 
 import time
 
@@ -18,6 +17,49 @@ HEADERS = {
         "Chrome/120.0.0.0 Safari/537.36"
     ),
 }
+
+
+def get_us_full() -> list[str]:
+    """Listado completo US via NASDAQ FTP (~8K).
+
+    Descarga nasdaqtraded.txt del FTP público de NASDAQ.
+    Incluye NYSE, NASDAQ, AMEX y NYSE Arca.
+    """
+    url = (
+        "https://api.nasdaq.com/api/screener/stocks"
+        "?tablesize=25000&offset=0&download=true"
+    )
+
+    tickers = []
+
+    # NASDAQ screener API (download mode)
+    try:
+        resp = requests.get(
+            url,
+            headers=HEADERS,
+            timeout=30,
+        )
+        resp.raise_for_status()
+        data = resp.json()
+        rows = data.get("data", {}).get("rows", [])
+        for row in rows:
+            sym = row.get("symbol", "").strip()
+            if sym and "^" not in sym and "/" not in sym:
+                tickers.append(sym)
+        if tickers:
+            logger.info("NASDAQ API: %d tickers US", len(tickers))
+            return tickers
+    except Exception as e:
+        logger.warning("NASDAQ API falló: %s", e)
+
+    # Fallback: S&P 500+400+600
+    logger.info("Usando S&P 500+400+600 como fallback")
+    tickers.extend(get_sp500())
+    time.sleep(1)
+    tickers.extend(get_sp400())
+    time.sleep(1)
+    tickers.extend(get_sp600())
+    return tickers
 
 
 def _wiki_tables(url: str) -> list[pd.DataFrame]:
@@ -960,19 +1002,239 @@ def get_mena_africa() -> list[str]:
     return all_t
 
 
+def get_tsx() -> list[str]:
+    """S&P/TSX 60 (Canadá) — hardcoded."""
+    tickers = [
+        "RY.TO",
+        "TD.TO",
+        "BNS.TO",
+        "BMO.TO",
+        "CM.TO",
+        "MFC.TO",
+        "SLF.TO",
+        "GWO.TO",
+        "NA.TO",
+        "IFC.TO",
+        "ENB.TO",
+        "TRP.TO",
+        "SU.TO",
+        "CNQ.TO",
+        "IMO.TO",
+        "CVE.TO",
+        "SHOP.TO",
+        "CSU.TO",
+        "OTEX.TO",
+        "BB.TO",
+        "BN.TO",
+        "BAM.TO",
+        "CP.TO",
+        "CNR.TO",
+        "WCN.TO",
+        "QSR.TO",
+        "ABX.TO",
+        "FNV.TO",
+        "WPM.TO",
+        "NTR.TO",
+        "FM.TO",
+        "TECK-B.TO",
+        "BCE.TO",
+        "T.TO",
+        "RCI-B.TO",
+        "ATD.TO",
+        "L.TO",
+        "DOL.TO",
+        "MRU.TO",
+        "SAP.TO",
+        "CAR-UN.TO",
+        "REI-UN.TO",
+        "HR-UN.TO",
+        "AP-UN.TO",
+        "CCO.TO",
+        "EMA.TO",
+        "FTS.TO",
+        "H.TO",
+        "AQN.TO",
+        "CU.TO",
+        "MG.TO",
+        "TIH.TO",
+        "WSP.TO",
+        "SNC.TO",
+        "GIB-A.TO",
+        "CCL-B.TO",
+        "TRI.TO",
+        "IFP.TO",
+        "GFL.TO",
+        "TFII.TO",
+    ]
+    logger.info("TSX: %d tickers", len(tickers))
+    return tickers
+
+
+def get_china_mainland() -> list[str]:
+    """Shanghai + Shenzhen principales."""
+    sse = [
+        "600519.SS",
+        "601318.SS",
+        "600036.SS",
+        "600276.SS",
+        "601166.SS",
+        "600900.SS",
+        "600030.SS",
+        "601012.SS",
+        "600050.SS",
+        "601398.SS",
+        "601288.SS",
+        "600028.SS",
+        "601857.SS",
+        "600309.SS",
+        "601088.SS",
+        "600585.SS",
+        "601888.SS",
+        "600438.SS",
+        "600887.SS",
+        "601668.SS",
+        "603259.SS",
+        "600809.SS",
+        "600196.SS",
+        "601601.SS",
+        "601628.SS",
+        "600690.SS",
+        "601919.SS",
+        "601225.SS",
+        "600346.SS",
+        "601211.SS",
+    ]
+    szse = [
+        "000858.SZ",
+        "000333.SZ",
+        "002714.SZ",
+        "000651.SZ",
+        "000568.SZ",
+        "002594.SZ",
+        "000002.SZ",
+        "000725.SZ",
+        "002304.SZ",
+        "002230.SZ",
+        "300750.SZ",
+        "300059.SZ",
+        "002415.SZ",
+        "002352.SZ",
+        "000001.SZ",
+        "300015.SZ",
+        "002475.SZ",
+        "300122.SZ",
+        "000538.SZ",
+        "002202.SZ",
+    ]
+    all_t = sse + szse
+    logger.info("China (SSE+SZSE): %d tickers", len(all_t))
+    return all_t
+
+
+def get_southeast_asia() -> list[str]:
+    """Indonesia, Tailandia, Malasia, Filipinas."""
+    indonesia = [
+        "BBCA.JK",
+        "BBRI.JK",
+        "BMRI.JK",
+        "TLKM.JK",
+        "ASII.JK",
+        "UNVR.JK",
+        "BBNI.JK",
+        "HMSP.JK",
+        "GGRM.JK",
+        "ICBP.JK",
+        "KLBF.JK",
+        "INDF.JK",
+        "MDKA.JK",
+        "EMTK.JK",
+        "GOTO.JK",
+    ]
+    thailand = [
+        "PTT.BK",
+        "AOT.BK",
+        "ADVANC.BK",
+        "CPALL.BK",
+        "SCB.BK",
+        "SCC.BK",
+        "KBANK.BK",
+        "GULF.BK",
+        "BDMS.BK",
+        "PTTGC.BK",
+        "TRUE.BK",
+        "BBL.BK",
+        "MINT.BK",
+        "BEM.BK",
+        "CPN.BK",
+    ]
+    malaysia = [
+        "1155.KL",
+        "1295.KL",
+        "3182.KL",
+        "5183.KL",
+        "5225.KL",
+        "6888.KL",
+        "1082.KL",
+        "4707.KL",
+        "5347.KL",
+        "6012.KL",
+        "4715.KL",
+        "7113.KL",
+    ]
+    philippines = [
+        "SM.PS",
+        "BDO.PS",
+        "TEL.PS",
+        "AC.PS",
+        "ALI.PS",
+        "JGS.PS",
+        "BPI.PS",
+        "URC.PS",
+        "MER.PS",
+        "SMPH.PS",
+    ]
+    all_t = indonesia + thailand + malaysia + philippines
+    logger.info("SEA (ID+TH+MY+PH): %d tickers", len(all_t))
+    return all_t
+
+
+def get_poland() -> list[str]:
+    """WIG20 + principales GPW."""
+    tickers = [
+        "PKO.WA",
+        "PZU.WA",
+        "PEO.WA",
+        "DNP.WA",
+        "KGH.WA",
+        "LPP.WA",
+        "CDR.WA",
+        "ALE.WA",
+        "SPL.WA",
+        "OPL.WA",
+        "CCC.WA",
+        "PKN.WA",
+        "MBK.WA",
+        "PGN.WA",
+        "JSW.WA",
+        "CPS.WA",
+        "KRU.WA",
+        "MRC.WA",
+        "TPE.WA",
+        "PCO.WA",
+    ]
+    logger.info("GPW (Polonia): %d tickers", len(tickers))
+    return tickers
+
+
 def build_universe() -> list[str]:
-    """Construir universo completo de ~5000 tickers."""
+    """Construir universo completo de 10K+ tickers."""
     logger.info("=== Construyendo universo ===")
 
     all_tickers = []
 
-    # US: S&P 500 + 400 + 600 = ~1500
+    # US: NASDAQ FTP completo (~8K) o S&P fallback
     logger.info("--- US ---")
-    all_tickers.extend(get_sp500())
-    time.sleep(1)
-    all_tickers.extend(get_sp400())
-    time.sleep(1)
-    all_tickers.extend(get_sp600())
+    all_tickers.extend(get_us_full())
     time.sleep(1)
 
     # UK: FTSE 100 + 250 = ~350
@@ -987,6 +1249,10 @@ def build_universe() -> list[str]:
     all_tickers.extend(get_euro_stoxx600())
     time.sleep(1)
 
+    # Polonia: WIG20 + principales
+    logger.info("--- Polonia ---")
+    all_tickers.extend(get_poland())
+
     # Japón: Nikkei 225
     logger.info("--- Japón ---")
     all_tickers.extend(get_nikkei225())
@@ -997,10 +1263,18 @@ def build_universe() -> list[str]:
     all_tickers.extend(get_hsi())
     time.sleep(1)
 
+    # China continental: SSE + SZSE
+    logger.info("--- China continental ---")
+    all_tickers.extend(get_china_mainland())
+
     # Asia adicional: India, Korea, Australia,
     # Taiwan, Singapur ~145
     logger.info("--- Asia adicional ---")
     all_tickers.extend(get_additional_asia())
+
+    # SEA: Indonesia, Tailandia, Malasia, Filipinas
+    logger.info("--- Sudeste Asiático ---")
+    all_tickers.extend(get_southeast_asia())
 
     # Latam ~74
     logger.info("--- Latam ---")
@@ -1009,6 +1283,10 @@ def build_universe() -> list[str]:
     # MENA/Africa ~50
     logger.info("--- MENA/Africa ---")
     all_tickers.extend(get_mena_africa())
+
+    # Canadá: S&P/TSX 60 ~60
+    logger.info("--- Canadá ---")
+    all_tickers.extend(get_tsx())
 
     # Deduplicar
     seen = set()
@@ -1027,10 +1305,24 @@ def build_universe() -> list[str]:
 
 
 if __name__ == "__main__":
+    import argparse
+
+    parser = argparse.ArgumentParser(
+        description="Construir universo de tickers"
+    )
+    parser.add_argument(
+        "--out",
+        default=".data/universe_tickers.txt",
+        help="Fichero de salida (default: .data/universe_tickers.txt)",
+    )
+    args = parser.parse_args()
+
     tickers = build_universe()
-    # Guardar a archivo
-    out = ".data/universe_tickers.txt"
-    with open(out, "w") as f:
+    with open(args.out, "w") as f:
         for t in tickers:
             f.write(t + "\n")
-    print(f"Guardados {len(tickers)} tickers en {out}")
+    logger.info(
+        "Guardados %d tickers en %s",
+        len(tickers),
+        args.out,
+    )

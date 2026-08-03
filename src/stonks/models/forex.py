@@ -11,6 +11,7 @@ from sqlalchemy import (
     String,
     UniqueConstraint,
 )
+from sqlalchemy.dialects.postgresql import TIMESTAMP
 from sqlalchemy.orm import Mapped, mapped_column
 
 from stonks.db import Base
@@ -72,3 +73,34 @@ class ForexRate(Base):
     source_id: Mapped[int | None] = mapped_column(
         Integer, ForeignKey("meta.data_source.id")
     )
+
+
+class ForexRateIntraday(Base):
+    """Tipo de cambio intraday (particionado por ts)."""
+
+    __tablename__ = "rate_intraday"
+    __table_args__ = (
+        Index(
+            "ix_forex_intraday_interval_ts",
+            "interval",
+            "ts",
+        ),
+        {
+            "schema": "forex",
+            "postgresql_partition_by": "RANGE (ts)",
+        },
+    )
+
+    pair_id: Mapped[int] = mapped_column(
+        Integer,
+        ForeignKey("forex.currency_pair.id"),
+        primary_key=True,
+    )
+    ts: Mapped[date] = mapped_column(
+        TIMESTAMP(timezone=True), primary_key=True
+    )
+    interval: Mapped[str] = mapped_column(String(3), primary_key=True)
+    open: Mapped[float | None] = mapped_column(Numeric(14, 8))
+    high: Mapped[float | None] = mapped_column(Numeric(14, 8))
+    low: Mapped[float | None] = mapped_column(Numeric(14, 8))
+    close: Mapped[float | None] = mapped_column(Numeric(14, 8))

@@ -1,0 +1,497 @@
+ticker,name,fund_type,asset_class,geography,strategy,provider
+SPY,SPDR S&P 500 ETF,etf,equity,US,index,State Street
+QQQ,Invesco QQQ Trust,etf,equity,US,index,Invesco
+VTI,Vanguard Total Stock Market,etf,equity,US,index,Vanguard
+IWM,iShares Russell 2000,etf,equity,US,index,iShares
+VOO,Vanguard S&P 500,etf,equity,US,index,Vanguard
+DIA,SPDR Dow Jones Industrial,etf,equity,US,index,State Street
+MDY,SPDR S&P MidCap 400,etf,equity,US,index,State Street
+RSP,Invesco S&P 500 Equal Weight,etf,equity,US,index,Invesco
+SPLG,SPDR Portfolio S&P 500,etf,equity,US,index,State Street
+SPTM,SPDR Portfolio S&P 1500,etf,equity,US,index,State Street
+ITOT,iShares Core S&P Total US,etf,equity,US,index,iShares
+SCHX,Schwab US Large-Cap,etf,equity,US,index,Schwab
+SCHB,Schwab US Broad Market,etf,equity,US,index,Schwab
+MGK,Vanguard Mega Cap Growth,etf,equity,US,growth,Vanguard
+MGV,Vanguard Mega Cap Value,etf,equity,US,value,Vanguard
+VUG,Vanguard Growth,etf,equity,US,growth,Vanguard
+VTV,Vanguard Value,etf,equity,US,value,Vanguard
+IVW,iShares S&P 500 Growth,etf,equity,US,growth,iShares
+IVE,iShares S&P 500 Value,etf,equity,US,value,iShares
+IJH,iShares Core S&P Mid-Cap,etf,equity,US,index,iShares
+IJR,iShares Core S&P Small-Cap,etf,equity,US,index,iShares
+SLY,SPDR S&P 600 Small Cap,etf,equity,US,index,State Street
+IWF,iShares Russell 1000 Growth,etf,equity,US,growth,iShares
+IWD,iShares Russell 1000 Value,etf,equity,US,value,iShares
+IWO,iShares Russell 2000 Growth,etf,equity,US,growth,iShares
+IWN,iShares Russell 2000 Value,etf,equity,US,value,iShares
+IWB,iShares Russell 1000,etf,equity,US,index,iShares
+IWV,iShares Russell 3000,etf,equity,US,index,iShares
+SCHA,Schwab US Small-Cap,etf,equity,US,index,Schwab
+VB,Vanguard Small-Cap,etf,equity,US,index,Vanguard
+VO,Vanguard Mid-Cap,etf,equity,US,index,Vanguard
+VV,Vanguard Large-Cap,etf,equity,US,index,Vanguard
+EFA,iShares MSCI EAFE,etf,equity,Developed ex-US,index,iShares
+VWO,Vanguard FTSE Emerging Markets,etf,equity,Emerging Markets,index,Vanguard
+EEM,iShares MSCI Emerging Markets,etf,equity,Emerging Markets,index,iShares
+VEA,Vanguard FTSE Developed Markets,etf,equity,Developed ex-US,index,Vanguard
+VXUS,Vanguard Total Intl Stock,etf,equity,Global ex-US,index,Vanguard
+IXUS,iShares Core MSCI Total Intl,etf,equity,Global ex-US,index,iShares
+VGK,Vanguard FTSE Europe,etf,equity,Europe,index,Vanguard
+VPL,Vanguard FTSE Pacific,etf,equity,Pacific,index,Vanguard
+IEFA,iShares Core MSCI EAFE,etf,equity,Developed ex-US,index,iShares
+IEMG,iShares Core MSCI EM,etf,equity,Emerging Markets,index,iShares
+SCZ,iShares MSCI EAFE Small-Cap,etf,equity,Developed ex-US,index,iShares
+VSS,Vanguard FTSE All-Wld ex-US SmCp,etf,equity,Global ex-US,index,Vanguard
+IDEV,iShares Core MSCI Intl Developed,etf,equity,Developed ex-US,index,iShares
+SPDW,SPDR Portfolio Developed World,etf,equity,Developed ex-US,index,State Street
+SPEM,SPDR Portfolio Emerging Markets,etf,equity,Emerging Markets,index,State Street
+VEU,Vanguard FTSE All-World ex-US,etf,equity,Global ex-US,index,Vanguard
+DWM,WisdomTree Intl Equity,etf,equity,Developed ex-US,index,WisdomTree
+FNDF,Schwab Fundamental Intl Large,etf,equity,Developed ex-US,fundamental,Schwab
+FNDE,Schwab Fundamental EM Large,etf,equity,Emerging Markets,fundamental,Schwab
+MCHI,iShares MSCI China,etf,equity,China,index,iShares
+INDA,iShares MSCI India,etf,equity,India,index,iShares
+EWJ,iShares MSCI Japan,etf,equity,Japan,index,iShares
+EWZ,iShares MSCI Brazil,etf,equity,Brazil,index,iShares
+EWG,iShares MSCI Germany,etf,equity,Germany,index,iShares
+EWU,iShares MSCI United Kingdom,etf,equity,UK,index,iShares
+EWY,iShares MSCI South Korea,etf,equity,South Korea,index,iShares
+EWT,iShares MSCI Taiwan,etf,equity,Taiwan,index,iShares
+EWH,iShares MSCI Hong Kong,etf,equity,Hong Kong,index,iShares
+EWA,iShares MSCI Australia,etf,equity,Australia,index,iShares
+EWC,iShares MSCI Canada,etf,equity,Canada,index,iShares
+EWI,iShares MSCI Italy,etf,equity,Italy,index,iShares
+EWP,iShares MSCI Spain,etf,equity,Spain,index,iShares
+EWQ,iShares MSCI France,etf,equity,France,index,iShares
+EWL,iShares MSCI Switzerland,etf,equity,Switzerland,index,iShares
+EWN,iShares MSCI Netherlands,etf,equity,Netherlands,index,iShares
+EWD,iShares MSCI Sweden,etf,equity,Sweden,index,iShares
+EWK,iShares MSCI Belgium,etf,equity,Belgium,index,iShares
+EIS,iShares MSCI Israel,etf,equity,Israel,index,iShares
+TUR,iShares MSCI Turkey,etf,equity,Turkey,index,iShares
+THD,iShares MSCI Thailand,etf,equity,Thailand,index,iShares
+EPHE,iShares MSCI Philippines,etf,equity,Philippines,index,iShares
+EIDO,iShares MSCI Indonesia,etf,equity,Indonesia,index,iShares
+VNM,VanEck Vietnam,etf,equity,Vietnam,index,VanEck
+FM,iShares MSCI Frontier and Select EM,etf,equity,Frontier Markets,index,iShares
+ARGT,Global X MSCI Argentina,etf,equity,Argentina,index,Global X
+ECH,iShares MSCI Chile,etf,equity,Chile,index,iShares
+EWM,iShares MSCI Malaysia,etf,equity,Malaysia,index,iShares
+EWS,iShares MSCI Singapore,etf,equity,Singapore,index,iShares
+NORW,Global X MSCI Norway,etf,equity,Norway,index,Global X
+EDEN,iShares MSCI Denmark,etf,equity,Denmark,index,iShares
+EFNL,iShares MSCI Finland,etf,equity,Finland,index,iShares
+EPOL,iShares MSCI Poland,etf,equity,Poland,index,iShares
+GXC,SPDR S&P China,etf,equity,China,index,State Street
+KSA,iShares MSCI Saudi Arabia,etf,equity,Saudi Arabia,index,iShares
+UAE,iShares MSCI UAE,etf,equity,UAE,index,iShares
+QAT,iShares MSCI Qatar,etf,equity,Qatar,index,iShares
+FLSA,Franklin FTSE South Africa,etf,equity,South Africa,index,Franklin
+FXI,iShares China Large-Cap,etf,equity,China,index,iShares
+KWEB,KraneShares CSI China Internet,etf,equity,China,thematic,Krane
+ASHR,Xtrackers Harvest CSI 300,etf,equity,China,index,Xtrackers
+XLK,Technology Select Sector SPDR,etf,equity,US,sector,State Street
+XLF,Financial Select Sector SPDR,etf,equity,US,sector,State Street
+XLE,Energy Select Sector SPDR,etf,equity,US,sector,State Street
+XLV,Health Care Select Sector SPDR,etf,equity,US,sector,State Street
+XLI,Industrial Select Sector SPDR,etf,equity,US,sector,State Street
+XLP,Consumer Staples Select Sector,etf,equity,US,sector,State Street
+XLU,Utilities Select Sector SPDR,etf,equity,US,sector,State Street
+XLB,Materials Select Sector SPDR,etf,equity,US,sector,State Street
+XLC,Communication Svcs Select Sector,etf,equity,US,sector,State Street
+XLY,Consumer Discretionary Select,etf,equity,US,sector,State Street
+XLRE,Real Estate Select Sector SPDR,etf,equity,US,sector,State Street
+VGT,Vanguard Information Technology,etf,equity,US,sector,Vanguard
+VHT,Vanguard Health Care,etf,equity,US,sector,Vanguard
+VFH,Vanguard Financials,etf,equity,US,sector,Vanguard
+VDE,Vanguard Energy,etf,equity,US,sector,Vanguard
+VIS,Vanguard Industrials,etf,equity,US,sector,Vanguard
+VAW,Vanguard Materials,etf,equity,US,sector,Vanguard
+VCR,Vanguard Consumer Discretionary,etf,equity,US,sector,Vanguard
+VOX,Vanguard Communication Services,etf,equity,US,sector,Vanguard
+VPU,Vanguard Utilities,etf,equity,US,sector,Vanguard
+VDC,Vanguard Consumer Staples,etf,equity,US,sector,Vanguard
+IYW,iShares US Technology,etf,equity,US,sector,iShares
+IYF,iShares US Financials,etf,equity,US,sector,iShares
+IYH,iShares US Healthcare,etf,equity,US,sector,iShares
+IYE,iShares US Energy,etf,equity,US,sector,iShares
+IYJ,iShares US Industrials,etf,equity,US,sector,iShares
+IYZ,iShares US Telecommunications,etf,equity,US,sector,iShares
+IYC,iShares US Consumer Discretionary,etf,equity,US,sector,iShares
+IYK,iShares US Consumer Staples,etf,equity,US,sector,iShares
+IYM,iShares US Basic Materials,etf,equity,US,sector,iShares
+IBB,iShares Biotechnology,etf,equity,US,sector,iShares
+ITA,iShares US Aerospace & Defense,etf,equity,US,sector,iShares
+IHI,iShares US Medical Devices,etf,equity,US,sector,iShares
+IHF,iShares US Healthcare Providers,etf,equity,US,sector,iShares
+ITB,iShares US Home Construction,etf,equity,US,sector,iShares
+IGV,iShares Expanded Tech-Software,etf,equity,US,sector,iShares
+SMH,VanEck Semiconductor,etf,equity,Global,sector,VanEck
+SOXX,iShares Semiconductor,etf,equity,US,sector,iShares
+XBI,SPDR S&P Biotech,etf,equity,US,sector,State Street
+XOP,SPDR S&P Oil & Gas Exploration,etf,equity,US,sector,State Street
+XHB,SPDR S&P Homebuilders,etf,equity,US,sector,State Street
+XME,SPDR S&P Metals & Mining,etf,equity,US,sector,State Street
+XAR,SPDR S&P Aerospace & Defense,etf,equity,US,sector,State Street
+XSD,SPDR S&P Semiconductor,etf,equity,US,sector,State Street
+XSW,SPDR S&P Software & Services,etf,equity,US,sector,State Street
+KRE,SPDR S&P Regional Banking,etf,equity,US,sector,State Street
+KBE,SPDR S&P Bank,etf,equity,US,sector,State Street
+JETS,US Global Jets,etf,equity,US,sector,US Global
+AGG,iShares Core US Aggregate Bond,etf,fixed_income,US,index,iShares
+TLT,iShares 20+ Year Treasury Bond,etf,fixed_income,US,index,iShares
+HYG,iShares iBoxx High Yield Corp,etf,fixed_income,US,index,iShares
+LQD,iShares iBoxx IG Corporate Bond,etf,fixed_income,US,index,iShares
+BND,Vanguard Total Bond Market,etf,fixed_income,US,index,Vanguard
+SHY,iShares 1-3 Year Treasury,etf,fixed_income,US,index,iShares
+IEF,iShares 7-10 Year Treasury,etf,fixed_income,US,index,iShares
+GOVT,iShares US Treasury Bond,etf,fixed_income,US,index,iShares
+VCSH,Vanguard Short-Term Corp Bond,etf,fixed_income,US,index,Vanguard
+VCIT,Vanguard Intermediate Corp Bond,etf,fixed_income,US,index,Vanguard
+TIPS,iShares TIPS Bond,etf,fixed_income,US,index,iShares
+EMB,iShares JP Morgan USD EM Bond,etf,fixed_income,EM,index,iShares
+BNDX,Vanguard Total Intl Bond,etf,fixed_income,Global ex-US,index,Vanguard
+IGOV,iShares Intl Treasury Bond,etf,fixed_income,Global ex-US,index,iShares
+BWX,SPDR Intl Treasury Bond,etf,fixed_income,Global ex-US,index,State Street
+PCY,Invesco EM Sovereign Debt,etf,fixed_income,EM,index,Invesco
+MUB,iShares National Muni Bond,etf,fixed_income,US,index,iShares
+SUB,iShares Short-Term National Muni,etf,fixed_income,US,index,iShares
+VMBS,Vanguard Mortgage-Backed Secs,etf,fixed_income,US,index,Vanguard
+MBB,iShares MBS,etf,fixed_income,US,index,iShares
+SPTL,SPDR Portfolio Long Term Treasury,etf,fixed_income,US,index,State Street
+SPAB,SPDR Portfolio Aggregate Bond,etf,fixed_income,US,index,State Street
+SPLB,SPDR Portfolio Long Term Corp,etf,fixed_income,US,index,State Street
+SPIB,SPDR Portfolio Intermediate Corp,etf,fixed_income,US,index,State Street
+SPSB,SPDR Portfolio Short Term Corp,etf,fixed_income,US,index,State Street
+SCHZ,Schwab US Aggregate Bond,etf,fixed_income,US,index,Schwab
+IGSB,iShares 1-5 Year IG Corp Bond,etf,fixed_income,US,index,iShares
+IGIB,iShares 5-10 Year IG Corp Bond,etf,fixed_income,US,index,iShares
+IGLB,iShares 10+ Year IG Corp Bond,etf,fixed_income,US,index,iShares
+USIG,iShares Broad USD IG Corp Bond,etf,fixed_income,US,index,iShares
+JNK,SPDR Bloomberg High Yield Bond,etf,fixed_income,US,index,State Street
+SHYG,iShares 0-5 Year High Yield Corp,etf,fixed_income,US,index,iShares
+SJNK,SPDR Bloomberg Short Term HY,etf,fixed_income,US,index,State Street
+FLOT,iShares Floating Rate Bond,etf,fixed_income,US,index,iShares
+BKLN,Invesco Senior Loan,etf,fixed_income,US,index,Invesco
+SRLN,SPDR Blackstone Senior Loan,etf,fixed_income,US,index,State Street
+CWB,SPDR Bloomberg Convertible Secs,etf,fixed_income,US,index,State Street
+ANGL,VanEck Fallen Angel High Yield,etf,fixed_income,US,index,VanEck
+MINT,PIMCO Enhanced Short Maturity,etf,fixed_income,US,active,PIMCO
+BSV,Vanguard Short-Term Bond,etf,fixed_income,US,index,Vanguard
+BIV,Vanguard Intermediate-Term Bond,etf,fixed_income,US,index,Vanguard
+BLV,Vanguard Long-Term Bond,etf,fixed_income,US,index,Vanguard
+VTEB,Vanguard Tax-Exempt Bond,etf,fixed_income,US,index,Vanguard
+VGSH,Vanguard Short-Term Treasury,etf,fixed_income,US,index,Vanguard
+VGIT,Vanguard Intermediate Treasury,etf,fixed_income,US,index,Vanguard
+VGLT,Vanguard Long-Term Treasury,etf,fixed_income,US,index,Vanguard
+EDV,Vanguard Extended Duration Treasury,etf,fixed_income,US,index,Vanguard
+STIP,iShares 0-5 Year TIPS Bond,etf,fixed_income,US,index,iShares
+JPST,JPMorgan Ultra-Short Income,etf,fixed_income,US,active,JPMorgan
+NEAR,iShares Short Duration Bond,etf,fixed_income,US,active,iShares
+GLD,SPDR Gold Shares,etf,commodity,Global,index,State Street
+SLV,iShares Silver Trust,etf,commodity,Global,index,iShares
+USO,United States Oil Fund,etf,commodity,Global,index,USCF
+IAU,iShares Gold Trust,etf,commodity,Global,index,iShares
+SGOL,Aberdeen Physical Gold Shares,etf,commodity,Global,index,Aberdeen
+PPLT,Aberdeen Physical Platinum,etf,commodity,Global,index,Aberdeen
+PALL,Aberdeen Physical Palladium,etf,commodity,Global,index,Aberdeen
+GDX,VanEck Gold Miners,etf,equity,Global,sector,VanEck
+GDXJ,VanEck Junior Gold Miners,etf,equity,Global,sector,VanEck
+SIL,Global X Silver Miners,etf,equity,Global,sector,Global X
+SILJ,ETFMG Prime Junior Silver Miners,etf,equity,Global,sector,ETFMG
+UNG,United States Natural Gas Fund,etf,commodity,US,index,USCF
+WEAT,Teucrium Wheat Fund,etf,commodity,Global,index,Teucrium
+CORN,Teucrium Corn Fund,etf,commodity,Global,index,Teucrium
+SOYB,Teucrium Soybean Fund,etf,commodity,Global,index,Teucrium
+DBA,Invesco DB Agriculture,etf,commodity,Global,index,Invesco
+DBC,Invesco DB Commodity Index,etf,commodity,Global,index,Invesco
+PDBC,Invesco Optimum Yield Diversified,etf,commodity,Global,index,Invesco
+GSG,iShares S&P GSCI Commodity,etf,commodity,Global,index,iShares
+REMX,VanEck Rare Earth/Strategic Metals,etf,commodity,Global,thematic,VanEck
+COPX,Global X Copper Miners,etf,equity,Global,thematic,Global X
+CPER,United States Copper Index,etf,commodity,US,index,USCF
+BCI,Aberdeen Bloomberg All Commodity,etf,commodity,Global,index,Aberdeen
+FTGC,First Trust Global Tactical Comm,etf,commodity,Global,active,First Trust
+COMT,iShares GSCI Commodity Dynamic,etf,commodity,Global,index,iShares
+BAR,GraniteShares Gold Trust,etf,commodity,Global,index,GraniteShares
+GLTR,Aberdeen Physical Precious Metals,etf,commodity,Global,index,Aberdeen
+MOO,VanEck Agribusiness,etf,equity,Global,thematic,VanEck
+WOOD,iShares Global Timber & Forestry,etf,equity,Global,thematic,iShares
+NIB,iPath Bloomberg Cocoa Subindex,etf,commodity,Global,index,iPath
+JO,iPath Bloomberg Coffee Subindex,etf,commodity,Global,index,iPath
+SCHD,Schwab US Dividend Equity,etf,equity,US,dividend,Schwab
+JEPI,JPMorgan Equity Premium Income,etf,equity,US,income,JPMorgan
+JEPQ,JPMorgan Nasdaq Equity Premium,etf,equity,US,income,JPMorgan
+DGRO,iShares Core Dividend Growth,etf,equity,US,dividend,iShares
+VIG,Vanguard Dividend Appreciation,etf,equity,US,dividend,Vanguard
+DVY,iShares Select Dividend,etf,equity,US,dividend,iShares
+SPHD,Invesco S&P 500 High Dividend,etf,equity,US,dividend,Invesco
+HDV,iShares Core High Dividend,etf,equity,US,dividend,iShares
+NOBL,ProShares S&P 500 Dividend Aristo,etf,equity,US,dividend,ProShares
+DGRW,WisdomTree US Quality Dividend Gr,etf,equity,US,dividend,WisdomTree
+SPYD,SPDR Portfolio S&P 500 High Div,etf,equity,US,dividend,State Street
+VYM,Vanguard High Dividend Yield,etf,equity,US,dividend,Vanguard
+FDL,First Trust Morningstar Dividend,etf,equity,US,dividend,First Trust
+VYMI,Vanguard Intl High Dividend Yield,etf,equity,Global ex-US,dividend,Vanguard
+IDV,iShares International Select Div,etf,equity,Global ex-US,dividend,iShares
+DEM,WisdomTree EM High Dividend,etf,equity,Emerging Markets,dividend,WisdomTree
+RDVY,First Trust Rising Dividend,etf,equity,US,dividend,First Trust
+DIVO,Amplify CWP Enhanced Dividend,etf,equity,US,income,Amplify
+PFF,iShares Preferred & Income Secs,etf,fixed_income,US,income,iShares
+PGX,Invesco Preferred,etf,fixed_income,US,income,Invesco
+PFFD,Global X US Preferred,etf,fixed_income,US,income,Global X
+QYLD,Global X NASDAQ 100 Covered Call,etf,equity,US,income,Global X
+XYLD,Global X S&P 500 Covered Call,etf,equity,US,income,Global X
+RYLD,Global X Russell 2000 Covered Call,etf,equity,US,income,Global X
+ARKK,ARK Innovation,etf,equity,US,thematic,ARK
+ARKG,ARK Genomic Revolution,etf,equity,US,thematic,ARK
+ARKW,ARK Next Generation Internet,etf,equity,US,thematic,ARK
+ARKF,ARK Fintech Innovation,etf,equity,US,thematic,ARK
+ARKQ,ARK Autonomous Tech & Robotics,etf,equity,US,thematic,ARK
+ICLN,iShares Global Clean Energy,etf,equity,Global,thematic,iShares
+TAN,Invesco Solar,etf,equity,Global,thematic,Invesco
+HACK,ETFMG Prime Cyber Security,etf,equity,Global,thematic,ETFMG
+BOTZ,Global X Robotics & AI,etf,equity,Global,thematic,Global X
+ROBO,ROBO Global Robotics & Auto,etf,equity,Global,thematic,ROBO
+GNOM,Global X Genomics & Biotech,etf,equity,Global,thematic,Global X
+PBW,Invesco WilderHill Clean Energy,etf,equity,US,thematic,Invesco
+FAN,First Trust Global Wind Energy,etf,equity,Global,thematic,First Trust
+QCLN,First Trust NASDAQ Clean Edge,etf,equity,US,thematic,First Trust
+MJ,ETFMG Alternative Harvest,etf,equity,Global,thematic,ETFMG
+DRIV,Global X Autonomous & EV,etf,equity,Global,thematic,Global X
+CLOU,Global X Cloud Computing,etf,equity,Global,thematic,Global X
+SKYY,First Trust Cloud Computing,etf,equity,US,thematic,First Trust
+SNSR,Global X Internet of Things,etf,equity,Global,thematic,Global X
+EDOC,Global X Telemedicine & Digital,etf,equity,Global,thematic,Global X
+HERO,Global X Video Games & Esports,etf,equity,Global,thematic,Global X
+FINX,Global X FinTech,etf,equity,Global,thematic,Global X
+IPAY,ETFMG Prime Mobile Payments,etf,equity,Global,thematic,ETFMG
+AIQ,Global X AI & Technology,etf,equity,Global,thematic,Global X
+LIT,Global X Lithium & Battery Tech,etf,equity,Global,thematic,Global X
+BATT,Amplify Lithium & Battery Tech,etf,equity,Global,thematic,Amplify
+ACES,ALPS Clean Energy,etf,equity,US,thematic,ALPS
+GRID,First Trust NASDAQ Clean Edge Grid,etf,equity,US,thematic,First Trust
+URNM,Sprott Uranium Miners,etf,equity,Global,thematic,Sprott
+MOON,Direxion Moonshot Innovators,etf,equity,US,thematic,Direxion
+BUZZ,VanEck Social Sentiment,etf,equity,US,thematic,VanEck
+MSOS,AdvisorShares Pure US Cannabis,etf,equity,US,thematic,AdvisorShares
+BLOK,Amplify Transformational Data,etf,equity,Global,thematic,Amplify
+BITQ,Bitwise Crypto Industry Innovators,etf,equity,Global,thematic,Bitwise
+IRBO,iShares Robotics and AI,etf,equity,Global,thematic,iShares
+SMOG,VanEck Low Carbon Energy,etf,equity,Global,thematic,VanEck
+PRNT,3D Printing,etf,equity,Global,thematic,ARK
+IZRL,ARK Israel Innovative Tech,etf,equity,Israel,thematic,ARK
+BITO,ProShares Bitcoin Strategy,etf,crypto,US,thematic,ProShares
+IBIT,iShares Bitcoin Trust,etf,crypto,US,index,iShares
+ETHE,Grayscale Ethereum Trust,etf,crypto,US,index,Grayscale
+GBTC,Grayscale Bitcoin Trust,etf,crypto,US,index,Grayscale
+FBTC,Fidelity Wise Origin Bitcoin,etf,crypto,US,index,Fidelity
+ARKB,ARK 21Shares Bitcoin,etf,crypto,US,index,ARK
+BITB,Bitwise Bitcoin,etf,crypto,US,index,Bitwise
+EZBC,Franklin Bitcoin,etf,crypto,US,index,Franklin
+HODL,VanEck Bitcoin,etf,crypto,US,index,VanEck
+BTCO,Invesco Galaxy Bitcoin,etf,crypto,US,index,Invesco
+ETHA,iShares Ethereum Trust,etf,crypto,US,index,iShares
+BRRR,CoinShares Valkyrie Bitcoin,etf,crypto,US,index,Valkyrie
+DEFI,Hashdex Bitcoin,etf,crypto,US,index,Hashdex
+TQQQ,ProShares UltraPro QQQ,etf,equity,US,leveraged,ProShares
+SQQQ,ProShares UltraPro Short QQQ,etf,equity,US,leveraged,ProShares
+SPXL,Direxion Daily S&P 500 Bull 3X,etf,equity,US,leveraged,Direxion
+SPXS,Direxion Daily S&P 500 Bear 3X,etf,equity,US,leveraged,Direxion
+TNA,Direxion Daily Small Cap Bull 3X,etf,equity,US,leveraged,Direxion
+TZA,Direxion Daily Small Cap Bear 3X,etf,equity,US,leveraged,Direxion
+UPRO,ProShares UltraPro S&P500,etf,equity,US,leveraged,ProShares
+SDS,ProShares UltraShort S&P500,etf,equity,US,leveraged,ProShares
+SSO,ProShares Ultra S&P500,etf,equity,US,leveraged,ProShares
+QLD,ProShares Ultra QQQ,etf,equity,US,leveraged,ProShares
+PSQ,ProShares Short QQQ,etf,equity,US,leveraged,ProShares
+SH,ProShares Short S&P500,etf,equity,US,leveraged,ProShares
+DOG,ProShares Short Dow30,etf,equity,US,leveraged,ProShares
+UDOW,ProShares UltraPro Dow30,etf,equity,US,leveraged,ProShares
+SDOW,ProShares UltraPro Short Dow30,etf,equity,US,leveraged,ProShares
+LABU,Direxion Daily S&P Biotech Bull 3X,etf,equity,US,leveraged,Direxion
+LABD,Direxion Daily S&P Biotech Bear 3X,etf,equity,US,leveraged,Direxion
+SOXL,Direxion Daily Semiconductor Bull 3X,etf,equity,US,leveraged,Direxion
+SOXS,Direxion Daily Semiconductor Bear 3X,etf,equity,US,leveraged,Direxion
+FAS,Direxion Daily Financial Bull 3X,etf,equity,US,leveraged,Direxion
+FAZ,Direxion Daily Financial Bear 3X,etf,equity,US,leveraged,Direxion
+ERX,Direxion Daily Energy Bull 2X,etf,equity,US,leveraged,Direxion
+ERY,Direxion Daily Energy Bear 2X,etf,equity,US,leveraged,Direxion
+NUGT,Direxion Daily Gold Miners Bull 2X,etf,equity,US,leveraged,Direxion
+DUST,Direxion Daily Gold Miners Bear 2X,etf,equity,US,leveraged,Direxion
+UVXY,ProShares Ultra VIX Short-Term,etf,volatility,US,leveraged,ProShares
+SVXY,ProShares Short VIX Short-Term,etf,volatility,US,leveraged,ProShares
+VXX,iPath Series B S&P 500 VIX ST,etf,volatility,US,index,iPath
+VIXY,ProShares VIX Short-Term Futures,etf,volatility,US,index,ProShares
+VLUE,iShares MSCI USA Value Factor,etf,equity,US,factor,iShares
+MTUM,iShares MSCI USA Momentum Factor,etf,equity,US,factor,iShares
+QUAL,iShares MSCI USA Quality Factor,etf,equity,US,factor,iShares
+SIZE,iShares MSCI USA Size Factor,etf,equity,US,factor,iShares
+USMV,iShares MSCI USA Min Vol Factor,etf,equity,US,factor,iShares
+RPV,Invesco S&P 500 Pure Value,etf,equity,US,factor,Invesco
+RPG,Invesco S&P 500 Pure Growth,etf,equity,US,factor,Invesco
+DFLV,Dimensional US Large Cap Value,etf,equity,US,factor,Dimensional
+DFAC,Dimensional US Core Equity 2,etf,equity,US,factor,Dimensional
+DFAT,Dimensional US Targeted Value,etf,equity,US,factor,Dimensional
+AVUV,Avantis US Small Cap Value,etf,equity,US,factor,Avantis
+AVUS,Avantis US Equity,etf,equity,US,factor,Avantis
+AVES,Avantis Intl Small Cap Value,etf,equity,Global ex-US,factor,Avantis
+AVEM,Avantis Emerging Markets Equity,etf,equity,Emerging Markets,factor,Avantis
+COWZ,Pacer US Cash Cows 100,etf,equity,US,factor,Pacer
+GCOW,Pacer Global Cash Cows Dividend,etf,equity,Global,factor,Pacer
+MOAT,VanEck Morningstar Wide Moat,etf,equity,US,factor,VanEck
+SPMV,Invesco S&P 500 Min Variance,etf,equity,US,factor,Invesco
+JMOM,JPMorgan US Momentum Factor,etf,equity,US,factor,JPMorgan
+JVAL,JPMorgan US Value Factor,etf,equity,US,factor,JPMorgan
+VNQ,Vanguard Real Estate,etf,equity,US,sector,Vanguard
+VNQI,Vanguard Global ex-US RE,etf,equity,Global ex-US,sector,Vanguard
+REET,iShares Global REIT,etf,equity,Global,sector,iShares
+RWR,SPDR Dow Jones REIT,etf,equity,US,sector,State Street
+USRT,iShares Core US REIT,etf,equity,US,sector,iShares
+SCHH,Schwab US REIT,etf,equity,US,sector,Schwab
+IYR,iShares US Real Estate,etf,equity,US,sector,iShares
+ICF,iShares Cohen & Steers REIT,etf,equity,US,sector,iShares
+IFGL,iShares Intl Developed RE,etf,equity,Global ex-US,sector,iShares
+REM,iShares Mortgage Real Estate,etf,equity,US,sector,iShares
+SRVR,Pacer Data & Infrastructure RE,etf,equity,US,sector,Pacer
+HOMZ,Hoya Capital Housing,etf,equity,US,sector,Hoya
+VT,Vanguard Total World Stock,etf,equity,Global,index,Vanguard
+ACWI,iShares MSCI ACWI,etf,equity,Global,index,iShares
+AOR,iShares Core Growth Allocation,etf,multi_asset,Global,balanced,iShares
+AOM,iShares Core Moderate Allocation,etf,multi_asset,Global,balanced,iShares
+AOK,iShares Core Conservative Alloc,etf,multi_asset,Global,balanced,iShares
+AOA,iShares Core Aggressive Alloc,etf,multi_asset,Global,balanced,iShares
+GAL,SPDR SSgA Global Allocation,etf,multi_asset,Global,balanced,State Street
+SWAN,Amplify BlackSwan Growth & Treasury,etf,multi_asset,US,balanced,Amplify
+RPAR,RPAR Risk Parity,etf,multi_asset,Global,balanced,RPAR
+ESGU,iShares ESG Aware MSCI USA,etf,equity,US,esg,iShares
+ESGV,Vanguard ESG US Stock,etf,equity,US,esg,Vanguard
+ESGE,iShares ESG Aware MSCI EM,etf,equity,Emerging Markets,esg,iShares
+ESGD,iShares ESG Aware MSCI EAFE,etf,equity,Developed ex-US,esg,iShares
+SUSA,iShares MSCI USA ESG Select,etf,equity,US,esg,iShares
+SUSL,iShares ESG MSCI USA Leaders,etf,equity,US,esg,iShares
+DSI,iShares MSCI KLD 400 Social,etf,equity,US,esg,iShares
+VEGN,US Vegan Climate,etf,equity,US,esg,Beyond
+KRMA,Global X Conscious Companies,etf,equity,US,esg,Global X
+NULG,Nuveen ESG Large-Cap Growth,etf,equity,US,esg,Nuveen
+NULV,Nuveen ESG Large-Cap Value,etf,equity,US,esg,Nuveen
+NUSC,Nuveen ESG Small-Cap,etf,equity,US,esg,Nuveen
+FXD,First Trust Consumer Discretionary,etf,equity,US,sector,First Trust
+FXG,First Trust Consumer Staples,etf,equity,US,sector,First Trust
+FXH,First Trust Health Care,etf,equity,US,sector,First Trust
+FXL,First Trust Technology,etf,equity,US,sector,First Trust
+FXN,First Trust Energy,etf,equity,US,sector,First Trust
+FXO,First Trust Financials,etf,equity,US,sector,First Trust
+FXR,First Trust Industrials/Producer,etf,equity,US,sector,First Trust
+FXU,First Trust Utilities,etf,equity,US,sector,First Trust
+FXZ,First Trust Materials,etf,equity,US,sector,First Trust
+FHLC,Fidelity MSCI Health Care,etf,equity,US,sector,Fidelity
+FDIS,Fidelity MSCI Consumer Disc,etf,equity,US,sector,Fidelity
+FTEC,Fidelity MSCI Information Tech,etf,equity,US,sector,Fidelity
+FNCL,Fidelity MSCI Financials,etf,equity,US,sector,Fidelity
+FENY,Fidelity MSCI Energy,etf,equity,US,sector,Fidelity
+FUTY,Fidelity MSCI Utilities,etf,equity,US,sector,Fidelity
+FSTA,Fidelity MSCI Consumer Staples,etf,equity,US,sector,Fidelity
+FIDU,Fidelity MSCI Industrials,etf,equity,US,sector,Fidelity
+FMAT,Fidelity MSCI Materials,etf,equity,US,sector,Fidelity
+FCOM,Fidelity MSCI Communication Svcs,etf,equity,US,sector,Fidelity
+FREL,Fidelity MSCI Real Estate,etf,equity,US,sector,Fidelity
+BIL,SPDR Bloomberg 1-3 Month T-Bill,etf,fixed_income,US,index,State Street
+SHV,iShares Short Treasury Bond,etf,fixed_income,US,index,iShares
+SGOV,iShares 0-3 Month Treasury Bond,etf,fixed_income,US,index,iShares
+TBIL,US Treasury 3 Month Bill,etf,fixed_income,US,index,F/m
+USFR,WisdomTree Floating Rate Treasury,etf,fixed_income,US,index,WisdomTree
+TFLO,iShares Treasury Floating Rate,etf,fixed_income,US,index,iShares
+CSHI,NEOS Enhanced Income 1-3M T-Bill,etf,fixed_income,US,active,NEOS
+TIP,iShares TIPS Bond,etf,fixed_income,US,index,iShares
+VTIP,Vanguard Short-Term Inflation,etf,fixed_income,US,index,Vanguard
+SCHP,Schwab US TIPS,etf,fixed_income,US,index,Schwab
+VFINX,Vanguard 500 Index Investor,mutual_fund,equity,US,index,Vanguard
+FXAIX,Fidelity 500 Index,mutual_fund,equity,US,index,Fidelity
+VTSAX,Vanguard Total Stock Mkt Admiral,mutual_fund,equity,US,index,Vanguard
+VBTLX,Vanguard Total Bond Mkt Admiral,mutual_fund,fixed_income,US,index,Vanguard
+VTIAX,Vanguard Total Intl Stock Admiral,mutual_fund,equity,Global ex-US,index,Vanguard
+VWELX,Vanguard Wellington,mutual_fund,multi_asset,US,balanced,Vanguard
+VTIVX,Vanguard Target Retirement 2045,mutual_fund,multi_asset,Global,target_date,Vanguard
+PIMIX,PIMCO Income Institutional,mutual_fund,fixed_income,Global,active,PIMCO
+DODFX,Dodge & Cox International Stock,mutual_fund,equity,Global ex-US,active,Dodge & Cox
+FCNTX,Fidelity Contrafund,mutual_fund,equity,US,active,Fidelity
+VFIAX,Vanguard 500 Index Admiral,mutual_fund,equity,US,index,Vanguard
+VIGAX,Vanguard Growth Index Admiral,mutual_fund,equity,US,growth,Vanguard
+VEXAX,Vanguard Extended Market Admiral,mutual_fund,equity,US,index,Vanguard
+VGWAX,Vanguard ESG Intl Stock Admiral,mutual_fund,equity,Global ex-US,esg,Vanguard
+PRWCX,T Rowe Price Capital Appreciation,mutual_fund,multi_asset,US,active,T Rowe Price
+TRBCX,T Rowe Price Blue Chip Growth,mutual_fund,equity,US,growth,T Rowe Price
+DODGX,Dodge & Cox Stock,mutual_fund,equity,US,active,Dodge & Cox
+OAKMX,Oakmark,mutual_fund,equity,US,active,Oakmark
+ABALX,American Funds Balanced,mutual_fund,multi_asset,US,balanced,American Funds
+AGTHX,American Funds Growth Fund,mutual_fund,equity,US,growth,American Funds
+ANCFX,American Funds Capital Income,mutual_fund,multi_asset,Global,income,American Funds
+ANWPX,American Funds New Perspective,mutual_fund,equity,Global,growth,American Funds
+CWGIX,American Funds Capital World Growth,mutual_fund,equity,Global,growth,American Funds
+UUP,Invesco DB US Dollar Index Bull,etf,currency,US,index,Invesco
+UDN,Invesco DB US Dollar Index Bear,etf,currency,US,index,Invesco
+FXE,Invesco CurrencyShares Euro,etf,currency,Europe,index,Invesco
+FXY,Invesco CurrencyShares Yen,etf,currency,Japan,index,Invesco
+FXB,Invesco CurrencyShares Pound,etf,currency,UK,index,Invesco
+FXA,Invesco CurrencyShares Aussie,etf,currency,Australia,index,Invesco
+FXC,Invesco CurrencyShares Canadian,etf,currency,Canada,index,Invesco
+FXF,Invesco CurrencyShares Swiss Franc,etf,currency,Switzerland,index,Invesco
+CEW,WisdomTree EM Currency Strategy,etf,currency,Emerging Markets,index,WisdomTree
+DBEF,Xtrackers MSCI EAFE Hedged Equity,etf,equity,Developed ex-US,hedged,Xtrackers
+DBEM,Xtrackers MSCI EM Hedged Equity,etf,equity,Emerging Markets,hedged,Xtrackers
+HEFA,iShares Currency Hedged MSCI EAFE,etf,equity,Developed ex-US,hedged,iShares
+HEWJ,iShares Currency Hedged MSCI Japan,etf,equity,Japan,hedged,iShares
+DXJ,WisdomTree Japan Hedged Equity,etf,equity,Japan,hedged,WisdomTree
+HEDJ,WisdomTree Europe Hedged Equity,etf,equity,Europe,hedged,WisdomTree
+DBMF,iM DBi Managed Futures Strategy,etf,alternatives,Global,managed_futures,iM
+CTA,Simplify Managed Futures Strategy,etf,alternatives,Global,managed_futures,Simplify
+KMLM,KFA Mount Lucas Managed Futures,etf,alternatives,Global,managed_futures,KFA
+BTAL,AGFiQ US Market Neutral Anti-Beta,etf,alternatives,US,market_neutral,AGFiQ
+MNA,IQ Merger Arbitrage,etf,alternatives,US,event_driven,IQ
+QAI,IQ Hedge Multi-Strategy Tracker,etf,alternatives,US,multi_strategy,IQ
+TAIL,Cambria Tail Risk,etf,alternatives,US,tail_risk,Cambria
+NUSI,Nationwide Nasdaq-100 Risk-Managed,etf,equity,US,income,Nationwide
+EPI,WisdomTree India Earnings,etf,equity,India,fundamental,WisdomTree
+PIN,Invesco India,etf,equity,India,index,Invesco
+INDY,iShares India 50,etf,equity,India,index,iShares
+SMIN,iShares MSCI India Small-Cap,etf,equity,India,index,iShares
+CNYA,iShares MSCI China A,etf,equity,China,index,iShares
+CNXT,VanEck ChiNext,etf,equity,China,index,VanEck
+CHIQ,Global X MSCI China Consumer Disc,etf,equity,China,sector,Global X
+CHIK,Global X MSCI China Communication,etf,equity,China,sector,Global X
+DFE,WisdomTree Europe SmallCap Div,etf,equity,Europe,dividend,WisdomTree
+EZU,iShares MSCI Eurozone,etf,equity,Eurozone,index,iShares
+BBEU,JPMorgan BetaBuilders Europe,etf,equity,Europe,index,JPMorgan
+BBJP,JPMorgan BetaBuilders Japan,etf,equity,Japan,index,JPMorgan
+HEWG,iShares Currency Hedged MSCI Germany,etf,equity,Germany,hedged,iShares
+FLBR,Franklin FTSE Brazil,etf,equity,Brazil,index,Franklin
+FLMX,Franklin FTSE Mexico,etf,equity,Mexico,index,Franklin
+FLJP,Franklin FTSE Japan,etf,equity,Japan,index,Franklin
+FLCH,Franklin FTSE China,etf,equity,China,index,Franklin
+FLIN,Franklin FTSE India,etf,equity,India,index,Franklin
+FLKR,Franklin FTSE South Korea,etf,equity,South Korea,index,Franklin
+FLTW,Franklin FTSE Taiwan,etf,equity,Taiwan,index,Franklin
+FLHK,Franklin FTSE Hong Kong,etf,equity,Hong Kong,index,Franklin
+FLGB,Franklin FTSE United Kingdom,etf,equity,UK,index,Franklin
+FLDM,Franklin FTSE Germany,etf,equity,Germany,index,Franklin
+FLFR,Franklin FTSE France,etf,equity,France,index,Franklin
+FLAU,Franklin FTSE Australia,etf,equity,Australia,index,Franklin
+FLCA,Franklin FTSE Canada,etf,equity,Canada,index,Franklin
+CIBR,First Trust NASDAQ Cybersecurity,etf,equity,Global,thematic,First Trust
+WCLD,WisdomTree Cloud Computing,etf,equity,US,thematic,WisdomTree
+DTEC,ALPS Disruptive Technologies,etf,equity,US,thematic,ALPS
+KOMP,SPDR S&P Kensho New Economies,etf,equity,US,thematic,State Street
+XITK,SPDR FactSet Innovative Tech,etf,equity,US,thematic,State Street
+PSCT,Invesco S&P SmallCap Tech,etf,equity,US,sector,Invesco
+PSCH,Invesco S&P SmallCap Health Care,etf,equity,US,sector,Invesco
+PSCI,Invesco S&P SmallCap Industrials,etf,equity,US,sector,Invesco
+PSCF,Invesco S&P SmallCap Financials,etf,equity,US,sector,Invesco
+PSCE,Invesco S&P SmallCap Energy,etf,equity,US,sector,Invesco
+FTXN,First Trust Nasdaq Oil & Gas,etf,equity,US,sector,First Trust
+FTXO,First Trust Nasdaq Bank,etf,equity,US,sector,First Trust
+RWO,SPDR Dow Jones Global Real Estate,etf,equity,Global,sector,State Street
+GREK,Global X MSCI Greece,etf,equity,Greece,index,Global X
+PGAL,Global X MSCI Portugal,etf,equity,Portugal,index,Global X
+ENZL,iShares MSCI New Zealand,etf,equity,New Zealand,index,iShares

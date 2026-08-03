@@ -5,6 +5,7 @@ from datetime import datetime
 from sqlalchemy import (
     Boolean,
     DateTime,
+    ForeignKey,
     Integer,
     Numeric,
     String,
@@ -40,7 +41,10 @@ class FetchRun(Base):
     __table_args__ = {"schema": "meta"}
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    source_id: Mapped[int | None] = mapped_column(Integer)
+    source_id: Mapped[int | None] = mapped_column(
+        Integer,
+        ForeignKey("meta.data_source.id"),
+    )
     domain: Mapped[str] = mapped_column(String(50), nullable=False)
     started_at: Mapped[datetime] = mapped_column(
         DateTime, default=datetime.now

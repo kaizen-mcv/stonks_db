@@ -806,3 +806,18 @@ WHERE bi.issuer_type = 'government'
   )
 ORDER BY cr.rating_date DESC LIMIT 10;
 ```
+
+---
+
+## Omisiones intencionales de FK
+
+Campos que **no** tienen `FOREIGN KEY` por diseño:
+
+| Campo | Tablas afectadas | Motivo |
+|-------|-----------------|--------|
+| `bronze.*.fetch_run_id` | 5 tablas bronze | Capa de aterrizaje crudo; no forzar FK para permitir carga masiva sin orden de inserts |
+| `gold.*.source_id` | Varias vistas mat. | Capa analítica derivada; no acoplar a `meta.data_source` |
+| `currency_code` | ~10 tablas (equity, fund, commodity, fi, gold, country) | Muchos registros vienen con divisas no estándar o vacías de yfinance; FK rompería la carga |
+| `trade.flow.partner_code` | 1 tabla | Permite agregados como 'WLD' (mundo) que no existen en `ref.country` |
+| `ref.country.currency_code` | 1 tabla | Algunos países usan divisas no listadas en `ref.currency` (ej. monedas menores) |
+| `ref.hs_product.parent_code` | 1 tabla | Autorreferencia parcial; no todos los padres están cargados |

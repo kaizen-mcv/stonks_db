@@ -33,18 +33,42 @@ _ISO2_TO_3 = {
 
 # (variable, percentil, código indicador, nombre)
 _TARGETS = [
-    ("sptincj992", "p99p100", "WID_INC_TOP1",
-     "Top 1% pre-tax national income share (WID)"),
-    ("sptincj992", "p90p100", "WID_INC_TOP10",
-     "Top 10% pre-tax national income share (WID)"),
-    ("sptincj992", "p0p50", "WID_INC_BOT50",
-     "Bottom 50% pre-tax national income share (WID)"),
-    ("shwealj992", "p99p100", "WID_WEALTH_TOP1",
-     "Top 1% net personal wealth share (WID)"),
-    ("shwealj992", "p90p100", "WID_WEALTH_TOP10",
-     "Top 10% net personal wealth share (WID)"),
-    ("gptincj992", "p0p100", "WID_INC_GINI",
-     "Gini of pre-tax national income (WID)"),
+    (
+        "sptincj992",
+        "p99p100",
+        "WID_INC_TOP1",
+        "Top 1% pre-tax national income share (WID)",
+    ),
+    (
+        "sptincj992",
+        "p90p100",
+        "WID_INC_TOP10",
+        "Top 10% pre-tax national income share (WID)",
+    ),
+    (
+        "sptincj992",
+        "p0p50",
+        "WID_INC_BOT50",
+        "Bottom 50% pre-tax national income share (WID)",
+    ),
+    (
+        "shwealj992",
+        "p99p100",
+        "WID_WEALTH_TOP1",
+        "Top 1% net personal wealth share (WID)",
+    ),
+    (
+        "shwealj992",
+        "p90p100",
+        "WID_WEALTH_TOP10",
+        "Top 10% net personal wealth share (WID)",
+    ),
+    (
+        "gptincj992",
+        "p0p100",
+        "WID_INC_GINI",
+        "Gini of pre-tax national income (WID)",
+    ),
 ]
 
 
@@ -62,7 +86,8 @@ class WIDFetcher(BaseSDMXFetcher):
         wanted = {(v, p): code for v, p, code, _ in _TARGETS}
         with zipfile.ZipFile(_CACHE) as zf:
             names = [
-                n for n in zf.namelist()
+                n
+                for n in zf.namelist()
                 if n.rsplit("/", 1)[-1].startswith("WID_data_")
                 and n.endswith(".csv")
             ]

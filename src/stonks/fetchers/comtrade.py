@@ -19,7 +19,8 @@ from stonks.config import settings
 from stonks.db import get_session
 from stonks.fetchers.base import BaseFetcher, logger
 from stonks.models.meta import DataSource
-from stonks.models.trade import Flow, HsProduct
+from stonks.models.ref import HsProduct
+from stonks.models.trade import Flow
 
 # M49 numérico (Comtrade) → ISO-3, vía pycountry.
 _M49_TO_3 = {

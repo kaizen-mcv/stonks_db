@@ -39,9 +39,7 @@ _SDMX = {
                 ]
             }
         },
-        "dataSets": [
-            {"observations": {"0:0": [1.5], "1:1": [2.5]}}
-        ],
+        "dataSets": [{"observations": {"0:0": [1.5], "1:1": [2.5]}}],
     }
 }
 
@@ -108,12 +106,27 @@ def test_who_parse_filtra_pais_y_sexo():
     from stonks.fetchers.who import WHOFetcher
 
     records = [
-        {"SpatialDimType": "COUNTRY", "SpatialDim": "ESP",
-         "TimeDim": 2020, "NumericValue": 83.0, "Dim1": "SEX_BTSX"},
-        {"SpatialDimType": "REGION", "SpatialDim": "EUR",
-         "TimeDim": 2020, "NumericValue": 80.0, "Dim1": "SEX_BTSX"},
-        {"SpatialDimType": "COUNTRY", "SpatialDim": "ESP",
-         "TimeDim": 2020, "NumericValue": 99.0, "Dim1": "SEX_MLE"},
+        {
+            "SpatialDimType": "COUNTRY",
+            "SpatialDim": "ESP",
+            "TimeDim": 2020,
+            "NumericValue": 83.0,
+            "Dim1": "SEX_BTSX",
+        },
+        {
+            "SpatialDimType": "REGION",
+            "SpatialDim": "EUR",
+            "TimeDim": 2020,
+            "NumericValue": 80.0,
+            "Dim1": "SEX_BTSX",
+        },
+        {
+            "SpatialDimType": "COUNTRY",
+            "SpatialDim": "ESP",
+            "TimeDim": 2020,
+            "NumericValue": 99.0,
+            "Dim1": "SEX_MLE",
+        },
     ]
     # dim1=None → solo el total (descarta región y desglose por sexo).
     filas = WHOFetcher._parse(records, dim1=None)

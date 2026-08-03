@@ -8,40 +8,120 @@ from stonks.fetchers.base import BaseFetcher, logger
 from stonks.models.crypto import (
     Coin,
     CryptoPrice,
+    MarketDominance,
 )
 
-# Top 50 coins por market cap (coingecko IDs)
+# Top 100 coins por market cap (coingecko IDs)
+# (coingecko_id, symbol, nombre, categoría)
 TOP_COINS = [
+    # ── Layer 1 principales ──────────────────
     ("bitcoin", "BTC", "Bitcoin", "layer1"),
     ("ethereum", "ETH", "Ethereum", "layer1"),
-    ("tether", "USDT", "Tether", "stablecoin"),
     ("binancecoin", "BNB", "BNB", "layer1"),
     ("solana", "SOL", "Solana", "layer1"),
-    ("usd-coin", "USDC", "USD Coin", "stablecoin"),
     ("ripple", "XRP", "XRP", "layer1"),
     ("cardano", "ADA", "Cardano", "layer1"),
-    ("dogecoin", "DOGE", "Dogecoin", "meme"),
     ("avalanche-2", "AVAX", "Avalanche", "layer1"),
     ("tron", "TRX", "TRON", "layer1"),
     ("polkadot", "DOT", "Polkadot", "layer1"),
-    ("chainlink", "LINK", "Chainlink", "defi"),
-    ("polygon-ecosystem-token", "POL", "Polygon", "layer2"),
-    ("shiba-inu", "SHIB", "Shiba Inu", "meme"),
     ("litecoin", "LTC", "Litecoin", "layer1"),
     ("bitcoin-cash", "BCH", "Bitcoin Cash", "layer1"),
-    ("uniswap", "UNI", "Uniswap", "defi"),
     ("stellar", "XLM", "Stellar", "layer1"),
     ("cosmos", "ATOM", "Cosmos", "layer1"),
     ("monero", "XMR", "Monero", "layer1"),
     ("ethereum-classic", "ETC", "Ethereum Classic", "layer1"),
+    ("algorand", "ALGO", "Algorand", "layer1"),
+    ("sui", "SUI", "Sui", "layer1"),
+    ("near", "NEAR", "NEAR Protocol", "layer1"),
+    ("internet-computer", "ICP", "Internet Computer", "layer1"),
+    ("aptos", "APT", "Aptos", "layer1"),
+    ("hedera-hashgraph", "HBAR", "Hedera", "layer1"),
+    ("kaspa", "KAS", "Kaspa", "layer1"),
+    ("vechain", "VET", "VeChain", "layer1"),
+    ("fantom", "FTM", "Fantom", "layer1"),
+    ("the-open-network", "TON", "Toncoin", "layer1"),
+    ("sei-network", "SEI", "Sei", "layer1"),
+    ("elrond-erd-2", "EGLD", "MultiversX", "layer1"),
+    ("eos", "EOS", "EOS", "layer1"),
+    ("neo", "NEO", "Neo", "layer1"),
+    ("zilliqa", "ZIL", "Zilliqa", "layer1"),
+    ("iota", "IOTA", "IOTA", "layer1"),
+    ("flow-token", "FLOW", "Flow", "layer1"),
+    ("mina-protocol", "MINA", "Mina", "layer1"),
+    ("tezos", "XTZ", "Tezos", "layer1"),
+    ("kava", "KAVA", "Kava", "layer1"),
+    # ── Stablecoins ──────────────────────────
+    ("tether", "USDT", "Tether", "stablecoin"),
+    ("usd-coin", "USDC", "USD Coin", "stablecoin"),
+    ("dai", "DAI", "Dai", "stablecoin"),
+    ("first-digital-usd", "FDUSD", "First Digital USD", "stablecoin"),
+    # ── Meme ─────────────────────────────────
+    ("dogecoin", "DOGE", "Dogecoin", "meme"),
+    ("shiba-inu", "SHIB", "Shiba Inu", "meme"),
+    ("pepe", "PEPE", "Pepe", "meme"),
+    ("floki", "FLOKI", "FLOKI", "meme"),
+    ("bonk", "BONK", "Bonk", "meme"),
+    # ── DeFi ─────────────────────────────────
+    ("chainlink", "LINK", "Chainlink", "defi"),
+    ("uniswap", "UNI", "Uniswap", "defi"),
     ("aave", "AAVE", "Aave", "defi"),
     ("maker", "MKR", "Maker", "defi"),
-    ("algorand", "ALGO", "Algorand", "layer1"),
-    ("filecoin", "FIL", "Filecoin", "infra"),
+    ("lido-dao", "LDO", "Lido DAO", "defi"),
+    ("the-graph", "GRT", "The Graph", "defi"),
+    ("pancakeswap-token", "CAKE", "PancakeSwap", "defi"),
+    ("curve-dao-token", "CRV", "Curve DAO", "defi"),
+    ("compound-governance-token", "COMP", "Compound", "defi"),
+    ("synthetix-network-token", "SNX", "Synthetix", "defi"),
+    ("1inch", "1INCH", "1inch", "defi"),
+    ("sushi", "SUSHI", "SushiSwap", "defi"),
+    ("jupiter-exchange-solana", "JUP", "Jupiter", "defi"),
+    ("pendle", "PENDLE", "Pendle", "defi"),
+    ("ondo-finance", "ONDO", "Ondo Finance", "defi"),
+    ("ethena", "ENA", "Ethena", "defi"),
+    ("raydium", "RAY", "Raydium", "defi"),
+    # ── Layer 2 ──────────────────────────────
+    ("polygon-ecosystem-token", "POL", "Polygon", "layer2"),
     ("arbitrum", "ARB", "Arbitrum", "layer2"),
     ("optimism", "OP", "Optimism", "layer2"),
+    ("starknet", "STRK", "Starknet", "layer2"),
+    ("immutable-x", "IMX", "Immutable X", "layer2"),
+    ("mantle", "MNT", "Mantle", "layer2"),
+    # ── Infra / Storage / Compute ────────────
+    ("filecoin", "FIL", "Filecoin", "infra"),
     ("render-token", "RENDER", "Render", "infra"),
-    ("sui", "SUI", "Sui", "layer1"),
+    ("arweave", "AR", "Arweave", "infra"),
+    ("theta-token", "THETA", "Theta Network", "infra"),
+    ("helium", "HNT", "Helium", "infra"),
+    ("akash-network", "AKT", "Akash Network", "infra"),
+    # ── Exchange tokens ──────────────────────
+    ("okb", "OKB", "OKB", "exchange"),
+    ("crypto-com-chain", "CRO", "Cronos", "exchange"),
+    ("leo-token", "LEO", "UNUS SED LEO", "exchange"),
+    ("kucoin-shares", "KCS", "KuCoin Token", "exchange"),
+    ("gatechain-token", "GT", "Gate Token", "exchange"),
+    # ── Gaming / Metaverso ───────────────────
+    ("axie-infinity", "AXS", "Axie Infinity", "gaming"),
+    ("the-sandbox", "SAND", "The Sandbox", "gaming"),
+    ("decentraland", "MANA", "Decentraland", "gaming"),
+    ("gala", "GALA", "Gala", "gaming"),
+    ("enjincoin", "ENJ", "Enjin Coin", "gaming"),
+    # ── Interoperabilidad ────────────────────
+    ("quant-network", "QNT", "Quant", "interop"),
+    ("thorchain", "RUNE", "THORChain", "interop"),
+    ("wormhole", "W", "Wormhole", "interop"),
+    # ── Privacy ──────────────────────────────
+    ("zcash", "ZEC", "Zcash", "privacy"),
+    ("dash", "DASH", "Dash", "privacy"),
+    # ── AI / Data ────────────────────────────
+    ("fetch-ai", "FET", "Fetch.ai", "ai"),
+    ("singularitynet", "AGIX", "SingularityNET", "ai"),
+    ("ocean-protocol", "OCEAN", "Ocean Protocol", "ai"),
+    ("bittensor", "TAO", "Bittensor", "ai"),
+    # ── Otros relevantes ─────────────────────
+    ("worldcoin-wld", "WLD", "Worldcoin", "identity"),
+    ("celestia", "TIA", "Celestia", "modular"),
+    ("injective-protocol", "INJ", "Injective", "layer1"),
+    ("pyth-network", "PYTH", "Pyth Network", "oracle"),
 ]
 
 
@@ -204,3 +284,50 @@ class CoinGeckoFetcher(BaseFetcher):
             session.close()
 
         return stats
+
+    def fetch_market_dominance(self) -> dict:
+        """Descargar snapshot del mercado crypto global."""
+        url = f"{self.BASE_URL}/global"
+        self._rate_limit()
+        data = self._get(url)
+        gd = data.get("data", {})
+
+        total_mc = gd.get("total_market_cap", {}).get("usd")
+        btc_pct = gd.get("market_cap_percentage", {}).get("btc")
+        eth_pct = gd.get("market_cap_percentage", {}).get("eth")
+
+        if total_mc is None:
+            logger.warning("Sin datos de dominance")
+            return {"inserted": 0}
+
+        session = get_session()
+        try:
+            today = date.today()
+            exists = (
+                session.query(MarketDominance).filter_by(date=today).first()
+            )
+            if exists:
+                exists.total_market_cap_usd = total_mc
+                exists.btc_dominance_pct = btc_pct
+                exists.eth_dominance_pct = eth_pct
+            else:
+                session.add(
+                    MarketDominance(
+                        date=today,
+                        total_market_cap_usd=total_mc,
+                        btc_dominance_pct=btc_pct,
+                        eth_dominance_pct=eth_pct,
+                    )
+                )
+            session.commit()
+            logger.info(
+                "MarketDominance %s: MC=%.0f BTC=%.1f%% ETH=%.1f%%",
+                today,
+                total_mc,
+                btc_pct or 0,
+                eth_pct or 0,
+            )
+        finally:
+            session.close()
+
+        return {"inserted": 1}

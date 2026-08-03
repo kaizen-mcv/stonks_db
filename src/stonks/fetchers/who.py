@@ -36,8 +36,7 @@ class WHOFetcher(BaseSDMXFetcher):
         for code, name, dim1 in _INDICATORS:
             if self._fetch_indicator(code, name, dim1).get("puntos"):
                 ok += 1
-        logger.info("who: %d/%d indicadores con datos", ok,
-                    len(_INDICATORS))
+        logger.info("who: %d/%d indicadores con datos", ok, len(_INDICATORS))
         return {"indicadores": len(_INDICATORS), "con_datos": ok}
 
     def _fetch_indicator(self, code, name, dim1) -> dict:
@@ -51,8 +50,7 @@ class WHOFetcher(BaseSDMXFetcher):
             resp.raise_for_status()
             filas = self._parse(resp.json().get("value", []), dim1)
             n = self._write(f"WHO_{code}", name, "health", filas)
-            self._finish_run(run_id, "success", fetched=len(filas),
-                             inserted=n)
+            self._finish_run(run_id, "success", fetched=len(filas), inserted=n)
             return {"code": code, "puntos": n}
         except Exception as e:  # noqa: BLE001
             self._finish_run(run_id, "failed", error_log={"msg": str(e)})
@@ -75,8 +73,11 @@ class WHOFetcher(BaseSDMXFetcher):
             if dim1 is None and r.get("Dim1") not in (None, "", "SEX_BTSX"):
                 continue
             try:
-                out[(iso3, int(year))] = (iso3, date(int(year), 12, 31),
-                                          float(val))
+                out[(iso3, int(year))] = (
+                    iso3,
+                    date(int(year), 12, 31),
+                    float(val),
+                )
             except (ValueError, TypeError):
                 continue
         return list(out.values())

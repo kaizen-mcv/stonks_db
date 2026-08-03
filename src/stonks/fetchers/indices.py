@@ -34,6 +34,15 @@ INDICES = [
     ("BOVESPA", "^BVSP", "Bovespa", "BRA", "BRL"),
     ("SENSEX", "^BSESN", "BSE SENSEX", "IND", "INR"),
     ("STOXX50", "^STOXX50E", "Euro Stoxx 50", None, "EUR"),
+    # Emergentes / frontera
+    ("TAIEX", "^TWII", "TAIEX", "TWN", "TWD"),
+    ("IPC", "^MXX", "IPC Mexico", "MEX", "MXN"),
+    ("JSEAS", "^J203.JO", "JSE All Share", "ZAF", "ZAR"),
+    ("BIST100", "XU100.IS", "BIST 100", "TUR", "TRY"),
+    ("SET", "^SET.BK", "SET Index", "THA", "THB"),
+    ("JCI", "^JKSE", "Jakarta Composite", "IDN", "IDR"),
+    ("KLCI", "^KLSE", "FTSE Bursa KLCI", "MYS", "MYR"),
+    ("TASI", "^TASI.SR", "Tadawul All Share", "SAU", "SAR"),
 ]
 
 
