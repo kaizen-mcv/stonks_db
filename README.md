@@ -45,6 +45,7 @@ BD en 5 minutos"* (capas, claves universales y dónde buscar cada cosa).
 | [docs/DATA_DICTIONARY.md](docs/DATA_DICTIONARY.md) | **Diccionario de datos**: cada tabla y columna (tipo, PK/FK, filas) |
 | [docs/SCHEMA_RELATIONS.md](docs/SCHEMA_RELATIONS.md) | Diagrama ER y relaciones |
 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Diseño interno (medallion, fetchers, transforms) |
+| [docs/CERTIFICACION.md](docs/CERTIFICACION.md) | **¿Son fiables los datos?**: cómo se ha verificado cada tabla |
 
 ---
 
@@ -112,23 +113,23 @@ Ver [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
 ## Estructura de la base de datos
 
-18 esquemas. Cifras aproximadas.
+20 esquemas. Cifras aproximadas (auditoría 2026-08).
 
 ### Referencia y metadatos
 | Esquema | Tablas | Contenido |
 |---|---|---|
-| `ref` | country, currency, exchange, sector, hs_product | Países (250), divisas, bolsas, sectores GICS, catálogo HS |
+| `ref` | country, **area**, currency, exchange, sector, hs_product, **legal_entity** | Países (250), **áreas** (superset con agregados e históricos), divisas, bolsas, sectores GICS, catálogo HS, **LEI (GLEIF)** |
 | `meta` | data_source, fetch_run, transform_run, data_quality | Fuentes y **auditoría** de descargas/transformaciones |
 
 ### Mercados financieros (silver) — ~12,3M filas
 | Esquema | Tablas principales | Filas |
 |---|---|---|
 | `equity` | company, price_daily, income_statement, balance_sheet, cash_flow, dividend, split, market_index, index_price, analyst_estimate, earnings_revision, index_constituent_current, ratios_mv | **~11M** (precios 11M) |
-| `fi` | bond, bond_issuer, credit_rating, yield_curve | ~84K |
-| `commodity` | commodity, price_daily | ~155K |
-| `forex` | currency_pair, rate_daily | ~335K |
-| `crypto` | coin, price_daily, market_dominance | ~222K |
-| `fund` | fund, nav_daily | ~507K |
+| `fi` | bond, bond_issuer, credit_rating, yield_curve, **country_risk_premium** | ~84K |
+| `commodity` | commodity (33), price_daily, price_intraday | ~197K |
+| `forex` | currency_pair (103), rate_daily, rate_intraday | ~613K |
+| `crypto` | coin (260), price_daily, price_intraday, market_dominance | ~222K |
+| `fund` | fund (496), nav_daily | ~603K |
 | `alt` | sentiment_indicator, sentiment_value, housing_index* | ~6K |
 
 ### Economía mundial (silver)
@@ -137,13 +138,16 @@ Ver [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 | `macro` | indicator, indicator_source, series, data_point | **~9,1M** (país × indicador × fecha) |
 | `trade` | flow | **~973K** (comercio bilateral, 1988→2023) |
 | `energy` | balance | ~186K (país × fuente × flujo, TWh) |
-| `country` | profile, demographics, tax_rate | ~1K |
+| `country` | profile, demographics, tax_rate | ~1,2K |
+| `realestate` | **price_index, price_index_value** | ~15K (85 índices, 41 países) |
+| `calendar` | **release, release_date** | ~91K fechas de publicación |
+| `deriv` | option_snapshot, volatility_index, volatility_daily, futures_contract, futures_daily, **cot_contract, cot_report** | ~455K (COT desde 1986) |
 
 ### Medallion
 | Esquema | Tablas / vistas | Papel |
 |---|---|---|
 | `bronze` | api_response, sec_companyfacts, constituents_snapshot, analyst_snapshot | Aterrizaje crudo JSONB |
-| `gold` | dim_date, dim_company, dim_country, index_membership, fact_fundamentals_pit, fact_factor_scores, mart_benchmark_returns, **mart_country_year**, mart_trade_matrix, mart_company_macro, mart_sovereign_risk, mart_trade_dependency, mart_earnings_surprise, mart_sector_country, **mart_country_governance**, **mart_climate_risk**, dim_indicator (vista), dim_data_source (vista) | Analítica point-in-time y *marts* (**10 MVs**) |
+| `gold` | dim_date, dim_company, dim_country, index_membership, fact_fundamentals_pit, fact_factor_scores, mart_benchmark_returns, **mart_country_year**, mart_trade_matrix, mart_company_macro, mart_sovereign_risk, mart_trade_dependency, mart_earnings_surprise, mart_sector_country, **mart_country_governance**, **mart_climate_risk**, **mart_volatility_regime**, **mart_crypto_overview**, **mart_etf_category**, **mart_yield_curve**, dim_indicator (vista), dim_data_source (vista) | Analítica point-in-time y *marts* (**14 MVs**) |
 
 **Tablas gold clave para analizar:**
 - `gold.mart_country_year` — panel ancho **país × año** (~123 métricas:

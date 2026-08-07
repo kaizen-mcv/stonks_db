@@ -6,7 +6,7 @@
 GDP_NOMINAL:
   name: "PIB nominal (USD corrientes)"
   category: "GDP"
-  unit: "billion_usd"
+  unit: "usd"
   frequency: "annual"
   sources:
     world_bank: "NY.GDP.MKTP.CD"
@@ -30,7 +30,7 @@ GDP_PER_CAPITA:
 GDP_PPP:
   name: "PIB PPP (USD internacionales)"
   category: "GDP"
-  unit: "billion_intl_usd"
+  unit: "intl_usd"
   frequency: "annual"
   sources:
     world_bank: "NY.GDP.MKTP.PP.CD"

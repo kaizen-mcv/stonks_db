@@ -251,7 +251,12 @@ class FundamentalsPitTransform(BaseTransform):
             if clasif is None:
                 continue
             _, fq = clasif
-            key = (company_id, stmt, fy, fq, filed, metric)
+            # `period_end_date` forma parte de la clave: sin el, dos
+            # periodos distintos presentados en el mismo informe y con
+            # el mismo trimestre fiscal se pisarian. Hoy no colisiona
+            # ninguno (medido: 0 de 1,17 M de claves), pero la clave
+            # sin el periodo no lo garantiza.
+            key = (company_id, stmt, fy, fq, filed, metric, end)
             dedup[key] = {
                 "company_id": company_id,
                 "statement_type": stmt,
@@ -286,6 +291,7 @@ class FundamentalsPitTransform(BaseTransform):
                     "fiscal_quarter",
                     "filed_date",
                     "metric",
+                    "period_end_date",
                 ],
                 set_={
                     "value": stmt.excluded.value,

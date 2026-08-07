@@ -15,14 +15,16 @@ from sqlalchemy.dialects.postgresql import TIMESTAMP
 from sqlalchemy.orm import Mapped, mapped_column
 
 from stonks.db import Base
+from stonks.models.linaje import Linaje, LinajeEjecucion
 
 
-class CurrencyPair(Base):
+class CurrencyPair(Base, Linaje):
     """Par de divisas."""
 
     __tablename__ = "currency_pair"
     __table_args__ = (
         UniqueConstraint("base_currency", "quote_currency"),
+        Index("ix_forex_pair_quote", "quote_currency"),
         {"schema": "forex"},
     )
 
@@ -43,12 +45,13 @@ class CurrencyPair(Base):
     category: Mapped[str | None] = mapped_column(String(20))
 
 
-class ForexRate(Base):
+class ForexRate(Base, LinajeEjecucion):
     """Tipo de cambio diario."""
 
     __tablename__ = "rate_daily"
     __table_args__ = (
         UniqueConstraint("pair_id", "date"),
+        Index("ix_forex_rate_source", "source_id"),
         Index(
             "ix_forex_rate_pair_date",
             "pair_id",
@@ -66,10 +69,10 @@ class ForexRate(Base):
         nullable=False,
     )
     date: Mapped[date] = mapped_column(Date, nullable=False)
-    open: Mapped[float | None] = mapped_column(Numeric(14, 8))
-    high: Mapped[float | None] = mapped_column(Numeric(14, 8))
-    low: Mapped[float | None] = mapped_column(Numeric(14, 8))
-    close: Mapped[float] = mapped_column(Numeric(14, 8), nullable=False)
+    open: Mapped[float | None] = mapped_column(Numeric(20, 10))
+    high: Mapped[float | None] = mapped_column(Numeric(20, 10))
+    low: Mapped[float | None] = mapped_column(Numeric(20, 10))
+    close: Mapped[float] = mapped_column(Numeric(20, 10), nullable=False)
     source_id: Mapped[int | None] = mapped_column(
         Integer, ForeignKey("meta.data_source.id")
     )
@@ -100,7 +103,7 @@ class ForexRateIntraday(Base):
         TIMESTAMP(timezone=True), primary_key=True
     )
     interval: Mapped[str] = mapped_column(String(3), primary_key=True)
-    open: Mapped[float | None] = mapped_column(Numeric(14, 8))
-    high: Mapped[float | None] = mapped_column(Numeric(14, 8))
-    low: Mapped[float | None] = mapped_column(Numeric(14, 8))
-    close: Mapped[float | None] = mapped_column(Numeric(14, 8))
+    open: Mapped[float | None] = mapped_column(Numeric(20, 10))
+    high: Mapped[float | None] = mapped_column(Numeric(20, 10))
+    low: Mapped[float | None] = mapped_column(Numeric(20, 10))
+    close: Mapped[float | None] = mapped_column(Numeric(20, 10))

@@ -27,6 +27,7 @@ from stonks.models.equity import (
     SharesHistory,
     UpgradeDowngrade,
 )
+from stonks.utils.divisas import tipo_de_cambio
 
 
 def _num(v):
@@ -42,6 +43,20 @@ def _num(v):
 def _int(v):
     n = _num(v)
     return int(n) if n is not None else None
+
+
+def _pct(v):
+    """Fracción de Yahoo a porcentaje (0,0847 -> 8,47)."""
+    n = _num(v)
+    return None if n is None else n * 100
+
+
+def _a_usd(v, factor):
+    """Importe en moneda de cotización a dólares."""
+    n = _num(v)
+    if n is None or factor is None:
+        return None
+    return n * factor
 
 
 def _d(v):
@@ -65,6 +80,10 @@ class EquityDeepFetcher(BaseFetcher):
         pares = self._targets(tickers)
         stats = {"empresas": 0, "con_datos": 0}
         total = len(pares)
+        # Registrar la ejecución: además de dejar rastro en
+        # `meta.fetch_run`, es lo que da el `fetch_run_id` que se
+        # estampa en cada fila.
+        run_id = self._start_run(params={"tickers": len(pares)})
         for i, (ticker, cid) in enumerate(pares, 1):
             self._rate_limit()
             stats["empresas"] += 1
@@ -73,6 +92,12 @@ class EquityDeepFetcher(BaseFetcher):
             if i % 50 == 0:
                 logger.info("Deep %d/%d", i, total)
         logger.info("Equity 360°: %d/%d con datos", stats["con_datos"], total)
+        self._finish_run(
+            run_id,
+            "success",
+            fetched=stats["empresas"],
+            inserted=stats["con_datos"],
+        )
         return stats
 
     def fetch(self, tickers: list[str] | None = None) -> dict:
@@ -82,15 +107,48 @@ class EquityDeepFetcher(BaseFetcher):
         """Capturar y volcar el 360° de una empresa."""
         t = yf.Ticker(ticker)
         hoy = date.today()
+        # Los importes vienen en la moneda de cotización y las
+        # columnas se llaman `_usd`. El factor se calcula una vez por
+        # empresa, no una por fila.
+        factor = self._factor_usd(cid)
         algo = False
         algo |= self._profile(t, ticker, hoy)
-        algo |= self._holders(t, cid, hoy)
-        algo |= self._insiders(t, cid)
+        algo |= self._holders(t, cid, hoy, factor)
+        algo |= self._insiders(t, cid, factor)
         algo |= self._upgrades(t, cid)
         algo |= self._recommendations(t, cid, hoy)
         algo |= self._shares(t, cid)
         algo |= self._earnings_dates(t, cid)
         return algo
+
+    @staticmethod
+    def _factor_usd(cid: int) -> float | None:
+        """Factor que pasa a dólares los importes de una empresa.
+
+        Yahoo informa el valor de una participación o de una operación
+        de insider en la moneda en que cotiza el valor: la posición de
+        Vanguard en Samsung figuraba con 18 billones, que son wones.
+
+        Devuelve None si la empresa cotiza en una moneda sin tipo de
+        cambio reciente; en ese caso el importe se descarta, porque un
+        número sin unidad conocida es peor que ninguno.
+        """
+        with get_session() as session:
+            moneda = session.execute(
+                text(
+                    "SELECT currency_code FROM equity.company "
+                    "WHERE id = :cid"
+                ),
+                {"cid": cid},
+            ).scalar()
+
+            # Sin moneda declarada no se toca el importe: son sobre
+            # todo cotizadas estadounidenses, que ya están en dólares.
+            if not moneda or moneda == "USD":
+                return 1.0
+
+            tipo = tipo_de_cambio(session, moneda)
+            return None if tipo is None else 1.0 / tipo
 
     # ── secciones ────────────────────────────────────
 
@@ -112,7 +170,7 @@ class EquityDeepFetcher(BaseFetcher):
         )
         return True
 
-    def _holders(self, t, cid, hoy) -> bool:
+    def _holders(self, t, cid, hoy, factor) -> bool:
         filas = []
         for attr, tipo in (
             ("institutional_holders", "institutional"),
@@ -135,9 +193,13 @@ class EquityDeepFetcher(BaseFetcher):
                         "holder_name": nombre,
                         "snapshot_date": hoy,
                         "date_reported": _d(r.get("Date Reported")),
-                        "pct_held": _num(r.get("pctHeld")),
+                        # Yahoo da `pctHeld` como fracción (0,0847),
+                        # no como porcentaje. Se guarda en porcentaje
+                        # para que la columna diga lo que su nombre
+                        # promete.
+                        "pct_held": _pct(r.get("pctHeld")),
                         "shares": _int(r.get("Shares")),
-                        "value_usd": _num(r.get("Value")),
+                        "value_usd": _a_usd(r.get("Value"), factor),
                     }
                 )
         return self._upsert(
@@ -147,7 +209,7 @@ class EquityDeepFetcher(BaseFetcher):
             {"pct_held", "shares", "value_usd", "date_reported"},
         )
 
-    def _insiders(self, t, cid) -> bool:
+    def _insiders(self, t, cid, factor) -> bool:
         try:
             df = t.insider_transactions
         except Exception:  # noqa: BLE001
@@ -165,7 +227,7 @@ class EquityDeepFetcher(BaseFetcher):
                     or None,
                     "start_date": _d(r.get("Start Date")),
                     "shares": _int(r.get("Shares")),
-                    "value_usd": _num(r.get("Value")),
+                    "value_usd": _a_usd(r.get("Value"), factor),
                 }
             )
         return self._upsert(
@@ -298,17 +360,26 @@ class EquityDeepFetcher(BaseFetcher):
         finally:
             session.close()
 
-    @staticmethod
-    def _upsert(model, filas, index_elements, update_cols) -> bool:
+    def _upsert(self, model, filas, index_elements, update_cols) -> bool:
         """Upsert idempotente troceado. Devuelve si escribió algo.
 
         Dedup intra-lote por la clave de conflicto (la fuente puede traer
         filas repetidas, p.ej. misma firma/fecha en upgrades).
+
+        Estampa el linaje en el sitio por el que pasan todas las
+        secciones del 360°, para no repetirlo siete veces.
         """
         if not filas:
             return False
         dedup = {tuple(f[k] for k in index_elements): f for f in filas}
         filas = list(dedup.values())
+        columnas = set(model.__table__.c.keys())
+        linaje = {
+            k: v for k, v in self.linaje().items() if k in columnas
+        }
+        if linaje:
+            filas = [{**f, **linaje} for f in filas]
+            update_cols = set(update_cols) | set(linaje)
         session = get_session()
         try:
             chunk = 3000

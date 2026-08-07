@@ -3,6 +3,7 @@
 from datetime import date, datetime
 
 from sqlalchemy import (
+    Boolean,
     Date,
     DateTime,
     ForeignKey,
@@ -17,9 +18,10 @@ from sqlalchemy import (
 from sqlalchemy.orm import Mapped, mapped_column
 
 from stonks.db import Base
+from stonks.models.linaje import Linaje, LinajeEjecucion
 
 
-class Indicator(Base):
+class Indicator(Base, Linaje):
     """Definición de un indicador macroeconómico."""
 
     __tablename__ = "indicator"
@@ -36,12 +38,13 @@ class Indicator(Base):
     description: Mapped[str | None] = mapped_column(Text)
 
 
-class IndicatorSource(Base):
+class IndicatorSource(Base, LinajeEjecucion):
     """Mapeo indicador → código en fuente externa."""
 
     __tablename__ = "indicator_source"
     __table_args__ = (
         UniqueConstraint("indicator_id", "source_id"),
+        Index("ix_macro_indsrc_source", "source_id"),
         {"schema": "macro"},
     )
 
@@ -61,7 +64,7 @@ class IndicatorSource(Base):
     priority: Mapped[int] = mapped_column(SmallInteger, default=1)
 
 
-class Series(Base):
+class Series(Base, Linaje):
     """Serie temporal: indicador + país."""
 
     __tablename__ = "series"
@@ -71,6 +74,7 @@ class Series(Base):
             "country_code",
             "region_code",
         ),
+        Index("ix_macro_series_country", "country_code"),
         {"schema": "macro"},
     )
 
@@ -89,7 +93,7 @@ class Series(Base):
     point_count: Mapped[int] = mapped_column(Integer, default=0)
 
 
-class DataPoint(Base):
+class DataPoint(Base, LinajeEjecucion):
     """Punto de datos de una serie temporal."""
 
     __tablename__ = "data_point"
@@ -100,6 +104,7 @@ class DataPoint(Base):
             "series_id",
             "date",
         ),
+        Index("ix_macro_dp_source", "source_id"),
         {"schema": "macro"},
     )
 
@@ -113,15 +118,22 @@ class DataPoint(Base):
     )
     date: Mapped[date] = mapped_column(Date, nullable=False)
     value: Mapped[float] = mapped_column(Numeric(20, 6), nullable=False)
+    # Las fuentes mezclan observaciones con proyecciones: el WEO del FMI
+    # y las WPP de la ONU publican series que llegan hasta 2030+. Sin
+    # esta marca, cualquier backtest que consulte la tabla usa datos del
+    # futuro (sesgo look-ahead).
+    is_forecast: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=False, server_default="false"
+    )
     source_id: Mapped[int | None] = mapped_column(
         Integer, ForeignKey("meta.data_source.id")
     )
     fetched_at: Mapped[datetime] = mapped_column(
-        DateTime, default=datetime.now
+        DateTime(timezone=True), default=datetime.now
     )
 
 
-class DataPointVintage(Base):
+class DataPointVintage(Base, Linaje):
     """Valor point-in-time de una serie (ALFRED): qué se sabía y cuándo.
 
     Cada fila registra el valor de una observación (`obs_date`) tal como

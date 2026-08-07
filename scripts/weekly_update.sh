@@ -35,15 +35,36 @@ stonks equity fundamentals --all >> "$LOG" 2>&1 || true
 echo "[$(date +%H:%M)] Pipeline weekly..." >> "$LOG"
 stonks update -c weekly --no-build >> "$LOG" 2>&1 || true
 
-# 5. Cleanup intraday (borrar datos expirados)
+# 5. Fuentes incorporadas en la auditoria 2026-08
+echo "[$(date +%H:%M)] Constituyentes de indices mundiales..." >> "$LOG"
+stonks equity constituents-world >> "$LOG" 2>&1 || true
+
+echo "[$(date +%H:%M)] Factores Fama-French..." >> "$LOG"
+stonks equity factors-fetch >> "$LOG" 2>&1 || true
+
+echo "[$(date +%H:%M)] Identificadores LEI (GLEIF)..." >> "$LOG"
+stonks ref lei-fetch --limite 300 >> "$LOG" 2>&1 || true
+
+echo "[$(date +%H:%M)] Calendario economico..." >> "$LOG"
+stonks calendar fetch >> "$LOG" 2>&1 || true
+
+# Inmobiliario (trimestral en origen) y primas de riesgo pais
+# (anual en origen): son baratos, se refrescan cada semana.
+echo "[$(date +%H:%M)] Indices inmobiliarios..." >> "$LOG"
+stonks realestate fetch >> "$LOG" 2>&1 || true
+
+echo "[$(date +%H:%M)] Primas de riesgo pais..." >> "$LOG"
+stonks fi risk-premium-fetch >> "$LOG" 2>&1 || true
+
+# 6. Cleanup intraday (borrar datos expirados)
 echo "[$(date +%H:%M)] Cleanup intraday..." >> "$LOG"
 stonks intraday cleanup >> "$LOG" 2>&1 || true
 
-# 6. Asegurar particiones futuras
+# 7. Asegurar particiones futuras
 echo "[$(date +%H:%M)] Crear particiones..." >> "$LOG"
 stonks intraday partitions --ahead 3 >> "$LOG" 2>&1 || true
 
-# 7. Refrescar vista materializada de ratios
+# 8. Refrescar vista materializada de ratios
 echo "[$(date +%H:%M)] Refrescando equity.ratios_mv..." >> "$LOG"
 psql -d stonks_db -c \
     "REFRESH MATERIALIZED VIEW CONCURRENTLY equity.ratios_mv;" \

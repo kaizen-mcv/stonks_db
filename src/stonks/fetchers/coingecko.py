@@ -2,6 +2,8 @@
 
 from datetime import date
 
+from sqlalchemy.dialects.postgresql import insert
+
 import stonks.models  # noqa: F401
 from stonks.db import get_session
 from stonks.fetchers.base import BaseFetcher, logger
@@ -235,6 +237,10 @@ class CoinGeckoFetcher(BaseFetcher):
                 vol_map = {int(v[0]): v[1] for v in volumes if v[1]}
                 mcap_map = {int(m[0]): m[1] for m in mcaps if m[1]}
 
+                # Un dict por (coin, fecha): CoinGecko puede devolver
+                # varias marcas de tiempo del mismo dia y ON CONFLICT
+                # no resuelve duplicados dentro del mismo INSERT.
+                lote: dict[date, dict] = {}
                 for point in prices:
                     ts_ms = int(point[0])
                     price = point[1]
@@ -243,29 +249,33 @@ class CoinGeckoFetcher(BaseFetcher):
 
                     dt = date.fromtimestamp(ts_ms / 1000)
                     stats["fetched"] += 1
+                    lote[dt] = {
+                        "coin_id": coin.id,
+                        "date": dt,
+                        "close": price,
+                        "volume_usd": vol_map.get(ts_ms),
+                        "market_cap_usd": mcap_map.get(ts_ms),
+                        **self.linaje(),
+                    }
 
-                    exists = (
-                        session.query(CryptoPrice)
-                        .filter_by(
-                            coin_id=coin.id,
-                            date=dt,
-                        )
-                        .first()
+                if lote:
+                    # Upsert, no "insertar solo si falta": si un dato
+                    # esta mal cargado, hay que poder corregirlo
+                    # relanzando el fetcher. Con el `continue` anterior
+                    # un valor erroneo se quedaba para siempre.
+                    stmt = insert(CryptoPrice).values(list(lote.values()))
+                    stmt = stmt.on_conflict_do_update(
+                        constraint="price_daily_coin_id_date_key",
+                        set_={
+                            "close": stmt.excluded.close,
+                            "volume_usd": stmt.excluded.volume_usd,
+                            "market_cap_usd": stmt.excluded.market_cap_usd,
+                            "source_id": stmt.excluded.source_id,
+                            "fetch_run_id": stmt.excluded.fetch_run_id,
+                        },
                     )
-
-                    if exists:
-                        continue
-
-                    session.add(
-                        CryptoPrice(
-                            coin_id=coin.id,
-                            date=dt,
-                            close=price,
-                            volume_usd=vol_map.get(ts_ms),
-                            market_cap_usd=mcap_map.get(ts_ms),
-                        )
-                    )
-                    stats["inserted"] += 1
+                    session.execute(stmt)
+                    stats["inserted"] += len(lote)
 
                 session.commit()
 

@@ -1,11 +1,14 @@
 """Seed de datos de referencia: países, divisas,
 bolsas, sectores, fuentes, indicadores."""
 
+import csv
 from pathlib import Path
 
 import pycountry
+import requests
 import yaml
 
+from stonks.config import settings
 from stonks.db import get_session
 from stonks.logger import get_logger
 from stonks.models.macro import Indicator, IndicatorSource
@@ -34,6 +37,25 @@ MAJOR_CURRENCIES = {
     "DKK",
     "KRW",
 }
+
+# Divisas retiradas de ISO 4217 (y por tanto ausentes de pycountry)
+# que siguen apareciendo en series historicas de tipo de cambio y de
+# comercio. Sin ellas, cargar el universo forex completo rompe la FK
+# contra ref.currency.
+WITHDRAWN_CURRENCIES = [
+    ("BGN", "Bulgarian Lev (retirada: euro desde 2026)"),
+    ("HRK", "Croatian Kuna (retirada: euro desde 2023)"),
+    ("LTL", "Lithuanian Litas (retirada: euro desde 2015)"),
+    ("LVL", "Latvian Lats (retirada: euro desde 2014)"),
+    ("EEK", "Estonian Kroon (retirada: euro desde 2011)"),
+    ("SKK", "Slovak Koruna (retirada: euro desde 2009)"),
+    ("MTL", "Maltese Lira (retirada: euro desde 2008)"),
+    ("CYP", "Cypriot Pound (retirada: euro desde 2008)"),
+    ("SIT", "Slovenian Tolar (retirada: euro desde 2007)"),
+    ("ROL", "Romanian Leu antiguo (redenominado a RON en 2005)"),
+    ("TRL", "Turkish Lira antigua (redenominada a TRY en 2005)"),
+    ("VEF", "Venezuelan Bolivar Fuerte (redenominado a VES)"),
+]
 
 # Bolsas principales (mic, short, name, country,
 # city, tz, currency)
@@ -426,6 +448,14 @@ def seed_currencies() -> int:
                 )
             )
             count += 1
+
+        # Divisas historicas que pycountry ya no lista.
+        for code, name in WITHDRAWN_CURRENCIES:
+            if session.query(Currency).filter_by(code=code).first():
+                continue
+            session.add(Currency(code=code, name=name, is_major=False))
+            count += 1
+
         session.commit()
     finally:
         session.close()
@@ -452,6 +482,102 @@ def seed_countries() -> int:
     finally:
         session.close()
     return count
+
+
+def seed_regiones() -> int:
+    """Completar region, subregion, renta, capital y coordenadas.
+
+    `ref.country` salia de pycountry, que da el codigo y el nombre y
+    nada mas: `region` tenia UN valor de 250 filas, y `sub_region`,
+    `income_group`, `capital`, `latitude` y `longitude` estaban
+    enteras a NULL. Sin region no hay mapa ni agregado por continente,
+    que es de lo primero que pide cualquier tablero.
+
+    Se combinan dos fuentes porque ninguna trae todo:
+
+    - `config/regiones_m49.csv` da region y subregion segun la
+      clasificacion M49 de la ONU (Europa / Europa meridional). Es la
+      granularidad que sirve para pintar mapas.
+    - La API del World Bank da el grupo de renta, la capital y las
+      coordenadas, y su propia region ("Europe & Central Asia"), que
+      es mas gruesa y mezcla continentes; por eso manda la M49.
+
+    Si la API no responde, se cargan igualmente las regiones del CSV:
+    es la parte que no depende de la red.
+    """
+    ruta = settings.config_dir / "regiones_m49.csv"
+    m49: dict[str, tuple[str, str]] = {}
+    if ruta.exists():
+        with open(ruta, encoding="utf-8") as f:
+            for fila in csv.DictReader(f):
+                if fila.get("es_agregado") == "si":
+                    continue
+                m49[fila["codigo_pais"]] = (
+                    fila["region"],
+                    fila["subregion"],
+                )
+    else:
+        logger.warning("Sin %s: no habra regiones", ruta)
+
+    banco: dict[str, dict] = {}
+    try:
+        resp = requests.get(
+            "https://api.worldbank.org/v2/country",
+            params={"format": "json", "per_page": 400},
+            timeout=30,
+        )
+        resp.raise_for_status()
+        for pais in resp.json()[1]:
+            # Los agregados ("Mundo", "Zona euro") llegan con la region
+            # a "Aggregates" y no son paises.
+            if (pais.get("region") or {}).get("id") == "NA":
+                continue
+            banco[pais["id"]] = pais
+    except Exception as e:  # noqa: BLE001
+        logger.warning("World Bank no responde (%s): solo regiones", e)
+
+    # `ref.country` tiene algun agregado que no es un pais y que por
+    # tanto no esta en la M49: la zona euro la crean los fetchers del
+    # BCE y de Eurostat. Se etiqueta a mano para que la columna no
+    # mezcle idiomas —tenia "Europe" mientras el resto pasaba a
+    # "Europa"— y para que un GROUP BY por region no parta el
+    # continente en dos.
+    AGREGADOS = {"EUZ": ("Europa", "Agregado regional")}
+
+    session = get_session()
+    tocados = 0
+    try:
+        for pais in session.query(Country).all():
+            cambio = False
+
+            region_sub = AGREGADOS.get(pais.code) or m49.get(pais.code)
+            if region_sub:
+                pais.region, pais.sub_region = region_sub
+                cambio = True
+
+            wb = banco.get(pais.code)
+            if wb:
+                renta = (wb.get("incomeLevel") or {}).get("value")
+                if renta and renta != "Aggregates":
+                    pais.income_group = renta
+                pais.capital = (wb.get("capitalCity") or None) or None
+                for campo, clave in (
+                    ("latitude", "latitude"),
+                    ("longitude", "longitude"),
+                ):
+                    valor = wb.get(clave)
+                    if valor not in (None, ""):
+                        setattr(pais, campo, float(valor))
+                cambio = True
+
+            if cambio:
+                tocados += 1
+        session.commit()
+    finally:
+        session.close()
+
+    logger.info("Regiones: %d paises completados", tocados)
+    return tocados
 
 
 def seed_exchanges() -> int:
@@ -536,6 +662,15 @@ def seed_indicators() -> int:
                 session.add(ind)
                 session.flush()
                 count += 1
+            else:
+                # Antes solo insertaba: cambiar indicators.yml no
+                # tenia ningun efecto sobre la base, asi que el fichero
+                # y la BD podian divergir en silencio. Es como la
+                # unidad falsa de GDP_NOMINAL sobrevivio tanto tiempo.
+                ind.name = info["name"]
+                ind.category = info.get("category")
+                ind.unit = info.get("unit")
+                ind.frequency = info.get("frequency")
 
             for src_name, ext_code in info.get("sources", {}).items():
                 src_id = source_cache.get(src_name)
@@ -565,11 +700,18 @@ def seed_indicators() -> int:
 
 def seed_all() -> dict[str, int]:
     """Ejecutar todos los seeds."""
+    from stonks.seed.unidades import aplicar_unidades
+
     results = {}
     results["sources"] = seed_sources()
     results["currencies"] = seed_currencies()
     results["countries"] = seed_countries()
+    results["regiones"] = seed_regiones()
     results["exchanges"] = seed_exchanges()
     results["sectors"] = seed_sectors()
     results["indicators"] = seed_indicators()
+    # Al final: los fetchers crean indicadores nuevos sin unidad y
+    # esta pasada los deja con una, aunque sea `desconocida`.
+    unidades = aplicar_unidades()
+    results["unidades"] = sum(unidades.values())
     return results

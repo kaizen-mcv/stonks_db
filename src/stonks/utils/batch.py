@@ -18,6 +18,7 @@ def batch_download(
     interval: str = "1d",
     batch_size: int = BATCH_SIZE,
     pause: float = PAUSE_BETWEEN_BATCHES,
+    auto_adjust: bool = True,
 ) -> pd.DataFrame:
     """Descarga OHLCV en lotes via yf.download().
 
@@ -27,6 +28,16 @@ def batch_download(
         interval: intervalo (1d, 1h, 5m, 1m)
         batch_size: tickers por lote
         pause: pausa entre lotes (segundos)
+        auto_adjust: si es True (por defecto de yfinance) la columna
+            Close viene ya ajustada por splits y dividendos y no hay
+            columna "Adj Close". Poner False para obtener el cierre
+            real y el ajustado por separado.
+
+    La columna temporal se normaliza siempre a `ts`: yfinance la llama
+    `Date` en diario y `Datetime` en intradia, y al concatenar lotes
+    heterogeneos pandas creaba ambas columnas rellenando con NaT la que
+    faltaba. Eso dejaba `ts` a nulo y reventaba la insercion en las
+    tablas particionadas.
 
     Returns:
         DataFrame con MultiIndex (Date, Ticker) y columnas
@@ -56,6 +67,7 @@ def batch_download(
                 group_by="ticker",
                 threads=True,
                 progress=False,
+                auto_adjust=auto_adjust,
             )
 
             if df.empty:
@@ -67,6 +79,7 @@ def batch_download(
                 ticker = lote[0]
                 df = df.copy()
                 df["Ticker"] = ticker
+                df.index.name = "ts"
                 df = df.reset_index()
                 frames.append(df)
             else:
@@ -79,6 +92,7 @@ def batch_download(
                         continue
                     sub = sub.copy()
                     sub["Ticker"] = ticker
+                    sub.index.name = "ts"
                     sub = sub.reset_index()
                     frames.append(sub)
 

@@ -24,6 +24,64 @@ class FundamentalsFetcher(BaseFetcher):
     DOMAIN = "equity"
     RATE_LIMIT = 1.0
 
+    @staticmethod
+    def _volcar(session, exists, modelo, clave, valores, stats) -> None:
+        """Insertar la fila, o actualizarla si ya estaba.
+
+        Antes habia un `continue` aqui: una vez cargado un periodo, no
+        se volvia a tocar nunca. Eso deja congelado cualquier dato que
+        la fuente revise despues, y con los splits pasa siempre —el
+        BPA de todo el historico cambia—. Booking figuraba con un BPA
+        de 165,57 cuando Yahoo ya daba 6,62 tras el split, y de ahi
+        salia un PER de 1,25 en un valor que cotiza a 31 veces
+        beneficios.
+
+        Es el tercer sitio donde aparecia el mismo patron, despues de
+        `coingecko.py` y `funds.py`.
+        """
+        if exists is None:
+            session.add(modelo(**clave, **valores))
+            stats["inserted"] += 1
+            return
+
+        cambios = []
+        for campo, valor in valores.items():
+            if valor is None:
+                # Que la fuente deje de dar un campo no es motivo para
+                # borrar el que ya se tenia.
+                continue
+            actual = getattr(exists, campo)
+            if isinstance(valor, (int, float)):
+                # Los importes llegan como Decimal desde la base y como
+                # float desde yfinance; hay que comparar en float.
+                distinto = actual is None or float(actual) != float(valor)
+            else:
+                distinto = actual != valor
+            if distinto:
+                cambios.append(campo)
+
+        if not cambios:
+            return
+        for campo in cambios:
+            setattr(exists, campo, valores[campo])
+        stats["updated"] += 1
+
+    @staticmethod
+    def _moneda_de_las_cuentas(t) -> str | None:
+        """Moneda en la que la empresa presenta sus estados.
+
+        Yahoo la da en `financialCurrency`, distinta de `currency`, que
+        es la de cotizacion. Devuelve None si no la da: preferible no
+        saber la unidad a declarar una equivocada, porque un ratio con
+        dos monedas mezcladas parece un chollo y no lo es.
+        """
+        try:
+            info = t.info or {}
+        except Exception:  # noqa: BLE001
+            return None
+        moneda = info.get("financialCurrency")
+        return str(moneda)[:3] if moneda else None
+
     def fetch_financials(self, ticker: str) -> dict[str, int]:
         """Descargar income, balance, cashflow."""
         run_id = self._start_run(
@@ -57,6 +115,16 @@ class FundamentalsFetcher(BaseFetcher):
 
             t = yf.Ticker(ticker)
 
+            # La moneda de los estados financieros NO es la de
+            # cotizacion. Central Puerto cotiza en dolares y reporta en
+            # pesos; Novo Nordisk cotiza en dolares su ADR y reporta en
+            # coronas. Etiquetar las cuentas con `comp.currency_code`
+            # —que es lo que se hacia— convertia el PER en un numero
+            # sin sentido: precio en una moneda dividido entre un
+            # beneficio por accion en otra. Novo Nordisk salia con PER
+            # 2,0 en su ADR y 12,7 en Copenhague, con el mismo BPA.
+            moneda_cuentas = self._moneda_de_las_cuentas(t)
+
             # Income Statement (anual)
             inc = t.income_stmt
             if inc is not None and not inc.empty:
@@ -72,8 +140,6 @@ class FundamentalsFetcher(BaseFetcher):
                         )
                         .first()
                     )
-                    if exists:
-                        continue
 
                     def g(key):
                         try:
@@ -84,29 +150,34 @@ class FundamentalsFetcher(BaseFetcher):
                         except (KeyError, TypeError):
                             return None
 
-                    session.add(
-                        IncomeStatement(
-                            company_id=comp.id,
-                            fiscal_year=year,
-                            fiscal_quarter=None,
-                            period_end_date=col.date(),
-                            currency_code=(comp.currency_code),
-                            revenue=g("Total Revenue"),
-                            cost_of_revenue=g("Cost Of Revenue"),
-                            gross_profit=g("Gross Profit"),
-                            operating_expenses=g("Operating Expense"),
-                            operating_income=g("Operating Income"),
-                            interest_expense=g("Interest Expense"),
-                            pretax_income=g("Pretax Income"),
-                            income_tax=g("Tax Provision"),
-                            net_income=g("Net Income"),
-                            eps_basic=g("Basic EPS"),
-                            eps_diluted=g("Diluted EPS"),
-                            ebitda=g("EBITDA"),
-                            source_id=src_id,
-                        )
+                    self._volcar(
+                        session,
+                        exists,
+                        IncomeStatement,
+                        {
+                            "company_id": comp.id,
+                            "fiscal_year": year,
+                            "fiscal_quarter": None,
+                        },
+                        {
+                            "period_end_date": col.date(),
+                            "currency_code": moneda_cuentas,
+                            "revenue": g("Total Revenue"),
+                            "cost_of_revenue": g("Cost Of Revenue"),
+                            "gross_profit": g("Gross Profit"),
+                            "operating_expenses": g("Operating Expense"),
+                            "operating_income": g("Operating Income"),
+                            "interest_expense": g("Interest Expense"),
+                            "pretax_income": g("Pretax Income"),
+                            "income_tax": g("Tax Provision"),
+                            "net_income": g("Net Income"),
+                            "eps_basic": g("Basic EPS"),
+                            "eps_diluted": g("Diluted EPS"),
+                            "ebitda": g("EBITDA"),
+                            "source_id": src_id,
+                        },
+                        stats,
                     )
-                    stats["inserted"] += 1
 
             # Balance Sheet (anual)
             bal = t.balance_sheet
@@ -123,8 +194,6 @@ class FundamentalsFetcher(BaseFetcher):
                         )
                         .first()
                     )
-                    if exists:
-                        continue
 
                     def gb(key):
                         try:
@@ -135,41 +204,46 @@ class FundamentalsFetcher(BaseFetcher):
                         except (KeyError, TypeError):
                             return None
 
-                    session.add(
-                        BalanceSheet(
-                            company_id=comp.id,
-                            fiscal_year=year,
-                            fiscal_quarter=None,
-                            period_end_date=col.date(),
-                            currency_code=(comp.currency_code),
-                            cash_and_equivalents=gb(
+                    self._volcar(
+                        session,
+                        exists,
+                        BalanceSheet,
+                        {
+                            "company_id": comp.id,
+                            "fiscal_year": year,
+                            "fiscal_quarter": None,
+                        },
+                        {
+                            "period_end_date": col.date(),
+                            "currency_code": moneda_cuentas,
+                            "cash_and_equivalents": gb(
                                 "Cash And Cash Equivalents"
                             ),
-                            total_current_assets=gb("Current Assets"),
-                            property_plant_equipment=gb("Net PPE"),
-                            goodwill=gb("Goodwill"),
-                            intangible_assets=gb("Other Intangible Assets"),
-                            total_assets=gb("Total Assets"),
-                            accounts_payable=gb("Accounts Payable"),
-                            short_term_debt=gb("Current Debt"),
-                            total_current_liabilities=gb(
+                            "total_current_assets": gb("Current Assets"),
+                            "property_plant_equipment": gb("Net PPE"),
+                            "goodwill": gb("Goodwill"),
+                            "intangible_assets": gb("Other Intangible Assets"),
+                            "total_assets": gb("Total Assets"),
+                            "accounts_payable": gb("Accounts Payable"),
+                            "short_term_debt": gb("Current Debt"),
+                            "total_current_liabilities": gb(
                                 "Current Liabilities"
                             ),
-                            long_term_debt=gb("Long Term Debt"),
-                            total_liabilities=gb(
+                            "long_term_debt": gb("Long Term Debt"),
+                            "total_liabilities": gb(
                                 "Total Liabilities Net Minority Interest"
                             ),
-                            total_stockholders_equity=gb(
+                            "total_stockholders_equity": gb(
                                 "Stockholders Equity"
                             ),
-                            retained_earnings=gb("Retained Earnings"),
-                            total_equity=gb(
+                            "retained_earnings": gb("Retained Earnings"),
+                            "total_equity": gb(
                                 "Total Equity Gross Minority Interest"
                             ),
-                            source_id=src_id,
-                        )
+                            "source_id": src_id,
+                        },
+                        stats,
                     )
-                    stats["inserted"] += 1
 
             # Cash Flow (anual)
             cf = t.cashflow
@@ -186,8 +260,6 @@ class FundamentalsFetcher(BaseFetcher):
                         )
                         .first()
                     )
-                    if exists:
-                        continue
 
                     def gc(key):
                         try:
@@ -198,27 +270,36 @@ class FundamentalsFetcher(BaseFetcher):
                         except (KeyError, TypeError):
                             return None
 
-                    session.add(
-                        CashFlow(
-                            company_id=comp.id,
-                            fiscal_year=year,
-                            fiscal_quarter=None,
-                            period_end_date=col.date(),
-                            currency_code=(comp.currency_code),
-                            operating_cash_flow=gc("Operating Cash Flow"),
-                            capital_expenditure=gc("Capital Expenditure"),
-                            free_cash_flow=gc("Free Cash Flow"),
-                            dividends_paid=gc("Common Stock Dividend Paid"),
-                            share_buyback=gc("Repurchase Of Capital Stock"),
-                            debt_issued=gc("Long Term Debt Issuance"),
-                            debt_repaid=gc("Long Term Debt Payments"),
-                            investing_cash_flow=gc("Investing Cash Flow"),
-                            financing_cash_flow=gc("Financing Cash Flow"),
-                            net_change_cash=gc("Changes In Cash"),
-                            source_id=src_id,
-                        )
+                    self._volcar(
+                        session,
+                        exists,
+                        CashFlow,
+                        {
+                            "company_id": comp.id,
+                            "fiscal_year": year,
+                            "fiscal_quarter": None,
+                        },
+                        {
+                            "period_end_date": col.date(),
+                            "currency_code": moneda_cuentas,
+                            "operating_cash_flow": gc("Operating Cash Flow"),
+                            "capital_expenditure": gc("Capital Expenditure"),
+                            "free_cash_flow": gc("Free Cash Flow"),
+                            "dividends_paid": gc(
+                                "Common Stock Dividend Paid"
+                            ),
+                            "share_buyback": gc(
+                                "Repurchase Of Capital Stock"
+                            ),
+                            "debt_issued": gc("Long Term Debt Issuance"),
+                            "debt_repaid": gc("Long Term Debt Payments"),
+                            "investing_cash_flow": gc("Investing Cash Flow"),
+                            "financing_cash_flow": gc("Financing Cash Flow"),
+                            "net_change_cash": gc("Changes In Cash"),
+                            "source_id": src_id,
+                        },
+                        stats,
                     )
-                    stats["inserted"] += 1
 
             session.commit()
             self._finish_run(run_id, "success", **stats)
@@ -278,6 +359,9 @@ class FundamentalsFetcher(BaseFetcher):
                         company_id=comp.id,
                         ex_date=ex_date,
                         amount=float(amount),
+                        # Aqui si es la de cotizacion: yfinance da el
+                        # dividendo en la misma moneda que el precio,
+                        # no en la de los estados financieros.
                         currency_code=comp.currency_code,
                         dividend_type="regular",
                     )

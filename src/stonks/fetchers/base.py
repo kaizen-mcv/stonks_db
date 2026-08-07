@@ -26,6 +26,10 @@ class BaseFetcher:
 
     def __init__(self) -> None:
         self._last_request: float = 0.0
+        # Linaje de la ejecucion en curso, que `_start_run` rellena y
+        # `linaje()` reparte a las filas que se escriben.
+        self._run_id: int | None = None
+        self._source_id: int | None = None
         self._session = requests.Session()
         self._session.headers.update(
             {
@@ -85,11 +89,30 @@ class BaseFetcher:
         )
         if src:
             run.source_id = src.id
+            self._source_id = src.id
         session.add(run)
         session.commit()
         run_id = run.id
+        self._run_id = run_id
         session.close()
         return run_id
+
+    def linaje(self) -> dict:
+        """Origen y ejecucion para estampar en cada fila escrita.
+
+        De 68 tablas de datos, 25 tenian `source_id` y solo 5
+        `fetch_run_id`. Sin eso, cuando un dato sale raro no hay forma
+        de saber quien lo escribio ni en que ejecucion, que es por
+        donde empieza cualquier investigacion.
+
+        Se usa desempaquetandolo en la fila:
+
+            filas.append({"date": d, "close": c, **self.linaje()})
+        """
+        return {
+            "source_id": self._source_id,
+            "fetch_run_id": self._run_id,
+        }
 
     def _finish_run(
         self,

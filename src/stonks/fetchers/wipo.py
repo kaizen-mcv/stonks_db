@@ -1,14 +1,28 @@
 """Fetcher WIPO IP Statistics — patentes mundiales.
 
-Descarga estadísticas de solicitudes y concesiones de
-patentes por país desde WIPO (200+ países, 1980-2023).
-Los datos se almacenan en macro como indicadores anuales.
+Solicitudes y concesiones de patentes por oficina y año, almacenadas
+en `macro` como indicadores anuales.
 
-Fuente: WIPO IP Statistics Data Center.
+**Cambio de fuente (auditoría 2026-08).** El fetcher apuntaba al CSV
+bulk `www3.wipo.int/ipstats/ipstats-export-patents.csv`, que hoy
+devuelve la página HTML del Data Center en lugar de datos: por eso
+nunca llegó a cargar nada. El Data Center actual es una aplicación
+JavaScript sin endpoint público de descarga.
+
+Lo que sí sigue publicando WIPO como fichero descargable es su serie
+histórica 1883-1979, en un ZIP de CSV limpios. Es un tramo que ninguna
+otra fuente de la base cubre —casi un siglo de actividad inventiva por
+país— así que el fetcher se reorienta a él en vez de retirarse.
+
+Para el tramo 1980 en adelante no hay hoy vía programática gratuita;
+queda documentado como hueco en docs/AUDIT_2026-08.md.
+
+Fuente: WIPO Statistics Database (datos históricos).
 Licencia: uso público.
 """
 
 import io
+import zipfile
 from datetime import date
 
 import pandas as pd
@@ -25,7 +39,19 @@ from stonks.models.macro import (
 )
 from stonks.models.meta import DataSource
 
-BULK_CSV_URL = "https://www3.wipo.int/ipstats/ipstats-export-patents.csv"
+# ZIP con los CSV historicos (1883-1979) de solicitudes y
+# concesiones por oficina y origen.
+HISTORICAL_ZIP_URL = (
+    "https://www.wipo.int/documents/2948119/3215563/"
+    "wipo_ip_historical_data.zip"
+)
+
+# Ficheros del ZIP que se usan.
+CSV_SOLICITUDES = "patents_filed_from_1883_to_1979.csv"
+CSV_CONCESIONES = "patents_granted_from_1883_to_1979.csv"
+
+# La fuente marca con 'ZZ' la fila agregada de todos los origenes.
+ORIGEN_TOTAL = "ZZ"
 
 # Variables WIPO: (col_pattern, code, nombre, categoría)
 # col_pattern se usa para buscar la columna en el CSV
@@ -62,15 +88,19 @@ class WIPOFetcher(BaseFetcher):
 
     def fetch(self) -> dict:
         """Descargar y almacenar datos WIPO."""
-        run_id = self._start_run(params={"source": "wipo_bulk_csv"})
-        logger.info("WIPO: descargando CSV bulk...")
+        run_id = self._start_run(params={"source": "wipo_historical_zip"})
+        logger.info("WIPO: descargando ZIP historico...")
         self._rate_limit()
-        resp = self._session.get(BULK_CSV_URL, timeout=120)
+        resp = self._session.get(
+            HISTORICAL_ZIP_URL,
+            headers={"Accept": "application/zip, */*"},
+            timeout=300,
+        )
         resp.raise_for_status()
 
-        df = self._parse_csv(resp.content)
+        df = self._parse_historico(resp.content)
         logger.info(
-            "WIPO: %d filas × %d columnas",
+            "WIPO: %d filas × %d columnas (1883-1979)",
             len(df),
             len(df.columns),
         )
@@ -137,30 +167,100 @@ class WIPOFetcher(BaseFetcher):
     # ── Parseo del CSV ──────────────────────────────
 
     @staticmethod
-    def _parse_csv(content: bytes) -> pd.DataFrame:
-        """Leer CSV y limpiar números con comas."""
-        # Intentar varias codificaciones
-        for enc in ("utf-8", "latin-1"):
-            try:
-                df = pd.read_csv(
-                    io.BytesIO(content),
-                    encoding=enc,
+    def _parse_historico(contenido: bytes) -> pd.DataFrame:
+        """Convertir el ZIP historico en una tabla ancha.
+
+        Cada CSV es largo: una fila por (año, oficina, origen). Se
+        pivota a una fila por (oficina, año) con tres columnas, que es
+        lo que espera `_ingest_variable`.
+
+        - `total`: filas con origen 'ZZ' (agregado de todos los
+          origenes) que publica la propia fuente.
+        - `resident`: filas donde el origen coincide con la oficina.
+        - `grants`: mismo criterio que `total`, sobre concesiones.
+
+        Los CSV llevan nueve lineas de titulos y notas en tres idiomas
+        antes de la cabecera, asi que esta se localiza en vez de
+        saltarse un numero fijo de filas.
+        """
+        zf = zipfile.ZipFile(io.BytesIO(contenido))
+
+        solicitudes = WIPOFetcher._leer_csv(zf, CSV_SOLICITUDES)
+        concesiones = WIPOFetcher._leer_csv(zf, CSV_CONCESIONES)
+
+        total = WIPOFetcher._agregar(solicitudes, solo_residentes=False)
+        residentes = WIPOFetcher._agregar(
+            solicitudes, solo_residentes=True
+        )
+        grants = WIPOFetcher._agregar(concesiones, solo_residentes=False)
+
+        df = total.rename(columns={"valor": "total"})
+        df = df.merge(
+            residentes.rename(columns={"valor": "resident"}),
+            on=["country_code", "year"],
+            how="outer",
+        )
+        df = df.merge(
+            grants.rename(columns={"valor": "grants"}),
+            on=["country_code", "year"],
+            how="outer",
+        )
+
+        # `_ingest_variable` limpia los valores con operaciones de
+        # cadena, asi que las columnas se entregan como texto.
+        for col in ("total", "resident", "grants"):
+            df[col] = df[col].apply(
+                lambda v: "" if pd.isna(v) else str(int(v))
+            )
+        df["year"] = df["year"].astype(int).astype(str)
+        return df
+
+    @staticmethod
+    def _leer_csv(zf: zipfile.ZipFile, nombre: str) -> pd.DataFrame:
+        """Leer un CSV del ZIP localizando su fila de cabecera."""
+        texto = zf.read(nombre).decode("latin-1")
+        lineas = texto.splitlines()
+        # Solicitudes usan 'filing_year' y concesiones 'grant_year'.
+        for i, linea in enumerate(lineas[:40]):
+            if linea.lower().startswith(("filing_year,", "grant_year,")):
+                return pd.read_csv(
+                    io.StringIO("\n".join(lineas[i:])),
                     dtype=str,
                 )
-                break
-            except UnicodeDecodeError:
-                continue
-        else:
-            df = pd.read_csv(
-                io.BytesIO(content),
-                encoding="utf-8",
-                errors="replace",
-                dtype=str,
-            )
+        raise ValueError(f"WIPO: sin cabecera en {nombre}")
 
-        # Normalizar nombres de columna
-        df.columns = [c.strip().lower().replace(" ", "_") for c in df.columns]
-        return df
+    @staticmethod
+    def _agregar(
+        df: pd.DataFrame, solo_residentes: bool
+    ) -> pd.DataFrame:
+        """Sumar por oficina y año.
+
+        La columna del año se llama `filing_year` en solicitudes y
+        `grant_year` en concesiones.
+        """
+        col_year = (
+            "filing_year" if "filing_year" in df.columns else "grant_year"
+        )
+        col_valor = next(
+            c for c in ("filings", "grants", "value") if c in df.columns
+        )
+
+        sub = df.copy()
+        if solo_residentes:
+            sub = sub[sub["origin_code"] == sub["office_code"]]
+        else:
+            sub = sub[sub["origin_code"] == ORIGEN_TOTAL]
+
+        sub["valor"] = pd.to_numeric(sub[col_valor], errors="coerce")
+        sub["year"] = pd.to_numeric(sub[col_year], errors="coerce")
+        sub = sub.dropna(subset=["valor", "year"])
+
+        agregado = (
+            sub.groupby(["office_code", "year"], as_index=False)["valor"]
+            .sum()
+            .rename(columns={"office_code": "country_code"})
+        )
+        return agregado
 
     @staticmethod
     def _detect_columns(
@@ -212,10 +312,17 @@ class WIPOFetcher(BaseFetcher):
     def _build_iso_map(
         session,
     ) -> dict[str, str]:
-        """Construir mapeo ISO2 → ISO3 desde
-        ref.country."""
+        """Construir mapeo ISO2 → ISO3 desde ref.country.
+
+        La columna se llama `code_alpha2`, no `iso2`: la consulta
+        antigua fallaba siempre, que era el segundo motivo por el que
+        este fetcher nunca cargo nada.
+        """
         rows = session.execute(
-            text("SELECT iso2, code FROM ref.country WHERE iso2 IS NOT NULL")
+            text(
+                "SELECT code_alpha2, code FROM ref.country "
+                "WHERE code_alpha2 IS NOT NULL"
+            )
         )
         return {r[0]: r[1] for r in rows if r[0] is not None}
 
@@ -276,7 +383,9 @@ class WIPOFetcher(BaseFetcher):
                 continue
 
             year = int(row[year_col])
-            if year < 1900 or year > 2100:
+            # La serie historica arranca en 1883: un limite en 1900
+            # descartaba en silencio los primeros 17 anos.
+            if year < 1800 or year > 2100:
                 continue
 
             sid = self._get_series(session, ind_id, iso3)

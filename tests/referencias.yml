@@ -1,0 +1,189 @@
+# Valores de referencia contrastados contra fuentes externas.
+#
+# Cada entrada fija un dato concreto de la base contra su valor real,
+# comprobado a mano en la fuente citada. Sirven para responder "¿son
+# ciertos los datos?" con evidencia, no con confianza.
+#
+# Reglas al añadir uno:
+#
+# 1. **Anclar a una fecha o periodo fijo, nunca a "el último".** Un
+#    valor que cambia cada día no sirve de referencia: mañana falla
+#    sin que nada esté mal.
+# 2. **La consulta debe devolver un único número.** Y ser precisa: al
+#    preparar este fichero, una consulta de interés abierto del oro
+#    devolvió 1.324 en vez de 384.603 porque cogía el contrato PAX
+#    GOLD en lugar del principal de COMEX.
+# 3. **Citar dónde se comprobó**, para poder repetirlo dentro de un
+#    año.
+# 4. **Tolerancia realista.** Las revisiones estadísticas mueven las
+#    cifras: la población de India de 2023 sale 1.438 M en la base y
+#    1.428 M en la nota de prensa de la ONU, y ambas son correctas
+#    según la revisión que se mire.
+
+- dominio: equity
+  descripcion: Cierre real de Apple el 2023-12-29
+  consulta: |
+    SELECT p.close FROM equity.price_daily p
+    JOIN equity.company c ON c.id = p.company_id
+    WHERE c.ticker = 'AAPL' AND p.date = '2023-12-29'
+  esperado: 192.53
+  tolerancia_pct: 0.5
+  referencia: >-
+    Nasdaq, cierre de AAPL el 29/12/2023 = 192,53 USD. Detecta que la
+    columna `close` vuelva a guardar el precio ajustado.
+
+- dominio: equity
+  descripcion: Cierre de AstraZeneca en Londres el 2023-12-29, en libras
+  consulta: |
+    SELECT p.close FROM equity.price_daily p
+    JOIN equity.company c ON c.id = p.company_id
+    WHERE c.ticker = 'AZN.L' AND p.date = '2023-12-29'
+  esperado: 106.00
+  tolerancia_pct: 1
+  referencia: >-
+    AZN.L cerró 2023 en unos 10.600 peniques. Londres cotiza en
+    peniques y yfinance los devuelve sin convertir: si esta referencia
+    da ~10.600 es que se perdió la normalización a libras.
+
+- dominio: crypto
+  descripcion: Cierre de Bitcoin el 2024-12-31
+  consulta: |
+    SELECT p.close FROM crypto.price_daily p
+    JOIN crypto.coin c ON c.id = p.coin_id
+    WHERE c.symbol = 'BTC' AND p.date = '2024-12-31'
+  esperado: 93429
+  tolerancia_pct: 1
+  referencia: CoinGecko, BTC/USD el 31/12/2024 = 93.429 USD.
+
+- dominio: macro
+  descripcion: PIB nominal de Estados Unidos en 2023, en dólares
+  consulta: |
+    SELECT d.value FROM macro.data_point d
+    JOIN macro.series s ON s.id = d.series_id
+    JOIN macro.indicator i ON i.id = s.indicator_id
+    WHERE i.code = 'GDP_NOMINAL' AND s.country_code = 'USA'
+      AND d.date = '2023-12-31'
+  esperado: 27720000000000
+  tolerancia_pct: 2
+  referencia: >-
+    World Bank, PIB de EE. UU. 2023 = 27,72 billones USD. Detecta
+    tanto un error de carga como un cambio de unidad (la etiqueta
+    decía `billion_usd` con los valores en dólares absolutos).
+
+- dominio: agri
+  descripcion: Producción de trigo en China en 2022
+  consulta: |
+    SELECT value FROM agri.production
+    WHERE country_code = 'CHN' AND item_name = 'Wheat'
+      AND element = 'Production' AND period = 2022
+  esperado: 137720000
+  tolerancia_pct: 1
+  referencia: FAOSTAT, trigo en China 2022 = 137,72 millones de toneladas.
+
+- dominio: energy
+  descripcion: Energía primaria consumida por Alemania en 2023
+  consulta: |
+    SELECT value FROM energy.balance
+    WHERE country_code = 'DEU' AND product_code = 'primary_energy'
+      AND flow = 'consumption' AND period = 2023
+  esperado: 3178.9
+  tolerancia_pct: 2
+  referencia: >-
+    Our World in Data, consumo de energía primaria de Alemania 2023
+    ≈ 3.179 TWh.
+
+- dominio: trade
+  descripcion: Exportaciones totales de Alemania al mundo en 2022
+  consulta: |
+    SELECT value_usd_k / 1e6 FROM trade.flow
+    WHERE reporter_code = 'DEU' AND partner_code = 'WLD'
+      AND flow = 'X' AND period = 2022 AND product_code = 'Total'
+  esperado: 1660
+  tolerancia_pct: 5
+  referencia: >-
+    WITS / UN Comtrade, exportaciones de Alemania 2022 ≈ 1,66
+    billones USD. Tolerancia amplia porque las revisiones y el
+    tratamiento de reexportaciones mueven la cifra.
+
+- dominio: fi
+  descripcion: Rendimiento del bono estadounidense a 10 años el 2023-12-29
+  consulta: |
+    SELECT yield_pct FROM fi.yield_curve
+    WHERE country_code = 'USA' AND maturity_months = 120
+      AND date = '2023-12-29'
+  esperado: 3.88
+  tolerancia_pct: 3
+  referencia: FRED (DGS10), 29/12/2023 = 3,88 %.
+
+- dominio: forex
+  descripcion: Tipo EUR/USD el 2023-12-29
+  consulta: |
+    SELECT r.close FROM forex.rate_daily r
+    JOIN forex.currency_pair p ON p.id = r.pair_id
+    WHERE p.pair_code = 'EURUSD' AND r.date = '2023-12-29'
+  esperado: 1.1050
+  tolerancia_pct: 1
+  referencia: >-
+    Tipo de referencia del BCE del 29/12/2023 = 1,1050. La base guarda
+    el tipo de mercado, no el fijado del BCE, así que difieren en
+    décimas de punto; la tolerancia lo cubre.
+
+- dominio: fund
+  descripcion: Valor liquidativo de SPY el 2023-12-29, sin ajustar
+  consulta: |
+    SELECT n.nav FROM fund.nav_daily n
+    JOIN fund.fund f ON f.id = n.fund_id
+    WHERE f.ticker = 'SPY' AND n.date = '2023-12-29'
+  esperado: 475.31
+  tolerancia_pct: 0.5
+  referencia: >-
+    Cierre real de SPY el 29/12/2023 = 475,31 USD. Con el ajuste por
+    distribuciones que aplica yfinance por defecto salía 461,39.
+
+- dominio: country
+  descripcion: Población de India en 2023
+  consulta: |
+    SELECT total_population / 1e6 FROM country.demographics
+    WHERE country_code = 'IND' AND year = 2023
+  esperado: 1428
+  tolerancia_pct: 2
+  referencia: >-
+    ONU / World Bank, población de India 2023 ≈ 1.428 millones. La
+    base da 1.438 M por usar otra revisión; entra en tolerancia.
+
+- dominio: deriv
+  descripcion: Interés abierto del futuro del oro en COMEX, cierre de 2024
+  consulta: |
+    SELECT open_interest FROM deriv.cot_report
+    WHERE contract_code = '088691' AND report_date <= '2024-12-31'
+    ORDER BY report_date DESC LIMIT 1
+  esperado: 458584
+  tolerancia_pct: 1
+  referencia: >-
+    CFTC Commitments of Traders, contrato 088691 (GOLD, COMEX). Ojo
+    al contrato: hay varios con "GOLD" en el nombre y el principal es
+    este, no MICRO GOLD ni PAX GOLD.
+
+- dominio: realestate
+  descripcion: Índice Case-Shiller nacional de EE. UU. al cierre de 2023
+  consulta: |
+    SELECT v.value FROM realestate.price_index_value v
+    JOIN realestate.price_index i ON i.id = v.index_id
+    WHERE i.code = 'CSUSHPINSA' AND v.date <= '2023-12-31'
+    ORDER BY v.date DESC LIMIT 1
+  esperado: 310.9
+  tolerancia_pct: 2
+  referencia: FRED (CSUSHPINSA), diciembre de 2023 ≈ 311.
+
+- dominio: commodity
+  descripcion: Precio del oro el 2023-12-29
+  consulta: |
+    SELECT cp.close FROM commodity.price_daily cp
+    JOIN commodity.commodity c ON c.id = cp.commodity_id
+    WHERE c.code = 'GOLD' AND cp.date = '2023-12-29'
+  esperado: 2062
+  tolerancia_pct: 2
+  referencia: >-
+    Oro al contado al cierre de 2023 ≈ 2.062 USD/oz (precio LBMA del
+    29/12/2023). La base guarda el futuro GC=F, que cotiza con una
+    prima sobre el contado; la tolerancia cubre esa base.

@@ -1,20 +1,30 @@
-"""Fetcher UNCTAD: FDI flows y Liner Shipping (CSV bulk).
+"""Fetcher UNCTAD: inversión extranjera y conectividad marítima.
 
-Descarga estadísticas de UNCTADstat vía CSV bulk download:
-- FDI inward/outward flows (millones USD)
-- LSCI (Liner Shipping Connectivity Index)
+Descarga de UNCTADstat:
+- Inversión extranjera directa, flujos y stock, entrante y saliente
+  (millones de USD corrientes, desde 1990)
+- LSCI (Liner Shipping Connectivity Index), trimestral desde 2006
 
-Los CSV usan nombres de país (no ISO3), así que se
-construye un mapa nombre→ISO3 desde ref.country con
-overrides manuales para las discrepancias habituales.
+**Cambio de fuente (auditoría 2026-08).** El fetcher apuntaba a
+`unctadstat.unctad.org/EN/BulkDownload/*.csv`, que hoy devuelve 404:
+por eso nunca cargó nada. UNCTAD rehízo el portal y ahora sirve los
+mismos datos por API (`unctadstat-api.unctad.org`), pero comprimidos
+en 7z en lugar de CSV plano, de ahí la dependencia de `py7zr`.
+
+Los CSV usan nombres de país (no ISO3), así que se construye un mapa
+nombre→ISO3 desde ref.country con overrides manuales para las
+discrepancias habituales.
 
 Fuente: UNCTAD, https://unctadstat.unctad.org
 """
 
 import io
+import pathlib
+import tempfile
 from datetime import date
 
 import pandas as pd
+import py7zr
 from sqlalchemy import text
 from sqlalchemy.dialects.postgresql import insert
 
@@ -28,9 +38,10 @@ from stonks.models.macro import (
 )
 from stonks.models.meta import DataSource
 
-# ── URLs de descarga CSV bulk ─────────────────────
-_FDI_CSV = "https://unctadstat.unctad.org/EN/BulkDownload/US.FdiFlowsStock.csv"
-_LSCI_CSV = "https://unctadstat.unctad.org/EN/BulkDownload/US.LSCI.csv"
+# ── Descarga bulk vía la API nueva (ficheros 7z) ──
+_API = "https://unctadstat-api.unctad.org/bulkdownload"
+_FDI_CSV = f"{_API}/US.FdiFlowsStock/US_FdiFlowsStock"
+_LSCI_CSV = f"{_API}/US.LSCI/US_LSCI"
 
 # ── Datasets: (url, filtro columna/tipo, variables)
 # Cada variable: (code, nombre, categoría, filtro)
@@ -41,13 +52,25 @@ _FDI_VARS = [
         "UNCTAD_FDI_IN",
         "FDI inward flows (millions USD)",
         "external",
-        {"Inward and outward": "Inward"},
+        {"Flow Label": "Flow", "Direction Label": "Inward"},
     ),
     (
         "UNCTAD_FDI_OUT",
         "FDI outward flows (millions USD)",
         "external",
-        {"Inward and outward": "Outward"},
+        {"Flow Label": "Flow", "Direction Label": "Outward"},
+    ),
+    (
+        "UNCTAD_FDI_STOCK_IN",
+        "FDI inward stock (millions USD)",
+        "external",
+        {"Flow Label": "Stock", "Direction Label": "Inward"},
+    ),
+    (
+        "UNCTAD_FDI_STOCK_OUT",
+        "FDI outward stock (millions USD)",
+        "external",
+        {"Flow Label": "Stock", "Direction Label": "Outward"},
     ),
 ]
 _LSCI_VARS = [
@@ -200,13 +223,16 @@ class UNCTADFetcher(BaseFetcher):
 
         Devuelve el total de puntos insertados.
         """
-        logger.info("UNCTAD %s: descargando CSV...", label)
+        logger.info("UNCTAD %s: descargando...", label)
         self._rate_limit()
-        resp = self._session.get(url, timeout=120)
+        resp = self._session.get(
+            url,
+            headers={"Accept": "application/octet-stream, */*"},
+            timeout=300,
+        )
         resp.raise_for_status()
 
-        # Detectar encoding y leer CSV
-        df = self._read_csv(resp.content)
+        df = self._read_csv(self._descomprimir(resp.content))
         logger.info(
             "UNCTAD %s: %d filas × %d columnas",
             label,
@@ -218,10 +244,24 @@ class UNCTADFetcher(BaseFetcher):
         df.columns = [c.strip() for c in df.columns]
 
         # Detectar columna de país
-        eco_col = self._find_column(df, ["Economy", "Country", "Reporter"])
-        year_col = self._find_column(df, ["Year", "Period"])
+        # "Economy" es el codigo M49 numerico y "Economy Label" el
+        # nombre: el mapeo a ISO3 se hace por nombre, asi que la
+        # etiqueta va primero.
+        eco_col = self._find_column(
+            df,
+            ["Economy Label", "Country Label", "Economy", "Country",
+             "Reporter"],
+        )
+        year_col = self._find_column(
+            df, ["Year", "Period", "Quarter"]
+        )
         val_col = self._find_column(
-            df, ["Value", "US Dollars at current prices in millions"]
+            df,
+            [
+                "US$ at current prices in millions",
+                "Index (Average Q1 2023 = 100)",
+                "Value",
+            ],
         )
 
         if eco_col is None or year_col is None:
@@ -302,18 +342,15 @@ class UNCTADFetcher(BaseFetcher):
                     continue
                 if iso3 not in valid:
                     continue
-                try:
-                    year = int(float(row[year_col]))
-                except (ValueError, TypeError):
-                    continue
-                if year < 1900 or year > 2100:
+                fecha = self._periodo_a_fecha(row[year_col])
+                if fecha is None:
                     continue
 
                 sid = self._get_series(session, ind_id, iso3)
                 batch.append(
                     {
                         "series_id": sid,
-                        "date": date(year, 12, 31),
+                        "date": fecha,
                         "value": float(row[val_col]),
                         "source_id": src_id,
                     }
@@ -346,6 +383,59 @@ class UNCTADFetcher(BaseFetcher):
         return total
 
     # ── Helpers ────────────────────────────────────
+
+    @staticmethod
+    def _periodo_a_fecha(bruto) -> date | None:
+        """Convertir el periodo de UNCTAD en fecha de cierre.
+
+        FDI es anual ("2024") y LSCI trimestral ("2006Q01"). Sin
+        tratar el segundo formato, la serie de conectividad maritima
+        se descartaba entera.
+        """
+        texto = str(bruto).strip()
+        if not texto or texto.lower() == "nan":
+            return None
+
+        if "Q" in texto.upper():
+            partes = texto.upper().split("Q")
+            try:
+                anio = int(partes[0])
+                trimestre = int(partes[1])
+            except (ValueError, IndexError):
+                return None
+            if not 1 <= trimestre <= 4:
+                return None
+            # Ultimo dia del trimestre.
+            mes, dia = {1: (3, 31), 2: (6, 30), 3: (9, 30),
+                        4: (12, 31)}[trimestre]
+        else:
+            try:
+                anio = int(float(texto))
+            except (ValueError, TypeError):
+                return None
+            mes, dia = 12, 31
+
+        if not 1900 <= anio <= 2100:
+            return None
+        return date(anio, mes, dia)
+
+    @staticmethod
+    def _descomprimir(contenido: bytes) -> bytes:
+        """Sacar el CSV del archivo 7z que sirve la API.
+
+        Si la respuesta no es un 7z se devuelve tal cual, para que el
+        fetcher siga funcionando si UNCTAD vuelve al CSV plano.
+        """
+        if not contenido.startswith(b"7z\xbc\xaf\x27\x1c"):
+            return contenido
+
+        with tempfile.TemporaryDirectory() as tmp:
+            with py7zr.SevenZipFile(io.BytesIO(contenido)) as archivo:
+                archivo.extractall(path=tmp)
+            for fichero in sorted(pathlib.Path(tmp).rglob("*")):
+                if fichero.is_file() and fichero.suffix.lower() == ".csv":
+                    return fichero.read_bytes()
+        raise ValueError("UNCTAD: el 7z no contiene ningun CSV")
 
     @staticmethod
     def _read_csv(content: bytes) -> pd.DataFrame:

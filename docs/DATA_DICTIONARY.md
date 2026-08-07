@@ -17,7 +17,18 @@ Cómo leer cada tabla:
 ### Esquema `ref`
 _Datos de referencia: países, divisas, bolsas, sectores GICS._
 
-#### `ref.country` · tabla · ~249 filas
+#### `ref.area` · tabla · ~281 filas
+Entidad geográfica: superset de `ref.country`.
+
+| Columna | Qué es | Tipo | Nulo | Clave |
+|---|---|---|---|---|
+| `code` | Código identificador. | character varying(3) | no | PK |
+| `name` | Nombre. | character varying(200) | no |  |
+| `area_type` |  | character varying(20) | no |  |
+| `country_code` | País (código ISO-3, p.ej. ESP). | character varying(3) | sí | FK → ref.country.code |
+| `notes` |  | character varying(300) | sí |  |
+
+#### `ref.country` · tabla · ~250 filas
 Lista de países del mundo, con su código ISO.
 
 | Columna | Qué es | Tipo | Nulo | Clave |
@@ -44,7 +55,7 @@ Lista de monedas (euro, dólar...).
 | `is_major` | Si es una divisa principal. | boolean | no |  |
 | `decimal_places` | Nº de decimales de la moneda. | smallint | no |  |
 
-#### `ref.exchange` · tabla · ~0 filas
+#### `ref.exchange` · tabla · ~35 filas
 Bolsas de valores (Nasdaq, NYSE...).
 
 | Columna | Qué es | Tipo | Nulo | Clave |
@@ -71,7 +82,22 @@ Catálogo de productos del Sistema Armonizado (HS): el código de cada tipo de m
 | `level` | Nivel de detalle: 2, 4 o 6 dígitos. | smallint | no |  |
 | `parent_code` | Producto padre (para la jerarquía HS). | character varying(6) | sí |  |
 
-#### `ref.sector` · tabla · ~0 filas
+#### `ref.legal_entity` · tabla · ~355 filas
+Entidad legal identificada por LEI (GLEIF).
+
+| Columna | Qué es | Tipo | Nulo | Clave |
+|---|---|---|---|---|
+| `lei` |  | character varying(20) | no | PK |
+| `legal_name` |  | character varying(500) | no |  |
+| `country_code` | País (código ISO-3, p.ej. ESP). | character varying(3) | sí | FK → ref.country.code |
+| `legal_jurisdiction` |  | character varying(10) | sí |  |
+| `entity_status` |  | character varying(20) | sí |  |
+| `entity_category` |  | character varying(40) | sí |  |
+| `parent_lei` |  | character varying(20) | sí |  |
+| `registration_status` |  | character varying(30) | sí |  |
+| `city` |  | character varying(120) | sí |  |
+
+#### `ref.sector` · tabla · ~36 filas
 Sectores económicos GICS (Tecnología, Salud...).
 
 | Columna | Qué es | Tipo | Nulo | Clave |
@@ -85,7 +111,12 @@ Sectores económicos GICS (Tecnología, Salud...).
 ### Esquema `meta`
 _Metadatos y auditoría: fuentes, ejecuciones, calidad._
 
-#### `meta.data_quality` · tabla · ~51 filas
+#### `meta.alembic_version` · tabla · ~0 filas
+| Columna | Qué es | Tipo | Nulo | Clave |
+|---|---|---|---|---|
+| `version_num` |  | character varying(32) | no | PK |
+
+#### `meta.data_quality` · tabla · ~1,791 filas
 Nota de calidad por dominio: cuántos países cubrimos y cómo de reciente es el dato.
 
 | Columna | Qué es | Tipo | Nulo | Clave |
@@ -97,7 +128,7 @@ Nota de calidad por dominio: cuántos países cubrimos y cómo de reciente es el
 | `completeness_score` | % de completitud (0-100). | numeric(5,2) | sí |  |
 | `freshness_days` | Antigüedad del último dato. | integer | sí |  |
 | `source_count` | Nº de fuentes que lo aportan. | integer | sí |  |
-| `last_assessed` | Última evaluación. | timestamp without time zone | no |  |
+| `last_assessed` | Última evaluación. | timestamp with time zone | no |  |
 
 #### `meta.data_source` · tabla · ~0 filas
 Las fuentes de donde sacamos los datos (IMF, yfinance, SEC...).
@@ -114,16 +145,16 @@ Las fuentes de donde sacamos los datos (IMF, yfinance, SEC...).
 | `is_enabled` | Si la fuente está activa. | boolean | no |  |
 | `notes` | Notas. | text | sí |  |
 
-#### `meta.fetch_run` · tabla · ~184,009 filas
+#### `meta.fetch_run` · tabla · ~235,950 filas
 Un registro por cada descarga hecha: cuándo, qué fuente, cuántos datos y si hubo errores. Es el 'diario' de descargas.
 
 | Columna | Qué es | Tipo | Nulo | Clave |
 |---|---|---|---|---|
 | `id` | Identificador único de la fila. | integer | no | PK |
-| `source_id` | Fuente de la que procede el dato. | integer | sí |  |
+| `source_id` | Fuente de la que procede el dato. | integer | sí | FK → meta.data_source.id |
 | `domain` | Dominio de datos afectado. | character varying(50) | no |  |
-| `started_at` | Cuándo empezó la ejecución. | timestamp without time zone | no |  |
-| `finished_at` | Cuándo terminó la ejecución. | timestamp without time zone | sí |  |
+| `started_at` | Cuándo empezó la ejecución. | timestamp with time zone | no |  |
+| `finished_at` | Cuándo terminó la ejecución. | timestamp with time zone | sí |  |
 | `status` | Estado (running / success / failed). | character varying(20) | no |  |
 | `records_fetched` | Registros descargados. | integer | no |  |
 | `records_inserted` | Registros insertados. | integer | no |  |
@@ -132,7 +163,23 @@ Un registro por cada descarga hecha: cuándo, qué fuente, cuántos datos y si h
 | `params` | Parámetros usados en la ejecución. | jsonb | sí |  |
 | `error_log` | Errores registrados, si los hubo. | jsonb | sí |  |
 
-#### `meta.transform_run` · tabla · ~147 filas
+#### `meta.table_certification` · tabla · ~94 filas
+Cómo se ha verificado cada tabla de datos.
+
+| Columna | Qué es | Tipo | Nulo | Clave |
+|---|---|---|---|---|
+| `id` | Identificador único de la fila. | integer | no | PK |
+| `schema_name` |  | character varying(63) | no |  |
+| `table_name` |  | character varying(63) | no |  |
+| `estado` |  | character varying(40) | no |  |
+| `metodo` |  | character varying(500) | sí |  |
+| `motivo` |  | character varying(500) | sí |  |
+| `filas` |  | bigint | sí |  |
+| `referencias` |  | integer | sí |  |
+| `certificado_por` |  | character varying(60) | sí |  |
+| `certified_at` |  | timestamp with time zone | sí |  |
+
+#### `meta.transform_run` · tabla · ~180 filas
 Un registro por cada vez que transformamos datos crudos en datos limpios. El 'diario' de transformaciones.
 
 | Columna | Qué es | Tipo | Nulo | Clave |
@@ -140,8 +187,8 @@ Un registro por cada vez que transformamos datos crudos en datos limpios. El 'di
 | `id` | Identificador único de la fila. | integer | no | PK |
 | `domain` | Dominio de datos afectado. | character varying(50) | no |  |
 | `target_layer` | Capa destino (silver/gold). | character varying(20) | no |  |
-| `started_at` | Cuándo empezó la ejecución. | timestamp without time zone | no |  |
-| `finished_at` | Cuándo terminó la ejecución. | timestamp without time zone | sí |  |
+| `started_at` | Cuándo empezó la ejecución. | timestamp with time zone | no |  |
+| `finished_at` | Cuándo terminó la ejecución. | timestamp with time zone | sí |  |
 | `status` | Estado (running / success / failed). | character varying(20) | no |  |
 | `records_read` | Registros leídos. | integer | no |  |
 | `records_written` | Registros escritos. | integer | no |  |
@@ -154,7 +201,7 @@ Un registro por cada vez que transformamos datos crudos en datos limpios. El 'di
 ### Esquema `equity`
 _Renta variable: empresas, precios, fundamentales y 360°._
 
-#### `equity.analyst_estimate` · tabla · ~141,496 filas
+#### `equity.analyst_estimate` · tabla · ~228,204 filas
 Previsiones de los analistas sobre beneficios e ingresos futuros.
 
 | Columna | Qué es | Tipo | Nulo | Clave |
@@ -170,8 +217,9 @@ Previsiones de los analistas sobre beneficios e ingresos futuros.
 | `revenue_avg` | Ingresos estimados (medio). | numeric(20,2) | sí |  |
 | `num_analysts` | Nº de analistas. | smallint | sí |  |
 | `source_id` | Fuente de la que procede el dato. | integer | sí | FK → meta.data_source.id |
+| `fetch_run_id` | Descarga que trajo el dato (auditoría). | integer | sí |  |
 
-#### `equity.balance_sheet` · tabla · ~20,752 filas
+#### `equity.balance_sheet` · tabla · ~22,342 filas
 Balance anual (activos, deudas, patrimonio) de cada empresa.
 
 | Columna | Qué es | Tipo | Nulo | Clave |
@@ -198,9 +246,10 @@ Balance anual (activos, deudas, patrimonio) de cada empresa.
 | `retained_earnings` | Beneficios retenidos (no repartidos). | numeric(18,2) | sí |  |
 | `total_equity` | Patrimonio neto total. | numeric(18,2) | sí |  |
 | `source_id` | Fuente de la que procede el dato. | integer | sí | FK → meta.data_source.id |
-| `fetched_at` | Cuándo se descargó. | timestamp without time zone | no |  |
+| `fetched_at` | Cuándo se descargó. | timestamp with time zone | no |  |
+| `fetch_run_id` | Descarga que trajo el dato (auditoría). | integer | sí |  |
 
-#### `equity.cash_flow` · tabla · ~21,092 filas
+#### `equity.cash_flow` · tabla · ~22,026 filas
 Flujos de caja anuales de cada empresa.
 
 | Columna | Qué es | Tipo | Nulo | Clave |
@@ -222,9 +271,10 @@ Flujos de caja anuales de cada empresa.
 | `financing_cash_flow` | Flujo de caja de financiación. | numeric(18,2) | sí |  |
 | `net_change_cash` | Variación neta de efectivo. | numeric(18,2) | sí |  |
 | `source_id` | Fuente de la que procede el dato. | integer | sí | FK → meta.data_source.id |
-| `fetched_at` | Cuándo se descargó. | timestamp without time zone | no |  |
+| `fetched_at` | Cuándo se descargó. | timestamp with time zone | no |  |
+| `fetch_run_id` | Descarga que trajo el dato (auditoría). | integer | sí |  |
 
-#### `equity.company` · tabla · ~10,491 filas
+#### `equity.company` · tabla · ~11,012 filas
 Cada empresa cotizada que seguimos.
 
 | Columna | Qué es | Tipo | Nulo | Clave |
@@ -245,9 +295,12 @@ Cada empresa cotizada que seguimos.
 | `website` | Web de la empresa. | character varying(300) | sí |  |
 | `description` | Descripción libre. | text | sí |  |
 | `employees` | Número de empleados. | integer | sí |  |
-| `last_updated` | Última actualización. | timestamp without time zone | no |  |
+| `last_updated` | Última actualización. | timestamp with time zone | no |  |
+| `lei` |  | character varying(20) | sí | FK → ref.legal_entity.lei |
+| `source_id` | Fuente de la que procede el dato. | integer | sí |  |
+| `fetch_run_id` | Descarga que trajo el dato (auditoría). | integer | sí |  |
 
-#### `equity.dividend` · tabla · ~187,621 filas
+#### `equity.dividend` · tabla · ~188,417 filas
 Dividendos pagados por cada acción.
 
 | Columna | Qué es | Tipo | Nulo | Clave |
@@ -260,8 +313,10 @@ Dividendos pagados por cada acción.
 | `amount` | Importe del dividendo por acción. | numeric(12,6) | no |  |
 | `currency_code` | Moneda del importe. | character varying(3) | sí |  |
 | `dividend_type` | Tipo de dividendo. | character varying(20) | sí |  |
+| `source_id` | Fuente de la que procede el dato. | integer | sí |  |
+| `fetch_run_id` | Descarga que trajo el dato (auditoría). | integer | sí |  |
 
-#### `equity.earnings_date` · tabla · ~191,208 filas
+#### `equity.earnings_date` · tabla · ~191,439 filas
 Fechas de presentación de resultados, con lo esperado vs lo reportado.
 
 | Columna | Qué es | Tipo | Nulo | Clave |
@@ -272,8 +327,10 @@ Fechas de presentación de resultados, con lo esperado vs lo reportado.
 | `eps_estimate` | Beneficio por acción esperado. | numeric(12,4) | sí |  |
 | `reported_eps` | Beneficio por acción real. | numeric(12,4) | sí |  |
 | `surprise_pct` | Sorpresa: desviación del real vs lo esperado (%). | numeric(10,4) | sí |  |
+| `source_id` | Fuente de la que procede el dato. | integer | sí |  |
+| `fetch_run_id` | Descarga que trajo el dato (auditoría). | integer | sí |  |
 
-#### `equity.earnings_revision` · tabla · ~141,496 filas
+#### `equity.earnings_revision` · tabla · ~228,204 filas
 Cómo van cambiando esas previsiones (si los analistas revisan al alza o a la baja).
 
 | Columna | Qué es | Tipo | Nulo | Clave |
@@ -288,8 +345,23 @@ Cómo van cambiando esas previsiones (si los analistas revisan al alza o a la ba
 | `up_last_30d` | Revisiones al alza (30 días). | smallint | sí |  |
 | `down_last_30d` | Revisiones a la baja (30 días). | smallint | sí |  |
 | `source_id` | Fuente de la que procede el dato. | integer | sí | FK → meta.data_source.id |
+| `fetch_run_id` | Descarga que trajo el dato (auditoría). | integer | sí |  |
 
-#### `equity.holder` · tabla · ~71,525 filas
+#### `equity.factor_return` · tabla · ~18,702 filas
+Rentabilidad de factores académicos (Fama-French).
+
+| Columna | Qué es | Tipo | Nulo | Clave |
+|---|---|---|---|---|
+| `id` | Identificador único de la fila. | bigint | no | PK |
+| `region` |  | character varying(20) | no |  |
+| `frequency` | Frecuencia (anual, mensual, diario...). | character varying(10) | no |  |
+| `factor` |  | character varying(10) | no |  |
+| `date` | Fecha del dato. | date | no |  |
+| `value_pct` |  | numeric(12,6) | no |  |
+| `source_id` | Fuente de la que procede el dato. | integer | sí | FK → meta.data_source.id |
+| `fetch_run_id` | Descarga que trajo el dato (auditoría). | integer | sí |  |
+
+#### `equity.holder` · tabla · ~74,847 filas
 Quién posee cada empresa: grandes fondos e instituciones, con su porcentaje.
 
 | Columna | Qué es | Tipo | Nulo | Clave |
@@ -303,8 +375,10 @@ Quién posee cada empresa: grandes fondos e instituciones, con su porcentaje.
 | `pct_held` | % de la empresa que posee. | numeric(9,6) | sí |  |
 | `shares` | Nº de acciones que posee. | bigint | sí |  |
 | `value_usd` | Valor de la participación (USD). | numeric(20,2) | sí |  |
+| `source_id` | Fuente de la que procede el dato. | integer | sí |  |
+| `fetch_run_id` | Descarga que trajo el dato (auditoría). | integer | sí |  |
 
-#### `equity.income_statement` · tabla · ~20,669 filas
+#### `equity.income_statement` · tabla · ~21,743 filas
 Cuenta de resultados anual (ingresos, beneficio...) de cada empresa.
 
 | Columna | Qué es | Tipo | Nulo | Clave |
@@ -330,9 +404,10 @@ Cuenta de resultados anual (ingresos, beneficio...) de cada empresa.
 | `shares_diluted` | Nº de acciones (diluido). | bigint | sí |  |
 | `ebitda` | EBITDA (beneficio antes de intereses, impuestos y amortizaciones). | numeric(18,2) | sí |  |
 | `source_id` | Fuente de la que procede el dato. | integer | sí | FK → meta.data_source.id |
-| `fetched_at` | Cuándo se descargó. | timestamp without time zone | no |  |
+| `fetched_at` | Cuándo se descargó. | timestamp with time zone | no |  |
+| `fetch_run_id` | Descarga que trajo el dato (auditoría). | integer | sí |  |
 
-#### `equity.index_constituent_current` · tabla · ~507 filas
+#### `equity.index_constituent_current` · tabla · ~1,362 filas
 Qué empresas componen hoy cada índice.
 
 | Columna | Qué es | Tipo | Nulo | Clave |
@@ -343,8 +418,9 @@ Qué empresas componen hoy cada índice.
 | `weight` | Peso o ponderación en el índice. | numeric(8,5) | sí |  |
 | `as_of_date` | Fecha de referencia del cálculo. | date | no |  |
 | `source_id` | Fuente de la que procede el dato. | integer | sí | FK → meta.data_source.id |
+| `fetch_run_id` | Descarga que trajo el dato (auditoría). | integer | sí |  |
 
-#### `equity.index_price` · tabla · ~248,106 filas
+#### `equity.index_price` · tabla · ~256,941 filas
 Valor de cierre diario de cada índice.
 
 | Columna | Qué es | Tipo | Nulo | Clave |
@@ -352,13 +428,15 @@ Valor de cierre diario de cada índice.
 | `id` | Identificador único de la fila. | integer | no | PK |
 | `index_id` | Índice de mercado. | integer | no | FK → equity.market_index.id |
 | `date` | Fecha del dato. | date | no |  |
-| `open` | Precio de apertura. | numeric(14,4) | sí |  |
-| `high` | Precio máximo del día. | numeric(14,4) | sí |  |
-| `low` | Precio mínimo del día. | numeric(14,4) | sí |  |
-| `close` | Precio de cierre. | numeric(14,4) | no |  |
+| `open` | Precio de apertura. | numeric(24,10) | sí |  |
+| `high` | Precio máximo del día. | numeric(24,10) | sí |  |
+| `low` | Precio mínimo del día. | numeric(24,10) | sí |  |
+| `close` | Precio de cierre. | numeric(24,10) | no |  |
 | `volume` | Volumen negociado. | bigint | sí |  |
+| `source_id` | Fuente de la que procede el dato. | integer | sí |  |
+| `fetch_run_id` | Descarga que trajo el dato (auditoría). | integer | sí |  |
 
-#### `equity.insider_transaction` · tabla · ~203,387 filas
+#### `equity.insider_transaction` · tabla · ~210,101 filas
 Compras y ventas de acciones por parte de directivos e insiders de la empresa.
 
 | Columna | Qué es | Tipo | Nulo | Clave |
@@ -371,8 +449,10 @@ Compras y ventas de acciones por parte de directivos e insiders de la empresa.
 | `start_date` | Fecha de la operación. | date | sí |  |
 | `shares` | Número de acciones. | bigint | sí |  |
 | `value_usd` | Valor de la operación (USD). | numeric(20,2) | sí |  |
+| `source_id` | Fuente de la que procede el dato. | integer | sí |  |
+| `fetch_run_id` | Descarga que trajo el dato (auditoría). | integer | sí |  |
 
-#### `equity.market_index` · tabla · ~0 filas
+#### `equity.market_index` · tabla · ~28 filas
 Índices bursátiles (S&P 500, DAX...).
 
 | Columna | Qué es | Tipo | Nulo | Clave |
@@ -384,8 +464,10 @@ Compras y ventas de acciones por parte de directivos e insiders de la empresa.
 | `exchange_id` | Bolsa de valores. | integer | sí | FK → ref.exchange.id |
 | `currency_code` | Moneda del importe. | character varying(3) | sí |  |
 | `description` | Descripción libre. | text | sí |  |
+| `source_id` | Fuente de la que procede el dato. | integer | sí |  |
+| `fetch_run_id` | Descarga que trajo el dato (auditoría). | integer | sí |  |
 
-#### `equity.price_daily` · tabla · ~9,477,965 filas
+#### `equity.price_daily` · tabla · ~28,785,268 filas
 El precio de cierre diario de cada acción (y máximo, mínimo, volumen...).
 
 | Columna | Qué es | Tipo | Nulo | Clave |
@@ -393,15 +475,510 @@ El precio de cierre diario de cada acción (y máximo, mínimo, volumen...).
 | `id` | Identificador único de la fila. | integer | no | PK |
 | `company_id` | Empresa a la que pertenece. | integer | no | FK → equity.company.id |
 | `date` | Fecha del dato. | date | no |  |
-| `open` | Precio de apertura. | numeric(14,4) | sí |  |
-| `high` | Precio máximo del día. | numeric(14,4) | sí |  |
-| `low` | Precio mínimo del día. | numeric(14,4) | sí |  |
-| `close` | Precio de cierre. | numeric(14,4) | no |  |
-| `adj_close` | Precio de cierre ajustado (dividendos/splits). | numeric(14,4) | sí |  |
+| `open` | Precio de apertura. | numeric(24,10) | sí |  |
+| `high` | Precio máximo del día. | numeric(24,10) | sí |  |
+| `low` | Precio mínimo del día. | numeric(24,10) | sí |  |
+| `close` | Precio de cierre. | numeric(24,10) | no |  |
+| `adj_close` | Precio de cierre ajustado (dividendos/splits). | numeric(24,10) | sí |  |
 | `volume` | Volumen negociado. | bigint | sí |  |
 | `source_id` | Fuente de la que procede el dato. | integer | sí | FK → meta.data_source.id |
+| `fetch_run_id` | Descarga que trajo el dato (auditoría). | integer | sí |  |
 
-#### `equity.ratios_mv` · materializada · ~9,928 filas
+#### `equity.price_intraday` · tabla · ~0 filas
+Precio intraday OHLCV particionado por mes.
+
+| Columna | Qué es | Tipo | Nulo | Clave |
+|---|---|---|---|---|
+| `company_id` | Empresa a la que pertenece. | integer | no | PK |
+| `ts` |  | timestamp with time zone | no | PK |
+| `interval` |  | character varying(3) | no | PK |
+| `open` | Precio de apertura. | numeric(24,10) | sí |  |
+| `high` | Precio máximo del día. | numeric(24,10) | sí |  |
+| `low` | Precio mínimo del día. | numeric(24,10) | sí |  |
+| `close` | Precio de cierre. | numeric(24,10) | no |  |
+| `volume` | Volumen negociado. | bigint | sí |  |
+
+#### `equity.price_intraday_2023_08` · tabla · ~0 filas
+| Columna | Qué es | Tipo | Nulo | Clave |
+|---|---|---|---|---|
+| `company_id` | Empresa a la que pertenece. | integer | no | PK |
+| `ts` |  | timestamp with time zone | no | PK |
+| `interval` |  | character varying(3) | no | PK |
+| `open` | Precio de apertura. | numeric(24,10) | sí |  |
+| `high` | Precio máximo del día. | numeric(24,10) | sí |  |
+| `low` | Precio mínimo del día. | numeric(24,10) | sí |  |
+| `close` | Precio de cierre. | numeric(24,10) | no |  |
+| `volume` | Volumen negociado. | bigint | sí |  |
+
+#### `equity.price_intraday_2023_09` · tabla · ~399 filas
+| Columna | Qué es | Tipo | Nulo | Clave |
+|---|---|---|---|---|
+| `company_id` | Empresa a la que pertenece. | integer | no | PK |
+| `ts` |  | timestamp with time zone | no | PK |
+| `interval` |  | character varying(3) | no | PK |
+| `open` | Precio de apertura. | numeric(24,10) | sí |  |
+| `high` | Precio máximo del día. | numeric(24,10) | sí |  |
+| `low` | Precio mínimo del día. | numeric(24,10) | sí |  |
+| `close` | Precio de cierre. | numeric(24,10) | no |  |
+| `volume` | Volumen negociado. | bigint | sí |  |
+
+#### `equity.price_intraday_2023_10` · tabla · ~462 filas
+| Columna | Qué es | Tipo | Nulo | Clave |
+|---|---|---|---|---|
+| `company_id` | Empresa a la que pertenece. | integer | no | PK |
+| `ts` |  | timestamp with time zone | no | PK |
+| `interval` |  | character varying(3) | no | PK |
+| `open` | Precio de apertura. | numeric(24,10) | sí |  |
+| `high` | Precio máximo del día. | numeric(24,10) | sí |  |
+| `low` | Precio mínimo del día. | numeric(24,10) | sí |  |
+| `close` | Precio de cierre. | numeric(24,10) | no |  |
+| `volume` | Volumen negociado. | bigint | sí |  |
+
+#### `equity.price_intraday_2023_11` · tabla · ~429 filas
+| Columna | Qué es | Tipo | Nulo | Clave |
+|---|---|---|---|---|
+| `company_id` | Empresa a la que pertenece. | integer | no | PK |
+| `ts` |  | timestamp with time zone | no | PK |
+| `interval` |  | character varying(3) | no | PK |
+| `open` | Precio de apertura. | numeric(24,10) | sí |  |
+| `high` | Precio máximo del día. | numeric(24,10) | sí |  |
+| `low` | Precio mínimo del día. | numeric(24,10) | sí |  |
+| `close` | Precio de cierre. | numeric(24,10) | no |  |
+| `volume` | Volumen negociado. | bigint | sí |  |
+
+#### `equity.price_intraday_2023_12` · tabla · ~420 filas
+| Columna | Qué es | Tipo | Nulo | Clave |
+|---|---|---|---|---|
+| `company_id` | Empresa a la que pertenece. | integer | no | PK |
+| `ts` |  | timestamp with time zone | no | PK |
+| `interval` |  | character varying(3) | no | PK |
+| `open` | Precio de apertura. | numeric(24,10) | sí |  |
+| `high` | Precio máximo del día. | numeric(24,10) | sí |  |
+| `low` | Precio mínimo del día. | numeric(24,10) | sí |  |
+| `close` | Precio de cierre. | numeric(24,10) | no |  |
+| `volume` | Volumen negociado. | bigint | sí |  |
+
+#### `equity.price_intraday_2024_01` · tabla · ~441 filas
+| Columna | Qué es | Tipo | Nulo | Clave |
+|---|---|---|---|---|
+| `company_id` | Empresa a la que pertenece. | integer | no | PK |
+| `ts` |  | timestamp with time zone | no | PK |
+| `interval` |  | character varying(3) | no | PK |
+| `open` | Precio de apertura. | numeric(24,10) | sí |  |
+| `high` | Precio máximo del día. | numeric(24,10) | sí |  |
+| `low` | Precio mínimo del día. | numeric(24,10) | sí |  |
+| `close` | Precio de cierre. | numeric(24,10) | no |  |
+| `volume` | Volumen negociado. | bigint | sí |  |
+
+#### `equity.price_intraday_2024_02` · tabla · ~420 filas
+| Columna | Qué es | Tipo | Nulo | Clave |
+|---|---|---|---|---|
+| `company_id` | Empresa a la que pertenece. | integer | no | PK |
+| `ts` |  | timestamp with time zone | no | PK |
+| `interval` |  | character varying(3) | no | PK |
+| `open` | Precio de apertura. | numeric(24,10) | sí |  |
+| `high` | Precio máximo del día. | numeric(24,10) | sí |  |
+| `low` | Precio mínimo del día. | numeric(24,10) | sí |  |
+| `close` | Precio de cierre. | numeric(24,10) | no |  |
+| `volume` | Volumen negociado. | bigint | sí |  |
+
+#### `equity.price_intraday_2024_03` · tabla · ~420 filas
+| Columna | Qué es | Tipo | Nulo | Clave |
+|---|---|---|---|---|
+| `company_id` | Empresa a la que pertenece. | integer | no | PK |
+| `ts` |  | timestamp with time zone | no | PK |
+| `interval` |  | character varying(3) | no | PK |
+| `open` | Precio de apertura. | numeric(24,10) | sí |  |
+| `high` | Precio máximo del día. | numeric(24,10) | sí |  |
+| `low` | Precio mínimo del día. | numeric(24,10) | sí |  |
+| `close` | Precio de cierre. | numeric(24,10) | no |  |
+| `volume` | Volumen negociado. | bigint | sí |  |
+
+#### `equity.price_intraday_2024_04` · tabla · ~462 filas
+| Columna | Qué es | Tipo | Nulo | Clave |
+|---|---|---|---|---|
+| `company_id` | Empresa a la que pertenece. | integer | no | PK |
+| `ts` |  | timestamp with time zone | no | PK |
+| `interval` |  | character varying(3) | no | PK |
+| `open` | Precio de apertura. | numeric(24,10) | sí |  |
+| `high` | Precio máximo del día. | numeric(24,10) | sí |  |
+| `low` | Precio mínimo del día. | numeric(24,10) | sí |  |
+| `close` | Precio de cierre. | numeric(24,10) | no |  |
+| `volume` | Volumen negociado. | bigint | sí |  |
+
+#### `equity.price_intraday_2024_05` · tabla · ~462 filas
+| Columna | Qué es | Tipo | Nulo | Clave |
+|---|---|---|---|---|
+| `company_id` | Empresa a la que pertenece. | integer | no | PK |
+| `ts` |  | timestamp with time zone | no | PK |
+| `interval` |  | character varying(3) | no | PK |
+| `open` | Precio de apertura. | numeric(24,10) | sí |  |
+| `high` | Precio máximo del día. | numeric(24,10) | sí |  |
+| `low` | Precio mínimo del día. | numeric(24,10) | sí |  |
+| `close` | Precio de cierre. | numeric(24,10) | no |  |
+| `volume` | Volumen negociado. | bigint | sí |  |
+
+#### `equity.price_intraday_2024_06` · tabla · ~399 filas
+| Columna | Qué es | Tipo | Nulo | Clave |
+|---|---|---|---|---|
+| `company_id` | Empresa a la que pertenece. | integer | no | PK |
+| `ts` |  | timestamp with time zone | no | PK |
+| `interval` |  | character varying(3) | no | PK |
+| `open` | Precio de apertura. | numeric(24,10) | sí |  |
+| `high` | Precio máximo del día. | numeric(24,10) | sí |  |
+| `low` | Precio mínimo del día. | numeric(24,10) | sí |  |
+| `close` | Precio de cierre. | numeric(24,10) | no |  |
+| `volume` | Volumen negociado. | bigint | sí |  |
+
+#### `equity.price_intraday_2024_07` · tabla · ~450 filas
+| Columna | Qué es | Tipo | Nulo | Clave |
+|---|---|---|---|---|
+| `company_id` | Empresa a la que pertenece. | integer | no | PK |
+| `ts` |  | timestamp with time zone | no | PK |
+| `interval` |  | character varying(3) | no | PK |
+| `open` | Precio de apertura. | numeric(24,10) | sí |  |
+| `high` | Precio máximo del día. | numeric(24,10) | sí |  |
+| `low` | Precio mínimo del día. | numeric(24,10) | sí |  |
+| `close` | Precio de cierre. | numeric(24,10) | no |  |
+| `volume` | Volumen negociado. | bigint | sí |  |
+
+#### `equity.price_intraday_2024_08` · tabla · ~462 filas
+| Columna | Qué es | Tipo | Nulo | Clave |
+|---|---|---|---|---|
+| `company_id` | Empresa a la que pertenece. | integer | no | PK |
+| `ts` |  | timestamp with time zone | no | PK |
+| `interval` |  | character varying(3) | no | PK |
+| `open` | Precio de apertura. | numeric(24,10) | sí |  |
+| `high` | Precio máximo del día. | numeric(24,10) | sí |  |
+| `low` | Precio mínimo del día. | numeric(24,10) | sí |  |
+| `close` | Precio de cierre. | numeric(24,10) | no |  |
+| `volume` | Volumen negociado. | bigint | sí |  |
+
+#### `equity.price_intraday_2024_09` · tabla · ~420 filas
+| Columna | Qué es | Tipo | Nulo | Clave |
+|---|---|---|---|---|
+| `company_id` | Empresa a la que pertenece. | integer | no | PK |
+| `ts` |  | timestamp with time zone | no | PK |
+| `interval` |  | character varying(3) | no | PK |
+| `open` | Precio de apertura. | numeric(24,10) | sí |  |
+| `high` | Precio máximo del día. | numeric(24,10) | sí |  |
+| `low` | Precio mínimo del día. | numeric(24,10) | sí |  |
+| `close` | Precio de cierre. | numeric(24,10) | no |  |
+| `volume` | Volumen negociado. | bigint | sí |  |
+
+#### `equity.price_intraday_2024_10` · tabla · ~483 filas
+| Columna | Qué es | Tipo | Nulo | Clave |
+|---|---|---|---|---|
+| `company_id` | Empresa a la que pertenece. | integer | no | PK |
+| `ts` |  | timestamp with time zone | no | PK |
+| `interval` |  | character varying(3) | no | PK |
+| `open` | Precio de apertura. | numeric(24,10) | sí |  |
+| `high` | Precio máximo del día. | numeric(24,10) | sí |  |
+| `low` | Precio mínimo del día. | numeric(24,10) | sí |  |
+| `close` | Precio de cierre. | numeric(24,10) | no |  |
+| `volume` | Volumen negociado. | bigint | sí |  |
+
+#### `equity.price_intraday_2024_11` · tabla · ~408 filas
+| Columna | Qué es | Tipo | Nulo | Clave |
+|---|---|---|---|---|
+| `company_id` | Empresa a la que pertenece. | integer | no | PK |
+| `ts` |  | timestamp with time zone | no | PK |
+| `interval` |  | character varying(3) | no | PK |
+| `open` | Precio de apertura. | numeric(24,10) | sí |  |
+| `high` | Precio máximo del día. | numeric(24,10) | sí |  |
+| `low` | Precio mínimo del día. | numeric(24,10) | sí |  |
+| `close` | Precio de cierre. | numeric(24,10) | no |  |
+| `volume` | Volumen negociado. | bigint | sí |  |
+
+#### `equity.price_intraday_2024_12` · tabla · ~429 filas
+| Columna | Qué es | Tipo | Nulo | Clave |
+|---|---|---|---|---|
+| `company_id` | Empresa a la que pertenece. | integer | no | PK |
+| `ts` |  | timestamp with time zone | no | PK |
+| `interval` |  | character varying(3) | no | PK |
+| `open` | Precio de apertura. | numeric(24,10) | sí |  |
+| `high` | Precio máximo del día. | numeric(24,10) | sí |  |
+| `low` | Precio mínimo del día. | numeric(24,10) | sí |  |
+| `close` | Precio de cierre. | numeric(24,10) | no |  |
+| `volume` | Volumen negociado. | bigint | sí |  |
+
+#### `equity.price_intraday_2025_01` · tabla · ~420 filas
+| Columna | Qué es | Tipo | Nulo | Clave |
+|---|---|---|---|---|
+| `company_id` | Empresa a la que pertenece. | integer | no | PK |
+| `ts` |  | timestamp with time zone | no | PK |
+| `interval` |  | character varying(3) | no | PK |
+| `open` | Precio de apertura. | numeric(24,10) | sí |  |
+| `high` | Precio máximo del día. | numeric(24,10) | sí |  |
+| `low` | Precio mínimo del día. | numeric(24,10) | sí |  |
+| `close` | Precio de cierre. | numeric(24,10) | no |  |
+| `volume` | Volumen negociado. | bigint | sí |  |
+
+#### `equity.price_intraday_2025_02` · tabla · ~399 filas
+| Columna | Qué es | Tipo | Nulo | Clave |
+|---|---|---|---|---|
+| `company_id` | Empresa a la que pertenece. | integer | no | PK |
+| `ts` |  | timestamp with time zone | no | PK |
+| `interval` |  | character varying(3) | no | PK |
+| `open` | Precio de apertura. | numeric(24,10) | sí |  |
+| `high` | Precio máximo del día. | numeric(24,10) | sí |  |
+| `low` | Precio mínimo del día. | numeric(24,10) | sí |  |
+| `close` | Precio de cierre. | numeric(24,10) | no |  |
+| `volume` | Volumen negociado. | bigint | sí |  |
+
+#### `equity.price_intraday_2025_03` · tabla · ~441 filas
+| Columna | Qué es | Tipo | Nulo | Clave |
+|---|---|---|---|---|
+| `company_id` | Empresa a la que pertenece. | integer | no | PK |
+| `ts` |  | timestamp with time zone | no | PK |
+| `interval` |  | character varying(3) | no | PK |
+| `open` | Precio de apertura. | numeric(24,10) | sí |  |
+| `high` | Precio máximo del día. | numeric(24,10) | sí |  |
+| `low` | Precio mínimo del día. | numeric(24,10) | sí |  |
+| `close` | Precio de cierre. | numeric(24,10) | no |  |
+| `volume` | Volumen negociado. | bigint | sí |  |
+
+#### `equity.price_intraday_2025_04` · tabla · ~441 filas
+| Columna | Qué es | Tipo | Nulo | Clave |
+|---|---|---|---|---|
+| `company_id` | Empresa a la que pertenece. | integer | no | PK |
+| `ts` |  | timestamp with time zone | no | PK |
+| `interval` |  | character varying(3) | no | PK |
+| `open` | Precio de apertura. | numeric(24,10) | sí |  |
+| `high` | Precio máximo del día. | numeric(24,10) | sí |  |
+| `low` | Precio mínimo del día. | numeric(24,10) | sí |  |
+| `close` | Precio de cierre. | numeric(24,10) | no |  |
+| `volume` | Volumen negociado. | bigint | sí |  |
+
+#### `equity.price_intraday_2025_05` · tabla · ~441 filas
+| Columna | Qué es | Tipo | Nulo | Clave |
+|---|---|---|---|---|
+| `company_id` | Empresa a la que pertenece. | integer | no | PK |
+| `ts` |  | timestamp with time zone | no | PK |
+| `interval` |  | character varying(3) | no | PK |
+| `open` | Precio de apertura. | numeric(24,10) | sí |  |
+| `high` | Precio máximo del día. | numeric(24,10) | sí |  |
+| `low` | Precio mínimo del día. | numeric(24,10) | sí |  |
+| `close` | Precio de cierre. | numeric(24,10) | no |  |
+| `volume` | Volumen negociado. | bigint | sí |  |
+
+#### `equity.price_intraday_2025_06` · tabla · ~420 filas
+| Columna | Qué es | Tipo | Nulo | Clave |
+|---|---|---|---|---|
+| `company_id` | Empresa a la que pertenece. | integer | no | PK |
+| `ts` |  | timestamp with time zone | no | PK |
+| `interval` |  | character varying(3) | no | PK |
+| `open` | Precio de apertura. | numeric(24,10) | sí |  |
+| `high` | Precio máximo del día. | numeric(24,10) | sí |  |
+| `low` | Precio mínimo del día. | numeric(24,10) | sí |  |
+| `close` | Precio de cierre. | numeric(24,10) | no |  |
+| `volume` | Volumen negociado. | bigint | sí |  |
+
+#### `equity.price_intraday_2025_07` · tabla · ~450 filas
+| Columna | Qué es | Tipo | Nulo | Clave |
+|---|---|---|---|---|
+| `company_id` | Empresa a la que pertenece. | integer | no | PK |
+| `ts` |  | timestamp with time zone | no | PK |
+| `interval` |  | character varying(3) | no | PK |
+| `open` | Precio de apertura. | numeric(24,10) | sí |  |
+| `high` | Precio máximo del día. | numeric(24,10) | sí |  |
+| `low` | Precio mínimo del día. | numeric(24,10) | sí |  |
+| `close` | Precio de cierre. | numeric(24,10) | no |  |
+| `volume` | Volumen negociado. | bigint | sí |  |
+
+#### `equity.price_intraday_2025_08` · tabla · ~441 filas
+| Columna | Qué es | Tipo | Nulo | Clave |
+|---|---|---|---|---|
+| `company_id` | Empresa a la que pertenece. | integer | no | PK |
+| `ts` |  | timestamp with time zone | no | PK |
+| `interval` |  | character varying(3) | no | PK |
+| `open` | Precio de apertura. | numeric(24,10) | sí |  |
+| `high` | Precio máximo del día. | numeric(24,10) | sí |  |
+| `low` | Precio mínimo del día. | numeric(24,10) | sí |  |
+| `close` | Precio de cierre. | numeric(24,10) | no |  |
+| `volume` | Volumen negociado. | bigint | sí |  |
+
+#### `equity.price_intraday_2025_09` · tabla · ~441 filas
+| Columna | Qué es | Tipo | Nulo | Clave |
+|---|---|---|---|---|
+| `company_id` | Empresa a la que pertenece. | integer | no | PK |
+| `ts` |  | timestamp with time zone | no | PK |
+| `interval` |  | character varying(3) | no | PK |
+| `open` | Precio de apertura. | numeric(24,10) | sí |  |
+| `high` | Precio máximo del día. | numeric(24,10) | sí |  |
+| `low` | Precio mínimo del día. | numeric(24,10) | sí |  |
+| `close` | Precio de cierre. | numeric(24,10) | no |  |
+| `volume` | Volumen negociado. | bigint | sí |  |
+
+#### `equity.price_intraday_2025_10` · tabla · ~483 filas
+| Columna | Qué es | Tipo | Nulo | Clave |
+|---|---|---|---|---|
+| `company_id` | Empresa a la que pertenece. | integer | no | PK |
+| `ts` |  | timestamp with time zone | no | PK |
+| `interval` |  | character varying(3) | no | PK |
+| `open` | Precio de apertura. | numeric(24,10) | sí |  |
+| `high` | Precio máximo del día. | numeric(24,10) | sí |  |
+| `low` | Precio mínimo del día. | numeric(24,10) | sí |  |
+| `close` | Precio de cierre. | numeric(24,10) | no |  |
+| `volume` | Volumen negociado. | bigint | sí |  |
+
+#### `equity.price_intraday_2025_11` · tabla · ~387 filas
+| Columna | Qué es | Tipo | Nulo | Clave |
+|---|---|---|---|---|
+| `company_id` | Empresa a la que pertenece. | integer | no | PK |
+| `ts` |  | timestamp with time zone | no | PK |
+| `interval` |  | character varying(3) | no | PK |
+| `open` | Precio de apertura. | numeric(24,10) | sí |  |
+| `high` | Precio máximo del día. | numeric(24,10) | sí |  |
+| `low` | Precio mínimo del día. | numeric(24,10) | sí |  |
+| `close` | Precio de cierre. | numeric(24,10) | no |  |
+| `volume` | Volumen negociado. | bigint | sí |  |
+
+#### `equity.price_intraday_2025_12` · tabla · ~450 filas
+| Columna | Qué es | Tipo | Nulo | Clave |
+|---|---|---|---|---|
+| `company_id` | Empresa a la que pertenece. | integer | no | PK |
+| `ts` |  | timestamp with time zone | no | PK |
+| `interval` |  | character varying(3) | no | PK |
+| `open` | Precio de apertura. | numeric(24,10) | sí |  |
+| `high` | Precio máximo del día. | numeric(24,10) | sí |  |
+| `low` | Precio mínimo del día. | numeric(24,10) | sí |  |
+| `close` | Precio de cierre. | numeric(24,10) | no |  |
+| `volume` | Volumen negociado. | bigint | sí |  |
+
+#### `equity.price_intraday_2026_01` · tabla · ~420 filas
+| Columna | Qué es | Tipo | Nulo | Clave |
+|---|---|---|---|---|
+| `company_id` | Empresa a la que pertenece. | integer | no | PK |
+| `ts` |  | timestamp with time zone | no | PK |
+| `interval` |  | character varying(3) | no | PK |
+| `open` | Precio de apertura. | numeric(24,10) | sí |  |
+| `high` | Precio máximo del día. | numeric(24,10) | sí |  |
+| `low` | Precio mínimo del día. | numeric(24,10) | sí |  |
+| `close` | Precio de cierre. | numeric(24,10) | no |  |
+| `volume` | Volumen negociado. | bigint | sí |  |
+
+#### `equity.price_intraday_2026_02` · tabla · ~399 filas
+| Columna | Qué es | Tipo | Nulo | Clave |
+|---|---|---|---|---|
+| `company_id` | Empresa a la que pertenece. | integer | no | PK |
+| `ts` |  | timestamp with time zone | no | PK |
+| `interval` |  | character varying(3) | no | PK |
+| `open` | Precio de apertura. | numeric(24,10) | sí |  |
+| `high` | Precio máximo del día. | numeric(24,10) | sí |  |
+| `low` | Precio mínimo del día. | numeric(24,10) | sí |  |
+| `close` | Precio de cierre. | numeric(24,10) | no |  |
+| `volume` | Volumen negociado. | bigint | sí |  |
+
+#### `equity.price_intraday_2026_03` · tabla · ~462 filas
+| Columna | Qué es | Tipo | Nulo | Clave |
+|---|---|---|---|---|
+| `company_id` | Empresa a la que pertenece. | integer | no | PK |
+| `ts` |  | timestamp with time zone | no | PK |
+| `interval` |  | character varying(3) | no | PK |
+| `open` | Precio de apertura. | numeric(24,10) | sí |  |
+| `high` | Precio máximo del día. | numeric(24,10) | sí |  |
+| `low` | Precio mínimo del día. | numeric(24,10) | sí |  |
+| `close` | Precio de cierre. | numeric(24,10) | no |  |
+| `volume` | Volumen negociado. | bigint | sí |  |
+
+#### `equity.price_intraday_2026_04` · tabla · ~441 filas
+| Columna | Qué es | Tipo | Nulo | Clave |
+|---|---|---|---|---|
+| `company_id` | Empresa a la que pertenece. | integer | no | PK |
+| `ts` |  | timestamp with time zone | no | PK |
+| `interval` |  | character varying(3) | no | PK |
+| `open` | Precio de apertura. | numeric(24,10) | sí |  |
+| `high` | Precio máximo del día. | numeric(24,10) | sí |  |
+| `low` | Precio mínimo del día. | numeric(24,10) | sí |  |
+| `close` | Precio de cierre. | numeric(24,10) | no |  |
+| `volume` | Volumen negociado. | bigint | sí |  |
+
+#### `equity.price_intraday_2026_05` · tabla · ~420 filas
+| Columna | Qué es | Tipo | Nulo | Clave |
+|---|---|---|---|---|
+| `company_id` | Empresa a la que pertenece. | integer | no | PK |
+| `ts` |  | timestamp with time zone | no | PK |
+| `interval` |  | character varying(3) | no | PK |
+| `open` | Precio de apertura. | numeric(24,10) | sí |  |
+| `high` | Precio máximo del día. | numeric(24,10) | sí |  |
+| `low` | Precio mínimo del día. | numeric(24,10) | sí |  |
+| `close` | Precio de cierre. | numeric(24,10) | no |  |
+| `volume` | Volumen negociado. | bigint | sí |  |
+
+#### `equity.price_intraday_2026_06` · tabla · ~441 filas
+| Columna | Qué es | Tipo | Nulo | Clave |
+|---|---|---|---|---|
+| `company_id` | Empresa a la que pertenece. | integer | no | PK |
+| `ts` |  | timestamp with time zone | no | PK |
+| `interval` |  | character varying(3) | no | PK |
+| `open` | Precio de apertura. | numeric(24,10) | sí |  |
+| `high` | Precio máximo del día. | numeric(24,10) | sí |  |
+| `low` | Precio mínimo del día. | numeric(24,10) | sí |  |
+| `close` | Precio de cierre. | numeric(24,10) | no |  |
+| `volume` | Volumen negociado. | bigint | sí |  |
+
+#### `equity.price_intraday_2026_07` · tabla · ~462 filas
+| Columna | Qué es | Tipo | Nulo | Clave |
+|---|---|---|---|---|
+| `company_id` | Empresa a la que pertenece. | integer | no | PK |
+| `ts` |  | timestamp with time zone | no | PK |
+| `interval` |  | character varying(3) | no | PK |
+| `open` | Precio de apertura. | numeric(24,10) | sí |  |
+| `high` | Precio máximo del día. | numeric(24,10) | sí |  |
+| `low` | Precio mínimo del día. | numeric(24,10) | sí |  |
+| `close` | Precio de cierre. | numeric(24,10) | no |  |
+| `volume` | Volumen negociado. | bigint | sí |  |
+
+#### `equity.price_intraday_2026_08` · tabla · ~3 filas
+| Columna | Qué es | Tipo | Nulo | Clave |
+|---|---|---|---|---|
+| `company_id` | Empresa a la que pertenece. | integer | no | PK |
+| `ts` |  | timestamp with time zone | no | PK |
+| `interval` |  | character varying(3) | no | PK |
+| `open` | Precio de apertura. | numeric(24,10) | sí |  |
+| `high` | Precio máximo del día. | numeric(24,10) | sí |  |
+| `low` | Precio mínimo del día. | numeric(24,10) | sí |  |
+| `close` | Precio de cierre. | numeric(24,10) | no |  |
+| `volume` | Volumen negociado. | bigint | sí |  |
+
+#### `equity.price_intraday_2026_09` · tabla · ~0 filas
+| Columna | Qué es | Tipo | Nulo | Clave |
+|---|---|---|---|---|
+| `company_id` | Empresa a la que pertenece. | integer | no | PK |
+| `ts` |  | timestamp with time zone | no | PK |
+| `interval` |  | character varying(3) | no | PK |
+| `open` | Precio de apertura. | numeric(24,10) | sí |  |
+| `high` | Precio máximo del día. | numeric(24,10) | sí |  |
+| `low` | Precio mínimo del día. | numeric(24,10) | sí |  |
+| `close` | Precio de cierre. | numeric(24,10) | no |  |
+| `volume` | Volumen negociado. | bigint | sí |  |
+
+#### `equity.price_intraday_2026_10` · tabla · ~0 filas
+| Columna | Qué es | Tipo | Nulo | Clave |
+|---|---|---|---|---|
+| `company_id` | Empresa a la que pertenece. | integer | no | PK |
+| `ts` |  | timestamp with time zone | no | PK |
+| `interval` |  | character varying(3) | no | PK |
+| `open` | Precio de apertura. | numeric(24,10) | sí |  |
+| `high` | Precio máximo del día. | numeric(24,10) | sí |  |
+| `low` | Precio mínimo del día. | numeric(24,10) | sí |  |
+| `close` | Precio de cierre. | numeric(24,10) | no |  |
+| `volume` | Volumen negociado. | bigint | sí |  |
+
+#### `equity.price_intraday_2026_11` · tabla · ~0 filas
+| Columna | Qué es | Tipo | Nulo | Clave |
+|---|---|---|---|---|
+| `company_id` | Empresa a la que pertenece. | integer | no | PK |
+| `ts` |  | timestamp with time zone | no | PK |
+| `interval` |  | character varying(3) | no | PK |
+| `open` | Precio de apertura. | numeric(24,10) | sí |  |
+| `high` | Precio máximo del día. | numeric(24,10) | sí |  |
+| `low` | Precio mínimo del día. | numeric(24,10) | sí |  |
+| `close` | Precio de cierre. | numeric(24,10) | no |  |
+| `volume` | Volumen negociado. | bigint | sí |  |
+
+#### `equity.ratios_mv` · materializada · ~10,449 filas
 Ratios de valoración calculados (PER, ROE...) — foto actual.
 
 | Columna | Qué es | Tipo | Nulo | Clave |
@@ -417,7 +994,9 @@ Ratios de valoración calculados (PER, ROE...) — foto actual.
 | `income_period` | Periodo de la cuenta de resultados. | date | sí |  |
 | `balance_period` | Periodo del balance. | date | sí |  |
 | `cashflow_period` | Periodo de los flujos de caja. | date | sí |  |
-| `last_close` | Último precio de cierre. | numeric(14,4) | sí |  |
+| `moneda_cuentas` |  | character varying(3) | sí |  |
+| `moneda_coherente` |  | boolean | sí |  |
+| `last_close` | Último precio de cierre. | numeric(24,10) | sí |  |
 | `pe_ratio` | PER (precio / beneficio). | numeric | sí |  |
 | `pb_ratio` | Precio / valor contable. | numeric | sí |  |
 | `ps_ratio` | Precio / ventas. | numeric | sí |  |
@@ -439,7 +1018,7 @@ Ratios de valoración calculados (PER, ROE...) — foto actual.
 | `free_cash_flow` | Flujo de caja libre. | numeric(18,2) | sí |  |
 | `operating_cash_flow` | Flujo de caja de las operaciones. | numeric(18,2) | sí |  |
 
-#### `equity.recommendation_trend` · tabla · ~12,300 filas
+#### `equity.recommendation_trend` · tabla · ~12,630 filas
 Resumen de cuántos analistas recomiendan comprar, mantener o vender.
 
 | Columna | Qué es | Tipo | Nulo | Clave |
@@ -453,8 +1032,10 @@ Resumen de cuántos analistas recomiendan comprar, mantener o vender.
 | `hold` | Analistas: mantener. | smallint | sí |  |
 | `sell` | Analistas: vender. | smallint | sí |  |
 | `strong_sell` | Analistas: vender fuerte. | smallint | sí |  |
+| `source_id` | Fuente de la que procede el dato. | integer | sí |  |
+| `fetch_run_id` | Descarga que trajo el dato (auditoría). | integer | sí |  |
 
-#### `equity.shares_history` · tabla · ~3,160,811 filas
+#### `equity.shares_history` · tabla · ~3,377,997 filas
 Número de acciones en circulación de la empresa a lo largo del tiempo.
 
 | Columna | Qué es | Tipo | Nulo | Clave |
@@ -463,8 +1044,10 @@ Número de acciones en circulación de la empresa a lo largo del tiempo.
 | `company_id` | Empresa a la que pertenece. | integer | no | FK → equity.company.id |
 | `date` | Fecha del dato. | date | no |  |
 | `shares` | Número de acciones. | bigint | sí |  |
+| `source_id` | Fuente de la que procede el dato. | integer | sí |  |
+| `fetch_run_id` | Descarga que trajo el dato (auditoría). | integer | sí |  |
 
-#### `equity.split` · tabla · ~6,300 filas
+#### `equity.split` · tabla · ~6,755 filas
 Splits (desdoblamientos) de acciones.
 
 | Columna | Qué es | Tipo | Nulo | Clave |
@@ -474,8 +1057,10 @@ Splits (desdoblamientos) de acciones.
 | `date` | Fecha del dato. | date | no |  |
 | `ratio_from` | Acciones antes del split. | numeric(10,4) | sí |  |
 | `ratio_to` | Acciones después del split. | numeric(10,4) | sí |  |
+| `source_id` | Fuente de la que procede el dato. | integer | sí |  |
+| `fetch_run_id` | Descarga que trajo el dato (auditoría). | integer | sí |  |
 
-#### `equity.upgrade_downgrade` · tabla · ~323,208 filas
+#### `equity.upgrade_downgrade` · tabla · ~331,351 filas
 Cambios de recomendación y precio objetivo que hacen los analistas (comprar/vender).
 
 | Columna | Qué es | Tipo | Nulo | Clave |
@@ -488,11 +1073,13 @@ Cambios de recomendación y precio objetivo que hacen los analistas (comprar/ven
 | `from_grade` | Recomendación anterior. | character varying(100) | sí |  |
 | `action` | Tipo de cambio (up/down/init). | character varying(50) | sí |  |
 | `price_target` | Precio objetivo fijado. | numeric(14,4) | sí |  |
+| `source_id` | Fuente de la que procede el dato. | integer | sí |  |
+| `fetch_run_id` | Descarga que trajo el dato (auditoría). | integer | sí |  |
 
 ### Esquema `fi`
 _Renta fija: bonos, ratings, curvas de tipos._
 
-#### `fi.bond` · tabla · ~5,015 filas
+#### `fi.bond` · tabla · ~5,061 filas
 Bonos (sobre todo deuda pública de EE.UU.).
 
 | Columna | Qué es | Tipo | Nulo | Clave |
@@ -509,6 +1096,8 @@ Bonos (sobre todo deuda pública de EE.UU.).
 | `currency_code` | Moneda del importe. | character varying(3) | sí |  |
 | `bond_type` | Tipo de bono. | character varying(30) | sí |  |
 | `is_callable` | Si es amortizable anticipadamente. | boolean | no |  |
+| `source_id` | Fuente de la que procede el dato. | integer | sí |  |
+| `fetch_run_id` | Descarga que trajo el dato (auditoría). | integer | sí |  |
 
 #### `fi.bond_issuer` · tabla · ~53 filas
 Emisores de bonos (países).
@@ -519,6 +1108,23 @@ Emisores de bonos (países).
 | `name` | Nombre. | character varying(300) | sí |  |
 | `issuer_type` | Tipo de emisor (soberano...). | character varying(20) | no |  |
 | `country_code` | País (código ISO-3, p.ej. ESP). | character varying(3) | sí | FK → ref.country.code |
+| `source_id` | Fuente de la que procede el dato. | integer | sí |  |
+| `fetch_run_id` | Descarga que trajo el dato (auditoría). | integer | sí |  |
+
+#### `fi.country_risk_premium` · tabla · ~175 filas
+Prima de riesgo por país (datasets de Damodaran, NYU).
+
+| Columna | Qué es | Tipo | Nulo | Clave |
+|---|---|---|---|---|
+| `id` | Identificador único de la fila. | integer | no | PK |
+| `country_code` | País (código ISO-3, p.ej. ESP). | character varying(3) | no | FK → ref.country.code |
+| `year` | Año. | smallint | no |  |
+| `equity_risk_premium` |  | numeric(8,4) | sí |  |
+| `country_risk_premium` |  | numeric(8,4) | sí |  |
+| `default_spread` |  | numeric(8,4) | sí |  |
+| `moodys_rating` |  | character varying(10) | sí |  |
+| `source_id` | Fuente de la que procede el dato. | integer | sí | FK → meta.data_source.id |
+| `fetch_run_id` | Descarga que trajo el dato (auditoría). | integer | sí |  |
 
 #### `fi.credit_rating` · tabla · ~10,563 filas
 Ratings de crédito (calificaciones de solvencia).
@@ -532,8 +1138,10 @@ Ratings de crédito (calificaciones de solvencia).
 | `outlook` | Perspectiva (positiva/estable/negativa). | character varying(20) | sí |  |
 | `rating_date` | Fecha del rating. | date | no |  |
 | `previous_rating` | Rating anterior. | character varying(10) | sí |  |
+| `source_id` | Fuente de la que procede el dato. | integer | sí |  |
+| `fetch_run_id` | Descarga que trajo el dato (auditoría). | integer | sí |  |
 
-#### `fi.yield_curve` · tabla · ~68,072 filas
+#### `fi.yield_curve` · tabla · ~68,422 filas
 Curvas de tipos de interés (rendimiento de la deuda por plazo).
 
 | Columna | Qué es | Tipo | Nulo | Clave |
@@ -544,6 +1152,7 @@ Curvas de tipos de interés (rendimiento de la deuda por plazo).
 | `maturity_months` | Plazo en meses. | smallint | no |  |
 | `yield_pct` | Rendimiento (%). | numeric(8,4) | no |  |
 | `source_id` | Fuente de la que procede el dato. | integer | sí | FK → meta.data_source.id |
+| `fetch_run_id` | Descarga que trajo el dato (auditoría). | integer | sí |  |
 
 ### Esquema `commodity`
 _Materias primas y sus precios._
@@ -562,8 +1171,10 @@ Materias primas (oro, petróleo...).
 | `currency_code` | Moneda del importe. | character varying(3) | sí |  |
 | `exchange` | Bolsa/mercado donde cotiza. | character varying(50) | sí |  |
 | `yfinance_ticker` | Símbolo en yfinance. | character varying(20) | sí |  |
+| `source_id` | Fuente de la que procede el dato. | integer | sí |  |
+| `fetch_run_id` | Descarga que trajo el dato (auditoría). | integer | sí |  |
 
-#### `commodity.price_daily` · tabla · ~104,882 filas
+#### `commodity.price_daily` · tabla · ~197,123 filas
 Precio diario de cada materia prima.
 
 | Columna | Qué es | Tipo | Nulo | Clave |
@@ -571,17 +1182,512 @@ Precio diario de cada materia prima.
 | `id` | Identificador único de la fila. | integer | no | PK |
 | `commodity_id` | Materia prima a la que pertenece. | integer | no | FK → commodity.commodity.id |
 | `date` | Fecha del dato. | date | no |  |
-| `open` | Precio de apertura. | numeric(14,4) | sí |  |
-| `high` | Precio máximo del día. | numeric(14,4) | sí |  |
-| `low` | Precio mínimo del día. | numeric(14,4) | sí |  |
-| `close` | Precio de cierre. | numeric(14,4) | no |  |
+| `open` | Precio de apertura. | numeric(24,10) | sí |  |
+| `high` | Precio máximo del día. | numeric(24,10) | sí |  |
+| `low` | Precio mínimo del día. | numeric(24,10) | sí |  |
+| `close` | Precio de cierre. | numeric(24,10) | no |  |
 | `volume` | Volumen negociado. | bigint | sí |  |
 | `source_id` | Fuente de la que procede el dato. | integer | sí | FK → meta.data_source.id |
+| `fetch_run_id` | Descarga que trajo el dato (auditoría). | integer | sí |  |
+
+#### `commodity.price_intraday` · tabla · ~0 filas
+Precio intraday commodity (particionado por ts).
+
+| Columna | Qué es | Tipo | Nulo | Clave |
+|---|---|---|---|---|
+| `commodity_id` | Materia prima a la que pertenece. | integer | no | PK |
+| `ts` |  | timestamp with time zone | no | PK |
+| `interval` |  | character varying(3) | no | PK |
+| `open` | Precio de apertura. | numeric(24,10) | sí |  |
+| `high` | Precio máximo del día. | numeric(24,10) | sí |  |
+| `low` | Precio mínimo del día. | numeric(24,10) | sí |  |
+| `close` | Precio de cierre. | numeric(24,10) | sí |  |
+| `volume` | Volumen negociado. | bigint | sí |  |
+
+#### `commodity.price_intraday_2023_08` · tabla · ~0 filas
+| Columna | Qué es | Tipo | Nulo | Clave |
+|---|---|---|---|---|
+| `commodity_id` | Materia prima a la que pertenece. | integer | no | PK |
+| `ts` |  | timestamp with time zone | no | PK |
+| `interval` |  | character varying(3) | no | PK |
+| `open` | Precio de apertura. | numeric(24,10) | sí |  |
+| `high` | Precio máximo del día. | numeric(24,10) | sí |  |
+| `low` | Precio mínimo del día. | numeric(24,10) | sí |  |
+| `close` | Precio de cierre. | numeric(24,10) | sí |  |
+| `volume` | Volumen negociado. | bigint | sí |  |
+
+#### `commodity.price_intraday_2023_09` · tabla · ~0 filas
+| Columna | Qué es | Tipo | Nulo | Clave |
+|---|---|---|---|---|
+| `commodity_id` | Materia prima a la que pertenece. | integer | no | PK |
+| `ts` |  | timestamp with time zone | no | PK |
+| `interval` |  | character varying(3) | no | PK |
+| `open` | Precio de apertura. | numeric(24,10) | sí |  |
+| `high` | Precio máximo del día. | numeric(24,10) | sí |  |
+| `low` | Precio mínimo del día. | numeric(24,10) | sí |  |
+| `close` | Precio de cierre. | numeric(24,10) | sí |  |
+| `volume` | Volumen negociado. | bigint | sí |  |
+
+#### `commodity.price_intraday_2023_10` · tabla · ~0 filas
+| Columna | Qué es | Tipo | Nulo | Clave |
+|---|---|---|---|---|
+| `commodity_id` | Materia prima a la que pertenece. | integer | no | PK |
+| `ts` |  | timestamp with time zone | no | PK |
+| `interval` |  | character varying(3) | no | PK |
+| `open` | Precio de apertura. | numeric(24,10) | sí |  |
+| `high` | Precio máximo del día. | numeric(24,10) | sí |  |
+| `low` | Precio mínimo del día. | numeric(24,10) | sí |  |
+| `close` | Precio de cierre. | numeric(24,10) | sí |  |
+| `volume` | Volumen negociado. | bigint | sí |  |
+
+#### `commodity.price_intraday_2023_11` · tabla · ~0 filas
+| Columna | Qué es | Tipo | Nulo | Clave |
+|---|---|---|---|---|
+| `commodity_id` | Materia prima a la que pertenece. | integer | no | PK |
+| `ts` |  | timestamp with time zone | no | PK |
+| `interval` |  | character varying(3) | no | PK |
+| `open` | Precio de apertura. | numeric(24,10) | sí |  |
+| `high` | Precio máximo del día. | numeric(24,10) | sí |  |
+| `low` | Precio mínimo del día. | numeric(24,10) | sí |  |
+| `close` | Precio de cierre. | numeric(24,10) | sí |  |
+| `volume` | Volumen negociado. | bigint | sí |  |
+
+#### `commodity.price_intraday_2023_12` · tabla · ~0 filas
+| Columna | Qué es | Tipo | Nulo | Clave |
+|---|---|---|---|---|
+| `commodity_id` | Materia prima a la que pertenece. | integer | no | PK |
+| `ts` |  | timestamp with time zone | no | PK |
+| `interval` |  | character varying(3) | no | PK |
+| `open` | Precio de apertura. | numeric(24,10) | sí |  |
+| `high` | Precio máximo del día. | numeric(24,10) | sí |  |
+| `low` | Precio mínimo del día. | numeric(24,10) | sí |  |
+| `close` | Precio de cierre. | numeric(24,10) | sí |  |
+| `volume` | Volumen negociado. | bigint | sí |  |
+
+#### `commodity.price_intraday_2024_01` · tabla · ~0 filas
+| Columna | Qué es | Tipo | Nulo | Clave |
+|---|---|---|---|---|
+| `commodity_id` | Materia prima a la que pertenece. | integer | no | PK |
+| `ts` |  | timestamp with time zone | no | PK |
+| `interval` |  | character varying(3) | no | PK |
+| `open` | Precio de apertura. | numeric(24,10) | sí |  |
+| `high` | Precio máximo del día. | numeric(24,10) | sí |  |
+| `low` | Precio mínimo del día. | numeric(24,10) | sí |  |
+| `close` | Precio de cierre. | numeric(24,10) | sí |  |
+| `volume` | Volumen negociado. | bigint | sí |  |
+
+#### `commodity.price_intraday_2024_02` · tabla · ~0 filas
+| Columna | Qué es | Tipo | Nulo | Clave |
+|---|---|---|---|---|
+| `commodity_id` | Materia prima a la que pertenece. | integer | no | PK |
+| `ts` |  | timestamp with time zone | no | PK |
+| `interval` |  | character varying(3) | no | PK |
+| `open` | Precio de apertura. | numeric(24,10) | sí |  |
+| `high` | Precio máximo del día. | numeric(24,10) | sí |  |
+| `low` | Precio mínimo del día. | numeric(24,10) | sí |  |
+| `close` | Precio de cierre. | numeric(24,10) | sí |  |
+| `volume` | Volumen negociado. | bigint | sí |  |
+
+#### `commodity.price_intraday_2024_03` · tabla · ~5,231 filas
+| Columna | Qué es | Tipo | Nulo | Clave |
+|---|---|---|---|---|
+| `commodity_id` | Materia prima a la que pertenece. | integer | no | PK |
+| `ts` |  | timestamp with time zone | no | PK |
+| `interval` |  | character varying(3) | no | PK |
+| `open` | Precio de apertura. | numeric(24,10) | sí |  |
+| `high` | Precio máximo del día. | numeric(24,10) | sí |  |
+| `low` | Precio mínimo del día. | numeric(24,10) | sí |  |
+| `close` | Precio de cierre. | numeric(24,10) | sí |  |
+| `volume` | Volumen negociado. | bigint | sí |  |
+
+#### `commodity.price_intraday_2024_04` · tabla · ~10,719 filas
+| Columna | Qué es | Tipo | Nulo | Clave |
+|---|---|---|---|---|
+| `commodity_id` | Materia prima a la que pertenece. | integer | no | PK |
+| `ts` |  | timestamp with time zone | no | PK |
+| `interval` |  | character varying(3) | no | PK |
+| `open` | Precio de apertura. | numeric(24,10) | sí |  |
+| `high` | Precio máximo del día. | numeric(24,10) | sí |  |
+| `low` | Precio mínimo del día. | numeric(24,10) | sí |  |
+| `close` | Precio de cierre. | numeric(24,10) | sí |  |
+| `volume` | Volumen negociado. | bigint | sí |  |
+
+#### `commodity.price_intraday_2024_05` · tabla · ~10,745 filas
+| Columna | Qué es | Tipo | Nulo | Clave |
+|---|---|---|---|---|
+| `commodity_id` | Materia prima a la que pertenece. | integer | no | PK |
+| `ts` |  | timestamp with time zone | no | PK |
+| `interval` |  | character varying(3) | no | PK |
+| `open` | Precio de apertura. | numeric(24,10) | sí |  |
+| `high` | Precio máximo del día. | numeric(24,10) | sí |  |
+| `low` | Precio mínimo del día. | numeric(24,10) | sí |  |
+| `close` | Precio de cierre. | numeric(24,10) | sí |  |
+| `volume` | Volumen negociado. | bigint | sí |  |
+
+#### `commodity.price_intraday_2024_06` · tabla · ~9,248 filas
+| Columna | Qué es | Tipo | Nulo | Clave |
+|---|---|---|---|---|
+| `commodity_id` | Materia prima a la que pertenece. | integer | no | PK |
+| `ts` |  | timestamp with time zone | no | PK |
+| `interval` |  | character varying(3) | no | PK |
+| `open` | Precio de apertura. | numeric(24,10) | sí |  |
+| `high` | Precio máximo del día. | numeric(24,10) | sí |  |
+| `low` | Precio mínimo del día. | numeric(24,10) | sí |  |
+| `close` | Precio de cierre. | numeric(24,10) | sí |  |
+| `volume` | Volumen negociado. | bigint | sí |  |
+
+#### `commodity.price_intraday_2024_07` · tabla · ~10,128 filas
+| Columna | Qué es | Tipo | Nulo | Clave |
+|---|---|---|---|---|
+| `commodity_id` | Materia prima a la que pertenece. | integer | no | PK |
+| `ts` |  | timestamp with time zone | no | PK |
+| `interval` |  | character varying(3) | no | PK |
+| `open` | Precio de apertura. | numeric(24,10) | sí |  |
+| `high` | Precio máximo del día. | numeric(24,10) | sí |  |
+| `low` | Precio mínimo del día. | numeric(24,10) | sí |  |
+| `close` | Precio de cierre. | numeric(24,10) | sí |  |
+| `volume` | Volumen negociado. | bigint | sí |  |
+
+#### `commodity.price_intraday_2024_08` · tabla · ~10,514 filas
+| Columna | Qué es | Tipo | Nulo | Clave |
+|---|---|---|---|---|
+| `commodity_id` | Materia prima a la que pertenece. | integer | no | PK |
+| `ts` |  | timestamp with time zone | no | PK |
+| `interval` |  | character varying(3) | no | PK |
+| `open` | Precio de apertura. | numeric(24,10) | sí |  |
+| `high` | Precio máximo del día. | numeric(24,10) | sí |  |
+| `low` | Precio mínimo del día. | numeric(24,10) | sí |  |
+| `close` | Precio de cierre. | numeric(24,10) | sí |  |
+| `volume` | Volumen negociado. | bigint | sí |  |
+
+#### `commodity.price_intraday_2024_09` · tabla · ~9,837 filas
+| Columna | Qué es | Tipo | Nulo | Clave |
+|---|---|---|---|---|
+| `commodity_id` | Materia prima a la que pertenece. | integer | no | PK |
+| `ts` |  | timestamp with time zone | no | PK |
+| `interval` |  | character varying(3) | no | PK |
+| `open` | Precio de apertura. | numeric(24,10) | sí |  |
+| `high` | Precio máximo del día. | numeric(24,10) | sí |  |
+| `low` | Precio mínimo del día. | numeric(24,10) | sí |  |
+| `close` | Precio de cierre. | numeric(24,10) | sí |  |
+| `volume` | Volumen negociado. | bigint | sí |  |
+
+#### `commodity.price_intraday_2024_10` · tabla · ~11,294 filas
+| Columna | Qué es | Tipo | Nulo | Clave |
+|---|---|---|---|---|
+| `commodity_id` | Materia prima a la que pertenece. | integer | no | PK |
+| `ts` |  | timestamp with time zone | no | PK |
+| `interval` |  | character varying(3) | no | PK |
+| `open` | Precio de apertura. | numeric(24,10) | sí |  |
+| `high` | Precio máximo del día. | numeric(24,10) | sí |  |
+| `low` | Precio mínimo del día. | numeric(24,10) | sí |  |
+| `close` | Precio de cierre. | numeric(24,10) | sí |  |
+| `volume` | Volumen negociado. | bigint | sí |  |
+
+#### `commodity.price_intraday_2024_11` · tabla · ~9,497 filas
+| Columna | Qué es | Tipo | Nulo | Clave |
+|---|---|---|---|---|
+| `commodity_id` | Materia prima a la que pertenece. | integer | no | PK |
+| `ts` |  | timestamp with time zone | no | PK |
+| `interval` |  | character varying(3) | no | PK |
+| `open` | Precio de apertura. | numeric(24,10) | sí |  |
+| `high` | Precio máximo del día. | numeric(24,10) | sí |  |
+| `low` | Precio mínimo del día. | numeric(24,10) | sí |  |
+| `close` | Precio de cierre. | numeric(24,10) | sí |  |
+| `volume` | Volumen negociado. | bigint | sí |  |
+
+#### `commodity.price_intraday_2024_12` · tabla · ~9,768 filas
+| Columna | Qué es | Tipo | Nulo | Clave |
+|---|---|---|---|---|
+| `commodity_id` | Materia prima a la que pertenece. | integer | no | PK |
+| `ts` |  | timestamp with time zone | no | PK |
+| `interval` |  | character varying(3) | no | PK |
+| `open` | Precio de apertura. | numeric(24,10) | sí |  |
+| `high` | Precio máximo del día. | numeric(24,10) | sí |  |
+| `low` | Precio mínimo del día. | numeric(24,10) | sí |  |
+| `close` | Precio de cierre. | numeric(24,10) | sí |  |
+| `volume` | Volumen negociado. | bigint | sí |  |
+
+#### `commodity.price_intraday_2025_01` · tabla · ~10,020 filas
+| Columna | Qué es | Tipo | Nulo | Clave |
+|---|---|---|---|---|
+| `commodity_id` | Materia prima a la que pertenece. | integer | no | PK |
+| `ts` |  | timestamp with time zone | no | PK |
+| `interval` |  | character varying(3) | no | PK |
+| `open` | Precio de apertura. | numeric(24,10) | sí |  |
+| `high` | Precio máximo del día. | numeric(24,10) | sí |  |
+| `low` | Precio mínimo del día. | numeric(24,10) | sí |  |
+| `close` | Precio de cierre. | numeric(24,10) | sí |  |
+| `volume` | Volumen negociado. | bigint | sí |  |
+
+#### `commodity.price_intraday_2025_02` · tabla · ~9,297 filas
+| Columna | Qué es | Tipo | Nulo | Clave |
+|---|---|---|---|---|
+| `commodity_id` | Materia prima a la que pertenece. | integer | no | PK |
+| `ts` |  | timestamp with time zone | no | PK |
+| `interval` |  | character varying(3) | no | PK |
+| `open` | Precio de apertura. | numeric(24,10) | sí |  |
+| `high` | Precio máximo del día. | numeric(24,10) | sí |  |
+| `low` | Precio mínimo del día. | numeric(24,10) | sí |  |
+| `close` | Precio de cierre. | numeric(24,10) | sí |  |
+| `volume` | Volumen negociado. | bigint | sí |  |
+
+#### `commodity.price_intraday_2025_03` · tabla · ~10,260 filas
+| Columna | Qué es | Tipo | Nulo | Clave |
+|---|---|---|---|---|
+| `commodity_id` | Materia prima a la que pertenece. | integer | no | PK |
+| `ts` |  | timestamp with time zone | no | PK |
+| `interval` |  | character varying(3) | no | PK |
+| `open` | Precio de apertura. | numeric(24,10) | sí |  |
+| `high` | Precio máximo del día. | numeric(24,10) | sí |  |
+| `low` | Precio mínimo del día. | numeric(24,10) | sí |  |
+| `close` | Precio de cierre. | numeric(24,10) | sí |  |
+| `volume` | Volumen negociado. | bigint | sí |  |
+
+#### `commodity.price_intraday_2025_04` · tabla · ~10,211 filas
+| Columna | Qué es | Tipo | Nulo | Clave |
+|---|---|---|---|---|
+| `commodity_id` | Materia prima a la que pertenece. | integer | no | PK |
+| `ts` |  | timestamp with time zone | no | PK |
+| `interval` |  | character varying(3) | no | PK |
+| `open` | Precio de apertura. | numeric(24,10) | sí |  |
+| `high` | Precio máximo del día. | numeric(24,10) | sí |  |
+| `low` | Precio mínimo del día. | numeric(24,10) | sí |  |
+| `close` | Precio de cierre. | numeric(24,10) | sí |  |
+| `volume` | Volumen negociado. | bigint | sí |  |
+
+#### `commodity.price_intraday_2025_05` · tabla · ~10,416 filas
+| Columna | Qué es | Tipo | Nulo | Clave |
+|---|---|---|---|---|
+| `commodity_id` | Materia prima a la que pertenece. | integer | no | PK |
+| `ts` |  | timestamp with time zone | no | PK |
+| `interval` |  | character varying(3) | no | PK |
+| `open` | Precio de apertura. | numeric(24,10) | sí |  |
+| `high` | Precio máximo del día. | numeric(24,10) | sí |  |
+| `low` | Precio mínimo del día. | numeric(24,10) | sí |  |
+| `close` | Precio de cierre. | numeric(24,10) | sí |  |
+| `volume` | Volumen negociado. | bigint | sí |  |
+
+#### `commodity.price_intraday_2025_06` · tabla · ~9,961 filas
+| Columna | Qué es | Tipo | Nulo | Clave |
+|---|---|---|---|---|
+| `commodity_id` | Materia prima a la que pertenece. | integer | no | PK |
+| `ts` |  | timestamp with time zone | no | PK |
+| `interval` |  | character varying(3) | no | PK |
+| `open` | Precio de apertura. | numeric(24,10) | sí |  |
+| `high` | Precio máximo del día. | numeric(24,10) | sí |  |
+| `low` | Precio mínimo del día. | numeric(24,10) | sí |  |
+| `close` | Precio de cierre. | numeric(24,10) | sí |  |
+| `volume` | Volumen negociado. | bigint | sí |  |
+
+#### `commodity.price_intraday_2025_07` · tabla · ~10,106 filas
+| Columna | Qué es | Tipo | Nulo | Clave |
+|---|---|---|---|---|
+| `commodity_id` | Materia prima a la que pertenece. | integer | no | PK |
+| `ts` |  | timestamp with time zone | no | PK |
+| `interval` |  | character varying(3) | no | PK |
+| `open` | Precio de apertura. | numeric(24,10) | sí |  |
+| `high` | Precio máximo del día. | numeric(24,10) | sí |  |
+| `low` | Precio mínimo del día. | numeric(24,10) | sí |  |
+| `close` | Precio de cierre. | numeric(24,10) | sí |  |
+| `volume` | Volumen negociado. | bigint | sí |  |
+
+#### `commodity.price_intraday_2025_08` · tabla · ~9,784 filas
+| Columna | Qué es | Tipo | Nulo | Clave |
+|---|---|---|---|---|
+| `commodity_id` | Materia prima a la que pertenece. | integer | no | PK |
+| `ts` |  | timestamp with time zone | no | PK |
+| `interval` |  | character varying(3) | no | PK |
+| `open` | Precio de apertura. | numeric(24,10) | sí |  |
+| `high` | Precio máximo del día. | numeric(24,10) | sí |  |
+| `low` | Precio mínimo del día. | numeric(24,10) | sí |  |
+| `close` | Precio de cierre. | numeric(24,10) | sí |  |
+| `volume` | Volumen negociado. | bigint | sí |  |
+
+#### `commodity.price_intraday_2025_09` · tabla · ~10,059 filas
+| Columna | Qué es | Tipo | Nulo | Clave |
+|---|---|---|---|---|
+| `commodity_id` | Materia prima a la que pertenece. | integer | no | PK |
+| `ts` |  | timestamp with time zone | no | PK |
+| `interval` |  | character varying(3) | no | PK |
+| `open` | Precio de apertura. | numeric(24,10) | sí |  |
+| `high` | Precio máximo del día. | numeric(24,10) | sí |  |
+| `low` | Precio mínimo del día. | numeric(24,10) | sí |  |
+| `close` | Precio de cierre. | numeric(24,10) | sí |  |
+| `volume` | Volumen negociado. | bigint | sí |  |
+
+#### `commodity.price_intraday_2025_10` · tabla · ~11,014 filas
+| Columna | Qué es | Tipo | Nulo | Clave |
+|---|---|---|---|---|
+| `commodity_id` | Materia prima a la que pertenece. | integer | no | PK |
+| `ts` |  | timestamp with time zone | no | PK |
+| `interval` |  | character varying(3) | no | PK |
+| `open` | Precio de apertura. | numeric(24,10) | sí |  |
+| `high` | Precio máximo del día. | numeric(24,10) | sí |  |
+| `low` | Precio mínimo del día. | numeric(24,10) | sí |  |
+| `close` | Precio de cierre. | numeric(24,10) | sí |  |
+| `volume` | Volumen negociado. | bigint | sí |  |
+
+#### `commodity.price_intraday_2025_11` · tabla · ~8,925 filas
+| Columna | Qué es | Tipo | Nulo | Clave |
+|---|---|---|---|---|
+| `commodity_id` | Materia prima a la que pertenece. | integer | no | PK |
+| `ts` |  | timestamp with time zone | no | PK |
+| `interval` |  | character varying(3) | no | PK |
+| `open` | Precio de apertura. | numeric(24,10) | sí |  |
+| `high` | Precio máximo del día. | numeric(24,10) | sí |  |
+| `low` | Precio mínimo del día. | numeric(24,10) | sí |  |
+| `close` | Precio de cierre. | numeric(24,10) | sí |  |
+| `volume` | Volumen negociado. | bigint | sí |  |
+
+#### `commodity.price_intraday_2025_12` · tabla · ~10,085 filas
+| Columna | Qué es | Tipo | Nulo | Clave |
+|---|---|---|---|---|
+| `commodity_id` | Materia prima a la que pertenece. | integer | no | PK |
+| `ts` |  | timestamp with time zone | no | PK |
+| `interval` |  | character varying(3) | no | PK |
+| `open` | Precio de apertura. | numeric(24,10) | sí |  |
+| `high` | Precio máximo del día. | numeric(24,10) | sí |  |
+| `low` | Precio mínimo del día. | numeric(24,10) | sí |  |
+| `close` | Precio de cierre. | numeric(24,10) | sí |  |
+| `volume` | Volumen negociado. | bigint | sí |  |
+
+#### `commodity.price_intraday_2026_01` · tabla · ~8,987 filas
+| Columna | Qué es | Tipo | Nulo | Clave |
+|---|---|---|---|---|
+| `commodity_id` | Materia prima a la que pertenece. | integer | no | PK |
+| `ts` |  | timestamp with time zone | no | PK |
+| `interval` |  | character varying(3) | no | PK |
+| `open` | Precio de apertura. | numeric(24,10) | sí |  |
+| `high` | Precio máximo del día. | numeric(24,10) | sí |  |
+| `low` | Precio mínimo del día. | numeric(24,10) | sí |  |
+| `close` | Precio de cierre. | numeric(24,10) | sí |  |
+| `volume` | Volumen negociado. | bigint | sí |  |
+
+#### `commodity.price_intraday_2026_02` · tabla · ~8,960 filas
+| Columna | Qué es | Tipo | Nulo | Clave |
+|---|---|---|---|---|
+| `commodity_id` | Materia prima a la que pertenece. | integer | no | PK |
+| `ts` |  | timestamp with time zone | no | PK |
+| `interval` |  | character varying(3) | no | PK |
+| `open` | Precio de apertura. | numeric(24,10) | sí |  |
+| `high` | Precio máximo del día. | numeric(24,10) | sí |  |
+| `low` | Precio mínimo del día. | numeric(24,10) | sí |  |
+| `close` | Precio de cierre. | numeric(24,10) | sí |  |
+| `volume` | Volumen negociado. | bigint | sí |  |
+
+#### `commodity.price_intraday_2026_03` · tabla · ~10,413 filas
+| Columna | Qué es | Tipo | Nulo | Clave |
+|---|---|---|---|---|
+| `commodity_id` | Materia prima a la que pertenece. | integer | no | PK |
+| `ts` |  | timestamp with time zone | no | PK |
+| `interval` |  | character varying(3) | no | PK |
+| `open` | Precio de apertura. | numeric(24,10) | sí |  |
+| `high` | Precio máximo del día. | numeric(24,10) | sí |  |
+| `low` | Precio mínimo del día. | numeric(24,10) | sí |  |
+| `close` | Precio de cierre. | numeric(24,10) | sí |  |
+| `volume` | Volumen negociado. | bigint | sí |  |
+
+#### `commodity.price_intraday_2026_04` · tabla · ~9,851 filas
+| Columna | Qué es | Tipo | Nulo | Clave |
+|---|---|---|---|---|
+| `commodity_id` | Materia prima a la que pertenece. | integer | no | PK |
+| `ts` |  | timestamp with time zone | no | PK |
+| `interval` |  | character varying(3) | no | PK |
+| `open` | Precio de apertura. | numeric(24,10) | sí |  |
+| `high` | Precio máximo del día. | numeric(24,10) | sí |  |
+| `low` | Precio mínimo del día. | numeric(24,10) | sí |  |
+| `close` | Precio de cierre. | numeric(24,10) | sí |  |
+| `volume` | Volumen negociado. | bigint | sí |  |
+
+#### `commodity.price_intraday_2026_05` · tabla · ~9,459 filas
+| Columna | Qué es | Tipo | Nulo | Clave |
+|---|---|---|---|---|
+| `commodity_id` | Materia prima a la que pertenece. | integer | no | PK |
+| `ts` |  | timestamp with time zone | no | PK |
+| `interval` |  | character varying(3) | no | PK |
+| `open` | Precio de apertura. | numeric(24,10) | sí |  |
+| `high` | Precio máximo del día. | numeric(24,10) | sí |  |
+| `low` | Precio mínimo del día. | numeric(24,10) | sí |  |
+| `close` | Precio de cierre. | numeric(24,10) | sí |  |
+| `volume` | Volumen negociado. | bigint | sí |  |
+
+#### `commodity.price_intraday_2026_06` · tabla · ~10,042 filas
+| Columna | Qué es | Tipo | Nulo | Clave |
+|---|---|---|---|---|
+| `commodity_id` | Materia prima a la que pertenece. | integer | no | PK |
+| `ts` |  | timestamp with time zone | no | PK |
+| `interval` |  | character varying(3) | no | PK |
+| `open` | Precio de apertura. | numeric(24,10) | sí |  |
+| `high` | Precio máximo del día. | numeric(24,10) | sí |  |
+| `low` | Precio mínimo del día. | numeric(24,10) | sí |  |
+| `close` | Precio de cierre. | numeric(24,10) | sí |  |
+| `volume` | Volumen negociado. | bigint | sí |  |
+
+#### `commodity.price_intraday_2026_07` · tabla · ~10,376 filas
+| Columna | Qué es | Tipo | Nulo | Clave |
+|---|---|---|---|---|
+| `commodity_id` | Materia prima a la que pertenece. | integer | no | PK |
+| `ts` |  | timestamp with time zone | no | PK |
+| `interval` |  | character varying(3) | no | PK |
+| `open` | Precio de apertura. | numeric(24,10) | sí |  |
+| `high` | Precio máximo del día. | numeric(24,10) | sí |  |
+| `low` | Precio mínimo del día. | numeric(24,10) | sí |  |
+| `close` | Precio de cierre. | numeric(24,10) | sí |  |
+| `volume` | Volumen negociado. | bigint | sí |  |
+
+#### `commodity.price_intraday_2026_08` · tabla · ~1,896 filas
+| Columna | Qué es | Tipo | Nulo | Clave |
+|---|---|---|---|---|
+| `commodity_id` | Materia prima a la que pertenece. | integer | no | PK |
+| `ts` |  | timestamp with time zone | no | PK |
+| `interval` |  | character varying(3) | no | PK |
+| `open` | Precio de apertura. | numeric(24,10) | sí |  |
+| `high` | Precio máximo del día. | numeric(24,10) | sí |  |
+| `low` | Precio mínimo del día. | numeric(24,10) | sí |  |
+| `close` | Precio de cierre. | numeric(24,10) | sí |  |
+| `volume` | Volumen negociado. | bigint | sí |  |
+
+#### `commodity.price_intraday_2026_09` · tabla · ~0 filas
+| Columna | Qué es | Tipo | Nulo | Clave |
+|---|---|---|---|---|
+| `commodity_id` | Materia prima a la que pertenece. | integer | no | PK |
+| `ts` |  | timestamp with time zone | no | PK |
+| `interval` |  | character varying(3) | no | PK |
+| `open` | Precio de apertura. | numeric(24,10) | sí |  |
+| `high` | Precio máximo del día. | numeric(24,10) | sí |  |
+| `low` | Precio mínimo del día. | numeric(24,10) | sí |  |
+| `close` | Precio de cierre. | numeric(24,10) | sí |  |
+| `volume` | Volumen negociado. | bigint | sí |  |
+
+#### `commodity.price_intraday_2026_10` · tabla · ~0 filas
+| Columna | Qué es | Tipo | Nulo | Clave |
+|---|---|---|---|---|
+| `commodity_id` | Materia prima a la que pertenece. | integer | no | PK |
+| `ts` |  | timestamp with time zone | no | PK |
+| `interval` |  | character varying(3) | no | PK |
+| `open` | Precio de apertura. | numeric(24,10) | sí |  |
+| `high` | Precio máximo del día. | numeric(24,10) | sí |  |
+| `low` | Precio mínimo del día. | numeric(24,10) | sí |  |
+| `close` | Precio de cierre. | numeric(24,10) | sí |  |
+| `volume` | Volumen negociado. | bigint | sí |  |
+
+#### `commodity.price_intraday_2026_11` · tabla · ~0 filas
+| Columna | Qué es | Tipo | Nulo | Clave |
+|---|---|---|---|---|
+| `commodity_id` | Materia prima a la que pertenece. | integer | no | PK |
+| `ts` |  | timestamp with time zone | no | PK |
+| `interval` |  | character varying(3) | no | PK |
+| `open` | Precio de apertura. | numeric(24,10) | sí |  |
+| `high` | Precio máximo del día. | numeric(24,10) | sí |  |
+| `low` | Precio mínimo del día. | numeric(24,10) | sí |  |
+| `close` | Precio de cierre. | numeric(24,10) | sí |  |
+| `volume` | Volumen negociado. | bigint | sí |  |
 
 ### Esquema `forex`
 _Divisas y tipos de cambio._
 
-#### `forex.currency_pair` · tabla · ~0 filas
+#### `forex.currency_pair` · tabla · ~115 filas
 Pares de divisas (EUR/USD...).
 
 | Columna | Qué es | Tipo | Nulo | Clave |
@@ -591,8 +1697,10 @@ Pares de divisas (EUR/USD...).
 | `quote_currency` | Divisa cotizada. | character varying(3) | no | FK → ref.currency.code |
 | `pair_code` | Código del par (EURUSD...). | character varying(7) | no |  |
 | `category` | Categoría o dominio. | character varying(20) | sí |  |
+| `source_id` | Fuente de la que procede el dato. | integer | sí |  |
+| `fetch_run_id` | Descarga que trajo el dato (auditoría). | integer | sí |  |
 
-#### `forex.rate_daily` · tabla · ~183,177 filas
+#### `forex.rate_daily` · tabla · ~677,061 filas
 Tipo de cambio diario de cada par.
 
 | Columna | Qué es | Tipo | Nulo | Clave |
@@ -600,16 +1708,470 @@ Tipo de cambio diario de cada par.
 | `id` | Identificador único de la fila. | integer | no | PK |
 | `pair_id` | Par de divisas al que pertenece. | integer | no | FK → forex.currency_pair.id |
 | `date` | Fecha del dato. | date | no |  |
-| `open` | Precio de apertura. | numeric(14,8) | sí |  |
-| `high` | Precio máximo del día. | numeric(14,8) | sí |  |
-| `low` | Precio mínimo del día. | numeric(14,8) | sí |  |
-| `close` | Precio de cierre. | numeric(14,8) | no |  |
+| `open` | Precio de apertura. | numeric(24,10) | sí |  |
+| `high` | Precio máximo del día. | numeric(24,10) | sí |  |
+| `low` | Precio mínimo del día. | numeric(24,10) | sí |  |
+| `close` | Precio de cierre. | numeric(24,10) | no |  |
 | `source_id` | Fuente de la que procede el dato. | integer | sí | FK → meta.data_source.id |
+| `fetch_run_id` | Descarga que trajo el dato (auditoría). | integer | sí |  |
+
+#### `forex.rate_intraday` · tabla · ~0 filas
+Tipo de cambio intraday (particionado por ts).
+
+| Columna | Qué es | Tipo | Nulo | Clave |
+|---|---|---|---|---|
+| `pair_id` | Par de divisas al que pertenece. | integer | no | PK |
+| `ts` |  | timestamp with time zone | no | PK |
+| `interval` |  | character varying(3) | no | PK |
+| `open` | Precio de apertura. | numeric(24,10) | sí |  |
+| `high` | Precio máximo del día. | numeric(24,10) | sí |  |
+| `low` | Precio mínimo del día. | numeric(24,10) | sí |  |
+| `close` | Precio de cierre. | numeric(24,10) | sí |  |
+
+#### `forex.rate_intraday_2023_08` · tabla · ~0 filas
+| Columna | Qué es | Tipo | Nulo | Clave |
+|---|---|---|---|---|
+| `pair_id` | Par de divisas al que pertenece. | integer | no | PK |
+| `ts` |  | timestamp with time zone | no | PK |
+| `interval` |  | character varying(3) | no | PK |
+| `open` | Precio de apertura. | numeric(24,10) | sí |  |
+| `high` | Precio máximo del día. | numeric(24,10) | sí |  |
+| `low` | Precio mínimo del día. | numeric(24,10) | sí |  |
+| `close` | Precio de cierre. | numeric(24,10) | sí |  |
+
+#### `forex.rate_intraday_2023_09` · tabla · ~0 filas
+| Columna | Qué es | Tipo | Nulo | Clave |
+|---|---|---|---|---|
+| `pair_id` | Par de divisas al que pertenece. | integer | no | PK |
+| `ts` |  | timestamp with time zone | no | PK |
+| `interval` |  | character varying(3) | no | PK |
+| `open` | Precio de apertura. | numeric(24,10) | sí |  |
+| `high` | Precio máximo del día. | numeric(24,10) | sí |  |
+| `low` | Precio mínimo del día. | numeric(24,10) | sí |  |
+| `close` | Precio de cierre. | numeric(24,10) | sí |  |
+
+#### `forex.rate_intraday_2023_10` · tabla · ~17,670 filas
+| Columna | Qué es | Tipo | Nulo | Clave |
+|---|---|---|---|---|
+| `pair_id` | Par de divisas al que pertenece. | integer | no | PK |
+| `ts` |  | timestamp with time zone | no | PK |
+| `interval` |  | character varying(3) | no | PK |
+| `open` | Precio de apertura. | numeric(24,10) | sí |  |
+| `high` | Precio máximo del día. | numeric(24,10) | sí |  |
+| `low` | Precio mínimo del día. | numeric(24,10) | sí |  |
+| `close` | Precio de cierre. | numeric(24,10) | sí |  |
+
+#### `forex.rate_intraday_2023_11` · tabla · ~48,264 filas
+| Columna | Qué es | Tipo | Nulo | Clave |
+|---|---|---|---|---|
+| `pair_id` | Par de divisas al que pertenece. | integer | no | PK |
+| `ts` |  | timestamp with time zone | no | PK |
+| `interval` |  | character varying(3) | no | PK |
+| `open` | Precio de apertura. | numeric(24,10) | sí |  |
+| `high` | Precio máximo del día. | numeric(24,10) | sí |  |
+| `low` | Precio mínimo del día. | numeric(24,10) | sí |  |
+| `close` | Precio de cierre. | numeric(24,10) | sí |  |
+
+#### `forex.rate_intraday_2023_12` · tabla · ~44,496 filas
+| Columna | Qué es | Tipo | Nulo | Clave |
+|---|---|---|---|---|
+| `pair_id` | Par de divisas al que pertenece. | integer | no | PK |
+| `ts` |  | timestamp with time zone | no | PK |
+| `interval` |  | character varying(3) | no | PK |
+| `open` | Precio de apertura. | numeric(24,10) | sí |  |
+| `high` | Precio máximo del día. | numeric(24,10) | sí |  |
+| `low` | Precio mínimo del día. | numeric(24,10) | sí |  |
+| `close` | Precio de cierre. | numeric(24,10) | sí |  |
+
+#### `forex.rate_intraday_2024_01` · tabla · ~47,618 filas
+| Columna | Qué es | Tipo | Nulo | Clave |
+|---|---|---|---|---|
+| `pair_id` | Par de divisas al que pertenece. | integer | no | PK |
+| `ts` |  | timestamp with time zone | no | PK |
+| `interval` |  | character varying(3) | no | PK |
+| `open` | Precio de apertura. | numeric(24,10) | sí |  |
+| `high` | Precio máximo del día. | numeric(24,10) | sí |  |
+| `low` | Precio mínimo del día. | numeric(24,10) | sí |  |
+| `close` | Precio de cierre. | numeric(24,10) | sí |  |
+
+#### `forex.rate_intraday_2024_02` · tabla · ~44,642 filas
+| Columna | Qué es | Tipo | Nulo | Clave |
+|---|---|---|---|---|
+| `pair_id` | Par de divisas al que pertenece. | integer | no | PK |
+| `ts` |  | timestamp with time zone | no | PK |
+| `interval` |  | character varying(3) | no | PK |
+| `open` | Precio de apertura. | numeric(24,10) | sí |  |
+| `high` | Precio máximo del día. | numeric(24,10) | sí |  |
+| `low` | Precio mínimo del día. | numeric(24,10) | sí |  |
+| `close` | Precio de cierre. | numeric(24,10) | sí |  |
+
+#### `forex.rate_intraday_2024_03` · tabla · ~44,529 filas
+| Columna | Qué es | Tipo | Nulo | Clave |
+|---|---|---|---|---|
+| `pair_id` | Par de divisas al que pertenece. | integer | no | PK |
+| `ts` |  | timestamp with time zone | no | PK |
+| `interval` |  | character varying(3) | no | PK |
+| `open` | Precio de apertura. | numeric(24,10) | sí |  |
+| `high` | Precio máximo del día. | numeric(24,10) | sí |  |
+| `low` | Precio mínimo del día. | numeric(24,10) | sí |  |
+| `close` | Precio de cierre. | numeric(24,10) | sí |  |
+
+#### `forex.rate_intraday_2024_04` · tabla · ~46,109 filas
+| Columna | Qué es | Tipo | Nulo | Clave |
+|---|---|---|---|---|
+| `pair_id` | Par de divisas al que pertenece. | integer | no | PK |
+| `ts` |  | timestamp with time zone | no | PK |
+| `interval` |  | character varying(3) | no | PK |
+| `open` | Precio de apertura. | numeric(24,10) | sí |  |
+| `high` | Precio máximo del día. | numeric(24,10) | sí |  |
+| `low` | Precio mínimo del día. | numeric(24,10) | sí |  |
+| `close` | Precio de cierre. | numeric(24,10) | sí |  |
+
+#### `forex.rate_intraday_2024_05` · tabla · ~48,217 filas
+| Columna | Qué es | Tipo | Nulo | Clave |
+|---|---|---|---|---|
+| `pair_id` | Par de divisas al que pertenece. | integer | no | PK |
+| `ts` |  | timestamp with time zone | no | PK |
+| `interval` |  | character varying(3) | no | PK |
+| `open` | Precio de apertura. | numeric(24,10) | sí |  |
+| `high` | Precio máximo del día. | numeric(24,10) | sí |  |
+| `low` | Precio mínimo del día. | numeric(24,10) | sí |  |
+| `close` | Precio de cierre. | numeric(24,10) | sí |  |
+
+#### `forex.rate_intraday_2024_06` · tabla · ~42,278 filas
+| Columna | Qué es | Tipo | Nulo | Clave |
+|---|---|---|---|---|
+| `pair_id` | Par de divisas al que pertenece. | integer | no | PK |
+| `ts` |  | timestamp with time zone | no | PK |
+| `interval` |  | character varying(3) | no | PK |
+| `open` | Precio de apertura. | numeric(24,10) | sí |  |
+| `high` | Precio máximo del día. | numeric(24,10) | sí |  |
+| `low` | Precio mínimo del día. | numeric(24,10) | sí |  |
+| `close` | Precio de cierre. | numeric(24,10) | sí |  |
+
+#### `forex.rate_intraday_2024_07` · tabla · ~49,162 filas
+| Columna | Qué es | Tipo | Nulo | Clave |
+|---|---|---|---|---|
+| `pair_id` | Par de divisas al que pertenece. | integer | no | PK |
+| `ts` |  | timestamp with time zone | no | PK |
+| `interval` |  | character varying(3) | no | PK |
+| `open` | Precio de apertura. | numeric(24,10) | sí |  |
+| `high` | Precio máximo del día. | numeric(24,10) | sí |  |
+| `low` | Precio mínimo del día. | numeric(24,10) | sí |  |
+| `close` | Precio de cierre. | numeric(24,10) | sí |  |
+
+#### `forex.rate_intraday_2024_08` · tabla · ~48,402 filas
+| Columna | Qué es | Tipo | Nulo | Clave |
+|---|---|---|---|---|
+| `pair_id` | Par de divisas al que pertenece. | integer | no | PK |
+| `ts` |  | timestamp with time zone | no | PK |
+| `interval` |  | character varying(3) | no | PK |
+| `open` | Precio de apertura. | numeric(24,10) | sí |  |
+| `high` | Precio máximo del día. | numeric(24,10) | sí |  |
+| `low` | Precio mínimo del día. | numeric(24,10) | sí |  |
+| `close` | Precio de cierre. | numeric(24,10) | sí |  |
+
+#### `forex.rate_intraday_2024_09` · tabla · ~45,457 filas
+| Columna | Qué es | Tipo | Nulo | Clave |
+|---|---|---|---|---|
+| `pair_id` | Par de divisas al que pertenece. | integer | no | PK |
+| `ts` |  | timestamp with time zone | no | PK |
+| `interval` |  | character varying(3) | no | PK |
+| `open` | Precio de apertura. | numeric(24,10) | sí |  |
+| `high` | Precio máximo del día. | numeric(24,10) | sí |  |
+| `low` | Precio mínimo del día. | numeric(24,10) | sí |  |
+| `close` | Precio de cierre. | numeric(24,10) | sí |  |
+
+#### `forex.rate_intraday_2024_10` · tabla · ~49,343 filas
+| Columna | Qué es | Tipo | Nulo | Clave |
+|---|---|---|---|---|
+| `pair_id` | Par de divisas al que pertenece. | integer | no | PK |
+| `ts` |  | timestamp with time zone | no | PK |
+| `interval` |  | character varying(3) | no | PK |
+| `open` | Precio de apertura. | numeric(24,10) | sí |  |
+| `high` | Precio máximo del día. | numeric(24,10) | sí |  |
+| `low` | Precio mínimo del día. | numeric(24,10) | sí |  |
+| `close` | Precio de cierre. | numeric(24,10) | sí |  |
+
+#### `forex.rate_intraday_2024_11` · tabla · ~45,899 filas
+| Columna | Qué es | Tipo | Nulo | Clave |
+|---|---|---|---|---|
+| `pair_id` | Par de divisas al que pertenece. | integer | no | PK |
+| `ts` |  | timestamp with time zone | no | PK |
+| `interval` |  | character varying(3) | no | PK |
+| `open` | Precio de apertura. | numeric(24,10) | sí |  |
+| `high` | Precio máximo del día. | numeric(24,10) | sí |  |
+| `low` | Precio mínimo del día. | numeric(24,10) | sí |  |
+| `close` | Precio de cierre. | numeric(24,10) | sí |  |
+
+#### `forex.rate_intraday_2024_12` · tabla · ~47,299 filas
+| Columna | Qué es | Tipo | Nulo | Clave |
+|---|---|---|---|---|
+| `pair_id` | Par de divisas al que pertenece. | integer | no | PK |
+| `ts` |  | timestamp with time zone | no | PK |
+| `interval` |  | character varying(3) | no | PK |
+| `open` | Precio de apertura. | numeric(24,10) | sí |  |
+| `high` | Precio máximo del día. | numeric(24,10) | sí |  |
+| `low` | Precio mínimo del día. | numeric(24,10) | sí |  |
+| `close` | Precio de cierre. | numeric(24,10) | sí |  |
+
+#### `forex.rate_intraday_2025_01` · tabla · ~49,450 filas
+| Columna | Qué es | Tipo | Nulo | Clave |
+|---|---|---|---|---|
+| `pair_id` | Par de divisas al que pertenece. | integer | no | PK |
+| `ts` |  | timestamp with time zone | no | PK |
+| `interval` |  | character varying(3) | no | PK |
+| `open` | Precio de apertura. | numeric(24,10) | sí |  |
+| `high` | Precio máximo del día. | numeric(24,10) | sí |  |
+| `low` | Precio mínimo del día. | numeric(24,10) | sí |  |
+| `close` | Precio de cierre. | numeric(24,10) | sí |  |
+
+#### `forex.rate_intraday_2025_02` · tabla · ~44,129 filas
+| Columna | Qué es | Tipo | Nulo | Clave |
+|---|---|---|---|---|
+| `pair_id` | Par de divisas al que pertenece. | integer | no | PK |
+| `ts` |  | timestamp with time zone | no | PK |
+| `interval` |  | character varying(3) | no | PK |
+| `open` | Precio de apertura. | numeric(24,10) | sí |  |
+| `high` | Precio máximo del día. | numeric(24,10) | sí |  |
+| `low` | Precio mínimo del día. | numeric(24,10) | sí |  |
+| `close` | Precio de cierre. | numeric(24,10) | sí |  |
+
+#### `forex.rate_intraday_2025_03` · tabla · ~46,107 filas
+| Columna | Qué es | Tipo | Nulo | Clave |
+|---|---|---|---|---|
+| `pair_id` | Par de divisas al que pertenece. | integer | no | PK |
+| `ts` |  | timestamp with time zone | no | PK |
+| `interval` |  | character varying(3) | no | PK |
+| `open` | Precio de apertura. | numeric(24,10) | sí |  |
+| `high` | Precio máximo del día. | numeric(24,10) | sí |  |
+| `low` | Precio mínimo del día. | numeric(24,10) | sí |  |
+| `close` | Precio de cierre. | numeric(24,10) | sí |  |
+
+#### `forex.rate_intraday_2025_04` · tabla · ~48,109 filas
+| Columna | Qué es | Tipo | Nulo | Clave |
+|---|---|---|---|---|
+| `pair_id` | Par de divisas al que pertenece. | integer | no | PK |
+| `ts` |  | timestamp with time zone | no | PK |
+| `interval` |  | character varying(3) | no | PK |
+| `open` | Precio de apertura. | numeric(24,10) | sí |  |
+| `high` | Precio máximo del día. | numeric(24,10) | sí |  |
+| `low` | Precio mínimo del día. | numeric(24,10) | sí |  |
+| `close` | Precio de cierre. | numeric(24,10) | sí |  |
+
+#### `forex.rate_intraday_2025_05` · tabla · ~46,485 filas
+| Columna | Qué es | Tipo | Nulo | Clave |
+|---|---|---|---|---|
+| `pair_id` | Par de divisas al que pertenece. | integer | no | PK |
+| `ts` |  | timestamp with time zone | no | PK |
+| `interval` |  | character varying(3) | no | PK |
+| `open` | Precio de apertura. | numeric(24,10) | sí |  |
+| `high` | Precio máximo del día. | numeric(24,10) | sí |  |
+| `low` | Precio mínimo del día. | numeric(24,10) | sí |  |
+| `close` | Precio de cierre. | numeric(24,10) | sí |  |
+
+#### `forex.rate_intraday_2025_06` · tabla · ~45,485 filas
+| Columna | Qué es | Tipo | Nulo | Clave |
+|---|---|---|---|---|
+| `pair_id` | Par de divisas al que pertenece. | integer | no | PK |
+| `ts` |  | timestamp with time zone | no | PK |
+| `interval` |  | character varying(3) | no | PK |
+| `open` | Precio de apertura. | numeric(24,10) | sí |  |
+| `high` | Precio máximo del día. | numeric(24,10) | sí |  |
+| `low` | Precio mínimo del día. | numeric(24,10) | sí |  |
+| `close` | Precio de cierre. | numeric(24,10) | sí |  |
+
+#### `forex.rate_intraday_2025_07` · tabla · ~49,716 filas
+| Columna | Qué es | Tipo | Nulo | Clave |
+|---|---|---|---|---|
+| `pair_id` | Par de divisas al que pertenece. | integer | no | PK |
+| `ts` |  | timestamp with time zone | no | PK |
+| `interval` |  | character varying(3) | no | PK |
+| `open` | Precio de apertura. | numeric(24,10) | sí |  |
+| `high` | Precio máximo del día. | numeric(24,10) | sí |  |
+| `low` | Precio mínimo del día. | numeric(24,10) | sí |  |
+| `close` | Precio de cierre. | numeric(24,10) | sí |  |
+
+#### `forex.rate_intraday_2025_08` · tabla · ~45,808 filas
+| Columna | Qué es | Tipo | Nulo | Clave |
+|---|---|---|---|---|
+| `pair_id` | Par de divisas al que pertenece. | integer | no | PK |
+| `ts` |  | timestamp with time zone | no | PK |
+| `interval` |  | character varying(3) | no | PK |
+| `open` | Precio de apertura. | numeric(24,10) | sí |  |
+| `high` | Precio máximo del día. | numeric(24,10) | sí |  |
+| `low` | Precio mínimo del día. | numeric(24,10) | sí |  |
+| `close` | Precio de cierre. | numeric(24,10) | sí |  |
+
+#### `forex.rate_intraday_2025_09` · tabla · ~49,594 filas
+| Columna | Qué es | Tipo | Nulo | Clave |
+|---|---|---|---|---|
+| `pair_id` | Par de divisas al que pertenece. | integer | no | PK |
+| `ts` |  | timestamp with time zone | no | PK |
+| `interval` |  | character varying(3) | no | PK |
+| `open` | Precio de apertura. | numeric(24,10) | sí |  |
+| `high` | Precio máximo del día. | numeric(24,10) | sí |  |
+| `low` | Precio mínimo del día. | numeric(24,10) | sí |  |
+| `close` | Precio de cierre. | numeric(24,10) | sí |  |
+
+#### `forex.rate_intraday_2025_10` · tabla · ~51,269 filas
+| Columna | Qué es | Tipo | Nulo | Clave |
+|---|---|---|---|---|
+| `pair_id` | Par de divisas al que pertenece. | integer | no | PK |
+| `ts` |  | timestamp with time zone | no | PK |
+| `interval` |  | character varying(3) | no | PK |
+| `open` | Precio de apertura. | numeric(24,10) | sí |  |
+| `high` | Precio máximo del día. | numeric(24,10) | sí |  |
+| `low` | Precio mínimo del día. | numeric(24,10) | sí |  |
+| `close` | Precio de cierre. | numeric(24,10) | sí |  |
+
+#### `forex.rate_intraday_2025_11` · tabla · ~44,219 filas
+| Columna | Qué es | Tipo | Nulo | Clave |
+|---|---|---|---|---|
+| `pair_id` | Par de divisas al que pertenece. | integer | no | PK |
+| `ts` |  | timestamp with time zone | no | PK |
+| `interval` |  | character varying(3) | no | PK |
+| `open` | Precio de apertura. | numeric(24,10) | sí |  |
+| `high` | Precio máximo del día. | numeric(24,10) | sí |  |
+| `low` | Precio mínimo del día. | numeric(24,10) | sí |  |
+| `close` | Precio de cierre. | numeric(24,10) | sí |  |
+
+#### `forex.rate_intraday_2025_12` · tabla · ~51,239 filas
+| Columna | Qué es | Tipo | Nulo | Clave |
+|---|---|---|---|---|
+| `pair_id` | Par de divisas al que pertenece. | integer | no | PK |
+| `ts` |  | timestamp with time zone | no | PK |
+| `interval` |  | character varying(3) | no | PK |
+| `open` | Precio de apertura. | numeric(24,10) | sí |  |
+| `high` | Precio máximo del día. | numeric(24,10) | sí |  |
+| `low` | Precio mínimo del día. | numeric(24,10) | sí |  |
+| `close` | Precio de cierre. | numeric(24,10) | sí |  |
+
+#### `forex.rate_intraday_2026_01` · tabla · ~48,941 filas
+| Columna | Qué es | Tipo | Nulo | Clave |
+|---|---|---|---|---|
+| `pair_id` | Par de divisas al que pertenece. | integer | no | PK |
+| `ts` |  | timestamp with time zone | no | PK |
+| `interval` |  | character varying(3) | no | PK |
+| `open` | Precio de apertura. | numeric(24,10) | sí |  |
+| `high` | Precio máximo del día. | numeric(24,10) | sí |  |
+| `low` | Precio mínimo del día. | numeric(24,10) | sí |  |
+| `close` | Precio de cierre. | numeric(24,10) | sí |  |
+
+#### `forex.rate_intraday_2026_02` · tabla · ~44,837 filas
+| Columna | Qué es | Tipo | Nulo | Clave |
+|---|---|---|---|---|
+| `pair_id` | Par de divisas al que pertenece. | integer | no | PK |
+| `ts` |  | timestamp with time zone | no | PK |
+| `interval` |  | character varying(3) | no | PK |
+| `open` | Precio de apertura. | numeric(24,10) | sí |  |
+| `high` | Precio máximo del día. | numeric(24,10) | sí |  |
+| `low` | Precio mínimo del día. | numeric(24,10) | sí |  |
+| `close` | Precio de cierre. | numeric(24,10) | sí |  |
+
+#### `forex.rate_intraday_2026_03` · tabla · ~49,283 filas
+| Columna | Qué es | Tipo | Nulo | Clave |
+|---|---|---|---|---|
+| `pair_id` | Par de divisas al que pertenece. | integer | no | PK |
+| `ts` |  | timestamp with time zone | no | PK |
+| `interval` |  | character varying(3) | no | PK |
+| `open` | Precio de apertura. | numeric(24,10) | sí |  |
+| `high` | Precio máximo del día. | numeric(24,10) | sí |  |
+| `low` | Precio mínimo del día. | numeric(24,10) | sí |  |
+| `close` | Precio de cierre. | numeric(24,10) | sí |  |
+
+#### `forex.rate_intraday_2026_04` · tabla · ~49,423 filas
+| Columna | Qué es | Tipo | Nulo | Clave |
+|---|---|---|---|---|
+| `pair_id` | Par de divisas al que pertenece. | integer | no | PK |
+| `ts` |  | timestamp with time zone | no | PK |
+| `interval` |  | character varying(3) | no | PK |
+| `open` | Precio de apertura. | numeric(24,10) | sí |  |
+| `high` | Precio máximo del día. | numeric(24,10) | sí |  |
+| `low` | Precio mínimo del día. | numeric(24,10) | sí |  |
+| `close` | Precio de cierre. | numeric(24,10) | sí |  |
+
+#### `forex.rate_intraday_2026_05` · tabla · ~45,968 filas
+| Columna | Qué es | Tipo | Nulo | Clave |
+|---|---|---|---|---|
+| `pair_id` | Par de divisas al que pertenece. | integer | no | PK |
+| `ts` |  | timestamp with time zone | no | PK |
+| `interval` |  | character varying(3) | no | PK |
+| `open` | Precio de apertura. | numeric(24,10) | sí |  |
+| `high` | Precio máximo del día. | numeric(24,10) | sí |  |
+| `low` | Precio mínimo del día. | numeric(24,10) | sí |  |
+| `close` | Precio de cierre. | numeric(24,10) | sí |  |
+
+#### `forex.rate_intraday_2026_06` · tabla · ~48,785 filas
+| Columna | Qué es | Tipo | Nulo | Clave |
+|---|---|---|---|---|
+| `pair_id` | Par de divisas al que pertenece. | integer | no | PK |
+| `ts` |  | timestamp with time zone | no | PK |
+| `interval` |  | character varying(3) | no | PK |
+| `open` | Precio de apertura. | numeric(24,10) | sí |  |
+| `high` | Precio máximo del día. | numeric(24,10) | sí |  |
+| `low` | Precio mínimo del día. | numeric(24,10) | sí |  |
+| `close` | Precio de cierre. | numeric(24,10) | sí |  |
+
+#### `forex.rate_intraday_2026_07` · tabla · ~51,483 filas
+| Columna | Qué es | Tipo | Nulo | Clave |
+|---|---|---|---|---|
+| `pair_id` | Par de divisas al que pertenece. | integer | no | PK |
+| `ts` |  | timestamp with time zone | no | PK |
+| `interval` |  | character varying(3) | no | PK |
+| `open` | Precio de apertura. | numeric(24,10) | sí |  |
+| `high` | Precio máximo del día. | numeric(24,10) | sí |  |
+| `low` | Precio mínimo del día. | numeric(24,10) | sí |  |
+| `close` | Precio de cierre. | numeric(24,10) | sí |  |
+
+#### `forex.rate_intraday_2026_08` · tabla · ~9,173 filas
+| Columna | Qué es | Tipo | Nulo | Clave |
+|---|---|---|---|---|
+| `pair_id` | Par de divisas al que pertenece. | integer | no | PK |
+| `ts` |  | timestamp with time zone | no | PK |
+| `interval` |  | character varying(3) | no | PK |
+| `open` | Precio de apertura. | numeric(24,10) | sí |  |
+| `high` | Precio máximo del día. | numeric(24,10) | sí |  |
+| `low` | Precio mínimo del día. | numeric(24,10) | sí |  |
+| `close` | Precio de cierre. | numeric(24,10) | sí |  |
+
+#### `forex.rate_intraday_2026_09` · tabla · ~0 filas
+| Columna | Qué es | Tipo | Nulo | Clave |
+|---|---|---|---|---|
+| `pair_id` | Par de divisas al que pertenece. | integer | no | PK |
+| `ts` |  | timestamp with time zone | no | PK |
+| `interval` |  | character varying(3) | no | PK |
+| `open` | Precio de apertura. | numeric(24,10) | sí |  |
+| `high` | Precio máximo del día. | numeric(24,10) | sí |  |
+| `low` | Precio mínimo del día. | numeric(24,10) | sí |  |
+| `close` | Precio de cierre. | numeric(24,10) | sí |  |
+
+#### `forex.rate_intraday_2026_10` · tabla · ~0 filas
+| Columna | Qué es | Tipo | Nulo | Clave |
+|---|---|---|---|---|
+| `pair_id` | Par de divisas al que pertenece. | integer | no | PK |
+| `ts` |  | timestamp with time zone | no | PK |
+| `interval` |  | character varying(3) | no | PK |
+| `open` | Precio de apertura. | numeric(24,10) | sí |  |
+| `high` | Precio máximo del día. | numeric(24,10) | sí |  |
+| `low` | Precio mínimo del día. | numeric(24,10) | sí |  |
+| `close` | Precio de cierre. | numeric(24,10) | sí |  |
+
+#### `forex.rate_intraday_2026_11` · tabla · ~0 filas
+| Columna | Qué es | Tipo | Nulo | Clave |
+|---|---|---|---|---|
+| `pair_id` | Par de divisas al que pertenece. | integer | no | PK |
+| `ts` |  | timestamp with time zone | no | PK |
+| `interval` |  | character varying(3) | no | PK |
+| `open` | Precio de apertura. | numeric(24,10) | sí |  |
+| `high` | Precio máximo del día. | numeric(24,10) | sí |  |
+| `low` | Precio mínimo del día. | numeric(24,10) | sí |  |
+| `close` | Precio de cierre. | numeric(24,10) | sí |  |
 
 ### Esquema `crypto`
 _Criptomonedas._
 
-#### `crypto.coin` · tabla · ~0 filas
+#### `crypto.coin` · tabla · ~256 filas
 Criptomonedas (Bitcoin, Ethereum...).
 
 | Columna | Qué es | Tipo | Nulo | Clave |
@@ -620,6 +2182,8 @@ Criptomonedas (Bitcoin, Ethereum...).
 | `name` | Nombre. | character varying(200) | no |  |
 | `category` | Categoría o dominio. | character varying(50) | sí |  |
 | `market_cap_rank` | Puesto por capitalización. | smallint | sí |  |
+| `source_id` | Fuente de la que procede el dato. | integer | sí |  |
+| `fetch_run_id` | Descarga que trajo el dato (auditoría). | integer | sí |  |
 
 #### `crypto.market_dominance` · tabla · ~0 filas
 Snapshot diario del mercado crypto.
@@ -631,26 +2195,524 @@ Snapshot diario del mercado crypto.
 | `total_market_cap_usd` | Capitalización total del mercado cripto (USD). | numeric(18,2) | sí |  |
 | `btc_dominance_pct` | % que representa Bitcoin. | numeric(6,3) | sí |  |
 | `eth_dominance_pct` | % que representa Ethereum. | numeric(6,3) | sí |  |
+| `source_id` | Fuente de la que procede el dato. | integer | sí |  |
+| `fetch_run_id` | Descarga que trajo el dato (auditoría). | integer | sí |  |
 
-#### `crypto.price_daily` · tabla · ~13,482 filas
+#### `crypto.price_daily` · tabla · ~267,232 filas
 Precio diario de cada cripto.
 
 | Columna | Qué es | Tipo | Nulo | Clave |
 |---|---|---|---|---|
 | `id` | Identificador único de la fila. | integer | no | PK |
-| `coin_id` | Cripto a la que pertenece. | integer | no |  |
+| `coin_id` | Cripto a la que pertenece. | integer | no | FK → crypto.coin.id |
 | `date` | Fecha del dato. | date | no |  |
-| `open` | Precio de apertura. | numeric(18,8) | sí |  |
-| `high` | Precio máximo del día. | numeric(18,8) | sí |  |
-| `low` | Precio mínimo del día. | numeric(18,8) | sí |  |
-| `close` | Precio de cierre. | numeric(18,8) | no |  |
+| `open` | Precio de apertura. | numeric(24,10) | sí |  |
+| `high` | Precio máximo del día. | numeric(24,10) | sí |  |
+| `low` | Precio mínimo del día. | numeric(24,10) | sí |  |
+| `close` | Precio de cierre. | numeric(24,10) | no |  |
 | `volume_usd` | Volumen negociado (USD). | numeric(18,2) | sí |  |
 | `market_cap_usd` | Capitalización bursátil en dólares. | numeric(18,2) | sí |  |
+| `source_id` | Fuente de la que procede el dato. | integer | sí |  |
+| `fetch_run_id` | Descarga que trajo el dato (auditoría). | integer | sí |  |
+
+#### `crypto.price_intraday` · tabla · ~0 filas
+Precio intraday crypto (particionado por ts).
+
+| Columna | Qué es | Tipo | Nulo | Clave |
+|---|---|---|---|---|
+| `coin_id` | Cripto a la que pertenece. | integer | no | PK |
+| `ts` |  | timestamp with time zone | no | PK |
+| `interval` |  | character varying(3) | no | PK |
+| `open` | Precio de apertura. | numeric(24,10) | sí |  |
+| `high` | Precio máximo del día. | numeric(24,10) | sí |  |
+| `low` | Precio mínimo del día. | numeric(24,10) | sí |  |
+| `close` | Precio de cierre. | numeric(24,10) | sí |  |
+| `volume_usd` |  | numeric(18,2) | sí |  |
+
+#### `crypto.price_intraday_2023_08` · tabla · ~0 filas
+| Columna | Qué es | Tipo | Nulo | Clave |
+|---|---|---|---|---|
+| `coin_id` | Cripto a la que pertenece. | integer | no | PK |
+| `ts` |  | timestamp with time zone | no | PK |
+| `interval` |  | character varying(3) | no | PK |
+| `open` | Precio de apertura. | numeric(24,10) | sí |  |
+| `high` | Precio máximo del día. | numeric(24,10) | sí |  |
+| `low` | Precio mínimo del día. | numeric(24,10) | sí |  |
+| `close` | Precio de cierre. | numeric(24,10) | sí |  |
+| `volume_usd` |  | numeric(18,2) | sí |  |
+
+#### `crypto.price_intraday_2023_09` · tabla · ~0 filas
+| Columna | Qué es | Tipo | Nulo | Clave |
+|---|---|---|---|---|
+| `coin_id` | Cripto a la que pertenece. | integer | no | PK |
+| `ts` |  | timestamp with time zone | no | PK |
+| `interval` |  | character varying(3) | no | PK |
+| `open` | Precio de apertura. | numeric(24,10) | sí |  |
+| `high` | Precio máximo del día. | numeric(24,10) | sí |  |
+| `low` | Precio mínimo del día. | numeric(24,10) | sí |  |
+| `close` | Precio de cierre. | numeric(24,10) | sí |  |
+| `volume_usd` |  | numeric(18,2) | sí |  |
+
+#### `crypto.price_intraday_2023_10` · tabla · ~0 filas
+| Columna | Qué es | Tipo | Nulo | Clave |
+|---|---|---|---|---|
+| `coin_id` | Cripto a la que pertenece. | integer | no | PK |
+| `ts` |  | timestamp with time zone | no | PK |
+| `interval` |  | character varying(3) | no | PK |
+| `open` | Precio de apertura. | numeric(24,10) | sí |  |
+| `high` | Precio máximo del día. | numeric(24,10) | sí |  |
+| `low` | Precio mínimo del día. | numeric(24,10) | sí |  |
+| `close` | Precio de cierre. | numeric(24,10) | sí |  |
+| `volume_usd` |  | numeric(18,2) | sí |  |
+
+#### `crypto.price_intraday_2023_11` · tabla · ~0 filas
+| Columna | Qué es | Tipo | Nulo | Clave |
+|---|---|---|---|---|
+| `coin_id` | Cripto a la que pertenece. | integer | no | PK |
+| `ts` |  | timestamp with time zone | no | PK |
+| `interval` |  | character varying(3) | no | PK |
+| `open` | Precio de apertura. | numeric(24,10) | sí |  |
+| `high` | Precio máximo del día. | numeric(24,10) | sí |  |
+| `low` | Precio mínimo del día. | numeric(24,10) | sí |  |
+| `close` | Precio de cierre. | numeric(24,10) | sí |  |
+| `volume_usd` |  | numeric(18,2) | sí |  |
+
+#### `crypto.price_intraday_2023_12` · tabla · ~0 filas
+| Columna | Qué es | Tipo | Nulo | Clave |
+|---|---|---|---|---|
+| `coin_id` | Cripto a la que pertenece. | integer | no | PK |
+| `ts` |  | timestamp with time zone | no | PK |
+| `interval` |  | character varying(3) | no | PK |
+| `open` | Precio de apertura. | numeric(24,10) | sí |  |
+| `high` | Precio máximo del día. | numeric(24,10) | sí |  |
+| `low` | Precio mínimo del día. | numeric(24,10) | sí |  |
+| `close` | Precio de cierre. | numeric(24,10) | sí |  |
+| `volume_usd` |  | numeric(18,2) | sí |  |
+
+#### `crypto.price_intraday_2024_01` · tabla · ~0 filas
+| Columna | Qué es | Tipo | Nulo | Clave |
+|---|---|---|---|---|
+| `coin_id` | Cripto a la que pertenece. | integer | no | PK |
+| `ts` |  | timestamp with time zone | no | PK |
+| `interval` |  | character varying(3) | no | PK |
+| `open` | Precio de apertura. | numeric(24,10) | sí |  |
+| `high` | Precio máximo del día. | numeric(24,10) | sí |  |
+| `low` | Precio mínimo del día. | numeric(24,10) | sí |  |
+| `close` | Precio de cierre. | numeric(24,10) | sí |  |
+| `volume_usd` |  | numeric(18,2) | sí |  |
+
+#### `crypto.price_intraday_2024_02` · tabla · ~0 filas
+| Columna | Qué es | Tipo | Nulo | Clave |
+|---|---|---|---|---|
+| `coin_id` | Cripto a la que pertenece. | integer | no | PK |
+| `ts` |  | timestamp with time zone | no | PK |
+| `interval` |  | character varying(3) | no | PK |
+| `open` | Precio de apertura. | numeric(24,10) | sí |  |
+| `high` | Precio máximo del día. | numeric(24,10) | sí |  |
+| `low` | Precio mínimo del día. | numeric(24,10) | sí |  |
+| `close` | Precio de cierre. | numeric(24,10) | sí |  |
+| `volume_usd` |  | numeric(18,2) | sí |  |
+
+#### `crypto.price_intraday_2024_03` · tabla · ~0 filas
+| Columna | Qué es | Tipo | Nulo | Clave |
+|---|---|---|---|---|
+| `coin_id` | Cripto a la que pertenece. | integer | no | PK |
+| `ts` |  | timestamp with time zone | no | PK |
+| `interval` |  | character varying(3) | no | PK |
+| `open` | Precio de apertura. | numeric(24,10) | sí |  |
+| `high` | Precio máximo del día. | numeric(24,10) | sí |  |
+| `low` | Precio mínimo del día. | numeric(24,10) | sí |  |
+| `close` | Precio de cierre. | numeric(24,10) | sí |  |
+| `volume_usd` |  | numeric(18,2) | sí |  |
+
+#### `crypto.price_intraday_2024_04` · tabla · ~0 filas
+| Columna | Qué es | Tipo | Nulo | Clave |
+|---|---|---|---|---|
+| `coin_id` | Cripto a la que pertenece. | integer | no | PK |
+| `ts` |  | timestamp with time zone | no | PK |
+| `interval` |  | character varying(3) | no | PK |
+| `open` | Precio de apertura. | numeric(24,10) | sí |  |
+| `high` | Precio máximo del día. | numeric(24,10) | sí |  |
+| `low` | Precio mínimo del día. | numeric(24,10) | sí |  |
+| `close` | Precio de cierre. | numeric(24,10) | sí |  |
+| `volume_usd` |  | numeric(18,2) | sí |  |
+
+#### `crypto.price_intraday_2024_05` · tabla · ~0 filas
+| Columna | Qué es | Tipo | Nulo | Clave |
+|---|---|---|---|---|
+| `coin_id` | Cripto a la que pertenece. | integer | no | PK |
+| `ts` |  | timestamp with time zone | no | PK |
+| `interval` |  | character varying(3) | no | PK |
+| `open` | Precio de apertura. | numeric(24,10) | sí |  |
+| `high` | Precio máximo del día. | numeric(24,10) | sí |  |
+| `low` | Precio mínimo del día. | numeric(24,10) | sí |  |
+| `close` | Precio de cierre. | numeric(24,10) | sí |  |
+| `volume_usd` |  | numeric(18,2) | sí |  |
+
+#### `crypto.price_intraday_2024_06` · tabla · ~0 filas
+| Columna | Qué es | Tipo | Nulo | Clave |
+|---|---|---|---|---|
+| `coin_id` | Cripto a la que pertenece. | integer | no | PK |
+| `ts` |  | timestamp with time zone | no | PK |
+| `interval` |  | character varying(3) | no | PK |
+| `open` | Precio de apertura. | numeric(24,10) | sí |  |
+| `high` | Precio máximo del día. | numeric(24,10) | sí |  |
+| `low` | Precio mínimo del día. | numeric(24,10) | sí |  |
+| `close` | Precio de cierre. | numeric(24,10) | sí |  |
+| `volume_usd` |  | numeric(18,2) | sí |  |
+
+#### `crypto.price_intraday_2024_07` · tabla · ~0 filas
+| Columna | Qué es | Tipo | Nulo | Clave |
+|---|---|---|---|---|
+| `coin_id` | Cripto a la que pertenece. | integer | no | PK |
+| `ts` |  | timestamp with time zone | no | PK |
+| `interval` |  | character varying(3) | no | PK |
+| `open` | Precio de apertura. | numeric(24,10) | sí |  |
+| `high` | Precio máximo del día. | numeric(24,10) | sí |  |
+| `low` | Precio mínimo del día. | numeric(24,10) | sí |  |
+| `close` | Precio de cierre. | numeric(24,10) | sí |  |
+| `volume_usd` |  | numeric(18,2) | sí |  |
+
+#### `crypto.price_intraday_2024_08` · tabla · ~124,440 filas
+| Columna | Qué es | Tipo | Nulo | Clave |
+|---|---|---|---|---|
+| `coin_id` | Cripto a la que pertenece. | integer | no | PK |
+| `ts` |  | timestamp with time zone | no | PK |
+| `interval` |  | character varying(3) | no | PK |
+| `open` | Precio de apertura. | numeric(24,10) | sí |  |
+| `high` | Precio máximo del día. | numeric(24,10) | sí |  |
+| `low` | Precio mínimo del día. | numeric(24,10) | sí |  |
+| `close` | Precio de cierre. | numeric(24,10) | sí |  |
+| `volume_usd` |  | numeric(18,2) | sí |  |
+
+#### `crypto.price_intraday_2024_09` · tabla · ~149,040 filas
+| Columna | Qué es | Tipo | Nulo | Clave |
+|---|---|---|---|---|
+| `coin_id` | Cripto a la que pertenece. | integer | no | PK |
+| `ts` |  | timestamp with time zone | no | PK |
+| `interval` |  | character varying(3) | no | PK |
+| `open` | Precio de apertura. | numeric(24,10) | sí |  |
+| `high` | Precio máximo del día. | numeric(24,10) | sí |  |
+| `low` | Precio mínimo del día. | numeric(24,10) | sí |  |
+| `close` | Precio de cierre. | numeric(24,10) | sí |  |
+| `volume_usd` |  | numeric(18,2) | sí |  |
+
+#### `crypto.price_intraday_2024_10` · tabla · ~154,194 filas
+| Columna | Qué es | Tipo | Nulo | Clave |
+|---|---|---|---|---|
+| `coin_id` | Cripto a la que pertenece. | integer | no | PK |
+| `ts` |  | timestamp with time zone | no | PK |
+| `interval` |  | character varying(3) | no | PK |
+| `open` | Precio de apertura. | numeric(24,10) | sí |  |
+| `high` | Precio máximo del día. | numeric(24,10) | sí |  |
+| `low` | Precio mínimo del día. | numeric(24,10) | sí |  |
+| `close` | Precio de cierre. | numeric(24,10) | sí |  |
+| `volume_usd` |  | numeric(18,2) | sí |  |
+
+#### `crypto.price_intraday_2024_11` · tabla · ~149,918 filas
+| Columna | Qué es | Tipo | Nulo | Clave |
+|---|---|---|---|---|
+| `coin_id` | Cripto a la que pertenece. | integer | no | PK |
+| `ts` |  | timestamp with time zone | no | PK |
+| `interval` |  | character varying(3) | no | PK |
+| `open` | Precio de apertura. | numeric(24,10) | sí |  |
+| `high` | Precio máximo del día. | numeric(24,10) | sí |  |
+| `low` | Precio mínimo del día. | numeric(24,10) | sí |  |
+| `close` | Precio de cierre. | numeric(24,10) | sí |  |
+| `volume_usd` |  | numeric(18,2) | sí |  |
+
+#### `crypto.price_intraday_2024_12` · tabla · ~156,860 filas
+| Columna | Qué es | Tipo | Nulo | Clave |
+|---|---|---|---|---|
+| `coin_id` | Cripto a la que pertenece. | integer | no | PK |
+| `ts` |  | timestamp with time zone | no | PK |
+| `interval` |  | character varying(3) | no | PK |
+| `open` | Precio de apertura. | numeric(24,10) | sí |  |
+| `high` | Precio máximo del día. | numeric(24,10) | sí |  |
+| `low` | Precio mínimo del día. | numeric(24,10) | sí |  |
+| `close` | Precio de cierre. | numeric(24,10) | sí |  |
+| `volume_usd` |  | numeric(18,2) | sí |  |
+
+#### `crypto.price_intraday_2025_01` · tabla · ~156,722 filas
+| Columna | Qué es | Tipo | Nulo | Clave |
+|---|---|---|---|---|
+| `coin_id` | Cripto a la que pertenece. | integer | no | PK |
+| `ts` |  | timestamp with time zone | no | PK |
+| `interval` |  | character varying(3) | no | PK |
+| `open` | Precio de apertura. | numeric(24,10) | sí |  |
+| `high` | Precio máximo del día. | numeric(24,10) | sí |  |
+| `low` | Precio mínimo del día. | numeric(24,10) | sí |  |
+| `close` | Precio de cierre. | numeric(24,10) | sí |  |
+| `volume_usd` |  | numeric(18,2) | sí |  |
+
+#### `crypto.price_intraday_2025_02` · tabla · ~141,930 filas
+| Columna | Qué es | Tipo | Nulo | Clave |
+|---|---|---|---|---|
+| `coin_id` | Cripto a la que pertenece. | integer | no | PK |
+| `ts` |  | timestamp with time zone | no | PK |
+| `interval` |  | character varying(3) | no | PK |
+| `open` | Precio de apertura. | numeric(24,10) | sí |  |
+| `high` | Precio máximo del día. | numeric(24,10) | sí |  |
+| `low` | Precio mínimo del día. | numeric(24,10) | sí |  |
+| `close` | Precio de cierre. | numeric(24,10) | sí |  |
+| `volume_usd` |  | numeric(18,2) | sí |  |
+
+#### `crypto.price_intraday_2025_03` · tabla · ~157,658 filas
+| Columna | Qué es | Tipo | Nulo | Clave |
+|---|---|---|---|---|
+| `coin_id` | Cripto a la que pertenece. | integer | no | PK |
+| `ts` |  | timestamp with time zone | no | PK |
+| `interval` |  | character varying(3) | no | PK |
+| `open` | Precio de apertura. | numeric(24,10) | sí |  |
+| `high` | Precio máximo del día. | numeric(24,10) | sí |  |
+| `low` | Precio mínimo del día. | numeric(24,10) | sí |  |
+| `close` | Precio de cierre. | numeric(24,10) | sí |  |
+| `volume_usd` |  | numeric(18,2) | sí |  |
+
+#### `crypto.price_intraday_2025_04` · tabla · ~152,640 filas
+| Columna | Qué es | Tipo | Nulo | Clave |
+|---|---|---|---|---|
+| `coin_id` | Cripto a la que pertenece. | integer | no | PK |
+| `ts` |  | timestamp with time zone | no | PK |
+| `interval` |  | character varying(3) | no | PK |
+| `open` | Precio de apertura. | numeric(24,10) | sí |  |
+| `high` | Precio máximo del día. | numeric(24,10) | sí |  |
+| `low` | Precio mínimo del día. | numeric(24,10) | sí |  |
+| `close` | Precio de cierre. | numeric(24,10) | sí |  |
+| `volume_usd` |  | numeric(18,2) | sí |  |
+
+#### `crypto.price_intraday_2025_05` · tabla · ~157,717 filas
+| Columna | Qué es | Tipo | Nulo | Clave |
+|---|---|---|---|---|
+| `coin_id` | Cripto a la que pertenece. | integer | no | PK |
+| `ts` |  | timestamp with time zone | no | PK |
+| `interval` |  | character varying(3) | no | PK |
+| `open` | Precio de apertura. | numeric(24,10) | sí |  |
+| `high` | Precio máximo del día. | numeric(24,10) | sí |  |
+| `low` | Precio mínimo del día. | numeric(24,10) | sí |  |
+| `close` | Precio de cierre. | numeric(24,10) | sí |  |
+| `volume_usd` |  | numeric(18,2) | sí |  |
+
+#### `crypto.price_intraday_2025_06` · tabla · ~152,342 filas
+| Columna | Qué es | Tipo | Nulo | Clave |
+|---|---|---|---|---|
+| `coin_id` | Cripto a la que pertenece. | integer | no | PK |
+| `ts` |  | timestamp with time zone | no | PK |
+| `interval` |  | character varying(3) | no | PK |
+| `open` | Precio de apertura. | numeric(24,10) | sí |  |
+| `high` | Precio máximo del día. | numeric(24,10) | sí |  |
+| `low` | Precio mínimo del día. | numeric(24,10) | sí |  |
+| `close` | Precio de cierre. | numeric(24,10) | sí |  |
+| `volume_usd` |  | numeric(18,2) | sí |  |
+
+#### `crypto.price_intraday_2025_07` · tabla · ~156,984 filas
+| Columna | Qué es | Tipo | Nulo | Clave |
+|---|---|---|---|---|
+| `coin_id` | Cripto a la que pertenece. | integer | no | PK |
+| `ts` |  | timestamp with time zone | no | PK |
+| `interval` |  | character varying(3) | no | PK |
+| `open` | Precio de apertura. | numeric(24,10) | sí |  |
+| `high` | Precio máximo del día. | numeric(24,10) | sí |  |
+| `low` | Precio mínimo del día. | numeric(24,10) | sí |  |
+| `close` | Precio de cierre. | numeric(24,10) | sí |  |
+| `volume_usd` |  | numeric(18,2) | sí |  |
+
+#### `crypto.price_intraday_2025_08` · tabla · ~156,984 filas
+| Columna | Qué es | Tipo | Nulo | Clave |
+|---|---|---|---|---|
+| `coin_id` | Cripto a la que pertenece. | integer | no | PK |
+| `ts` |  | timestamp with time zone | no | PK |
+| `interval` |  | character varying(3) | no | PK |
+| `open` | Precio de apertura. | numeric(24,10) | sí |  |
+| `high` | Precio máximo del día. | numeric(24,10) | sí |  |
+| `low` | Precio mínimo del día. | numeric(24,10) | sí |  |
+| `close` | Precio de cierre. | numeric(24,10) | sí |  |
+| `volume_usd` |  | numeric(18,2) | sí |  |
+
+#### `crypto.price_intraday_2025_09` · tabla · ~151,916 filas
+| Columna | Qué es | Tipo | Nulo | Clave |
+|---|---|---|---|---|
+| `coin_id` | Cripto a la que pertenece. | integer | no | PK |
+| `ts` |  | timestamp with time zone | no | PK |
+| `interval` |  | character varying(3) | no | PK |
+| `open` | Precio de apertura. | numeric(24,10) | sí |  |
+| `high` | Precio máximo del día. | numeric(24,10) | sí |  |
+| `low` | Precio mínimo del día. | numeric(24,10) | sí |  |
+| `close` | Precio de cierre. | numeric(24,10) | sí |  |
+| `volume_usd` |  | numeric(18,2) | sí |  |
+
+#### `crypto.price_intraday_2025_10` · tabla · ~156,973 filas
+| Columna | Qué es | Tipo | Nulo | Clave |
+|---|---|---|---|---|
+| `coin_id` | Cripto a la que pertenece. | integer | no | PK |
+| `ts` |  | timestamp with time zone | no | PK |
+| `interval` |  | character varying(3) | no | PK |
+| `open` | Precio de apertura. | numeric(24,10) | sí |  |
+| `high` | Precio máximo del día. | numeric(24,10) | sí |  |
+| `low` | Precio mínimo del día. | numeric(24,10) | sí |  |
+| `close` | Precio de cierre. | numeric(24,10) | sí |  |
+| `volume_usd` |  | numeric(18,2) | sí |  |
+
+#### `crypto.price_intraday_2025_11` · tabla · ~120,844 filas
+| Columna | Qué es | Tipo | Nulo | Clave |
+|---|---|---|---|---|
+| `coin_id` | Cripto a la que pertenece. | integer | no | PK |
+| `ts` |  | timestamp with time zone | no | PK |
+| `interval` |  | character varying(3) | no | PK |
+| `open` | Precio de apertura. | numeric(24,10) | sí |  |
+| `high` | Precio máximo del día. | numeric(24,10) | sí |  |
+| `low` | Precio mínimo del día. | numeric(24,10) | sí |  |
+| `close` | Precio de cierre. | numeric(24,10) | sí |  |
+| `volume_usd` |  | numeric(18,2) | sí |  |
+
+#### `crypto.price_intraday_2025_12` · tabla · ~156,258 filas
+| Columna | Qué es | Tipo | Nulo | Clave |
+|---|---|---|---|---|
+| `coin_id` | Cripto a la que pertenece. | integer | no | PK |
+| `ts` |  | timestamp with time zone | no | PK |
+| `interval` |  | character varying(3) | no | PK |
+| `open` | Precio de apertura. | numeric(24,10) | sí |  |
+| `high` | Precio máximo del día. | numeric(24,10) | sí |  |
+| `low` | Precio mínimo del día. | numeric(24,10) | sí |  |
+| `close` | Precio de cierre. | numeric(24,10) | sí |  |
+| `volume_usd` |  | numeric(18,2) | sí |  |
+
+#### `crypto.price_intraday_2026_01` · tabla · ~157,744 filas
+| Columna | Qué es | Tipo | Nulo | Clave |
+|---|---|---|---|---|
+| `coin_id` | Cripto a la que pertenece. | integer | no | PK |
+| `ts` |  | timestamp with time zone | no | PK |
+| `interval` |  | character varying(3) | no | PK |
+| `open` | Precio de apertura. | numeric(24,10) | sí |  |
+| `high` | Precio máximo del día. | numeric(24,10) | sí |  |
+| `low` | Precio mínimo del día. | numeric(24,10) | sí |  |
+| `close` | Precio de cierre. | numeric(24,10) | sí |  |
+| `volume_usd` |  | numeric(18,2) | sí |  |
+
+#### `crypto.price_intraday_2026_02` · tabla · ~142,480 filas
+| Columna | Qué es | Tipo | Nulo | Clave |
+|---|---|---|---|---|
+| `coin_id` | Cripto a la que pertenece. | integer | no | PK |
+| `ts` |  | timestamp with time zone | no | PK |
+| `interval` |  | character varying(3) | no | PK |
+| `open` | Precio de apertura. | numeric(24,10) | sí |  |
+| `high` | Precio máximo del día. | numeric(24,10) | sí |  |
+| `low` | Precio mínimo del día. | numeric(24,10) | sí |  |
+| `close` | Precio de cierre. | numeric(24,10) | sí |  |
+| `volume_usd` |  | numeric(18,2) | sí |  |
+
+#### `crypto.price_intraday_2026_03` · tabla · ~157,728 filas
+| Columna | Qué es | Tipo | Nulo | Clave |
+|---|---|---|---|---|
+| `coin_id` | Cripto a la que pertenece. | integer | no | PK |
+| `ts` |  | timestamp with time zone | no | PK |
+| `interval` |  | character varying(3) | no | PK |
+| `open` | Precio de apertura. | numeric(24,10) | sí |  |
+| `high` | Precio máximo del día. | numeric(24,10) | sí |  |
+| `low` | Precio mínimo del día. | numeric(24,10) | sí |  |
+| `close` | Precio de cierre. | numeric(24,10) | sí |  |
+| `volume_usd` |  | numeric(18,2) | sí |  |
+
+#### `crypto.price_intraday_2026_04` · tabla · ~146,922 filas
+| Columna | Qué es | Tipo | Nulo | Clave |
+|---|---|---|---|---|
+| `coin_id` | Cripto a la que pertenece. | integer | no | PK |
+| `ts` |  | timestamp with time zone | no | PK |
+| `interval` |  | character varying(3) | no | PK |
+| `open` | Precio de apertura. | numeric(24,10) | sí |  |
+| `high` | Precio máximo del día. | numeric(24,10) | sí |  |
+| `low` | Precio mínimo del día. | numeric(24,10) | sí |  |
+| `close` | Precio de cierre. | numeric(24,10) | sí |  |
+| `volume_usd` |  | numeric(18,2) | sí |  |
+
+#### `crypto.price_intraday_2026_05` · tabla · ~155,027 filas
+| Columna | Qué es | Tipo | Nulo | Clave |
+|---|---|---|---|---|
+| `coin_id` | Cripto a la que pertenece. | integer | no | PK |
+| `ts` |  | timestamp with time zone | no | PK |
+| `interval` |  | character varying(3) | no | PK |
+| `open` | Precio de apertura. | numeric(24,10) | sí |  |
+| `high` | Precio máximo del día. | numeric(24,10) | sí |  |
+| `low` | Precio mínimo del día. | numeric(24,10) | sí |  |
+| `close` | Precio de cierre. | numeric(24,10) | sí |  |
+| `volume_usd` |  | numeric(18,2) | sí |  |
+
+#### `crypto.price_intraday_2026_06` · tabla · ~145,586 filas
+| Columna | Qué es | Tipo | Nulo | Clave |
+|---|---|---|---|---|
+| `coin_id` | Cripto a la que pertenece. | integer | no | PK |
+| `ts` |  | timestamp with time zone | no | PK |
+| `interval` |  | character varying(3) | no | PK |
+| `open` | Precio de apertura. | numeric(24,10) | sí |  |
+| `high` | Precio máximo del día. | numeric(24,10) | sí |  |
+| `low` | Precio mínimo del día. | numeric(24,10) | sí |  |
+| `close` | Precio de cierre. | numeric(24,10) | sí |  |
+| `volume_usd` |  | numeric(18,2) | sí |  |
+
+#### `crypto.price_intraday_2026_07` · tabla · ~153,726 filas
+| Columna | Qué es | Tipo | Nulo | Clave |
+|---|---|---|---|---|
+| `coin_id` | Cripto a la que pertenece. | integer | no | PK |
+| `ts` |  | timestamp with time zone | no | PK |
+| `interval` |  | character varying(3) | no | PK |
+| `open` | Precio de apertura. | numeric(24,10) | sí |  |
+| `high` | Precio máximo del día. | numeric(24,10) | sí |  |
+| `low` | Precio mínimo del día. | numeric(24,10) | sí |  |
+| `close` | Precio de cierre. | numeric(24,10) | sí |  |
+| `volume_usd` |  | numeric(18,2) | sí |  |
+
+#### `crypto.price_intraday_2026_08` · tabla · ~30,462 filas
+| Columna | Qué es | Tipo | Nulo | Clave |
+|---|---|---|---|---|
+| `coin_id` | Cripto a la que pertenece. | integer | no | PK |
+| `ts` |  | timestamp with time zone | no | PK |
+| `interval` |  | character varying(3) | no | PK |
+| `open` | Precio de apertura. | numeric(24,10) | sí |  |
+| `high` | Precio máximo del día. | numeric(24,10) | sí |  |
+| `low` | Precio mínimo del día. | numeric(24,10) | sí |  |
+| `close` | Precio de cierre. | numeric(24,10) | sí |  |
+| `volume_usd` |  | numeric(18,2) | sí |  |
+
+#### `crypto.price_intraday_2026_09` · tabla · ~0 filas
+| Columna | Qué es | Tipo | Nulo | Clave |
+|---|---|---|---|---|
+| `coin_id` | Cripto a la que pertenece. | integer | no | PK |
+| `ts` |  | timestamp with time zone | no | PK |
+| `interval` |  | character varying(3) | no | PK |
+| `open` | Precio de apertura. | numeric(24,10) | sí |  |
+| `high` | Precio máximo del día. | numeric(24,10) | sí |  |
+| `low` | Precio mínimo del día. | numeric(24,10) | sí |  |
+| `close` | Precio de cierre. | numeric(24,10) | sí |  |
+| `volume_usd` |  | numeric(18,2) | sí |  |
+
+#### `crypto.price_intraday_2026_10` · tabla · ~0 filas
+| Columna | Qué es | Tipo | Nulo | Clave |
+|---|---|---|---|---|
+| `coin_id` | Cripto a la que pertenece. | integer | no | PK |
+| `ts` |  | timestamp with time zone | no | PK |
+| `interval` |  | character varying(3) | no | PK |
+| `open` | Precio de apertura. | numeric(24,10) | sí |  |
+| `high` | Precio máximo del día. | numeric(24,10) | sí |  |
+| `low` | Precio mínimo del día. | numeric(24,10) | sí |  |
+| `close` | Precio de cierre. | numeric(24,10) | sí |  |
+| `volume_usd` |  | numeric(18,2) | sí |  |
+
+#### `crypto.price_intraday_2026_11` · tabla · ~0 filas
+| Columna | Qué es | Tipo | Nulo | Clave |
+|---|---|---|---|---|
+| `coin_id` | Cripto a la que pertenece. | integer | no | PK |
+| `ts` |  | timestamp with time zone | no | PK |
+| `interval` |  | character varying(3) | no | PK |
+| `open` | Precio de apertura. | numeric(24,10) | sí |  |
+| `high` | Precio máximo del día. | numeric(24,10) | sí |  |
+| `low` | Precio mínimo del día. | numeric(24,10) | sí |  |
+| `close` | Precio de cierre. | numeric(24,10) | sí |  |
+| `volume_usd` |  | numeric(18,2) | sí |  |
 
 ### Esquema `fund`
 _ETFs y fondos._
 
-#### `fund.fund` · tabla · ~25 filas
+#### `fund.fund` · tabla · ~496 filas
 ETFs y fondos de inversión.
 
 | Columna | Qué es | Tipo | Nulo | Clave |
@@ -669,8 +2731,10 @@ ETFs y fondos de inversión.
 | `currency_code` | Moneda del importe. | character varying(3) | sí |  |
 | `exchange_id` | Bolsa de valores. | integer | sí | FK → ref.exchange.id |
 | `is_active` | Si sigue cotizando (no deslistada). | boolean | no |  |
+| `source_id` | Fuente de la que procede el dato. | integer | sí |  |
+| `fetch_run_id` | Descarga que trajo el dato (auditoría). | integer | sí |  |
 
-#### `fund.nav_daily` · tabla · ~132,304 filas
+#### `fund.nav_daily` · tabla · ~1,379,929 filas
 Valor liquidativo (NAV) diario de cada fondo.
 
 | Columna | Qué es | Tipo | Nulo | Clave |
@@ -678,33 +2742,13 @@ Valor liquidativo (NAV) diario de cada fondo.
 | `id` | Identificador único de la fila. | integer | no | PK |
 | `fund_id` | Fondo al que pertenece. | integer | no | FK → fund.fund.id |
 | `date` | Fecha del dato. | date | no |  |
-| `nav` | Valor liquidativo (NAV). | numeric(14,6) | no |  |
-| `volume` | Volumen negociado. | integer | sí |  |
+| `nav` | Valor liquidativo (NAV). | numeric(24,10) | no |  |
+| `volume` | Volumen negociado. | bigint | sí |  |
+| `source_id` | Fuente de la que procede el dato. | integer | sí |  |
+| `fetch_run_id` | Descarga que trajo el dato (auditoría). | integer | sí |  |
 
 ### Esquema `alt`
 _Datos alternativos: sentimiento, vivienda._
-
-#### `alt.housing_index` · tabla · ~0 filas
-Índice inmobiliario.
-
-| Columna | Qué es | Tipo | Nulo | Clave |
-|---|---|---|---|---|
-| `id` | Identificador único de la fila. | integer | no | PK |
-| `code` | Código identificador. | character varying(50) | no |  |
-| `name` | Nombre. | character varying(200) | sí |  |
-| `country_code` | País (código ISO-3, p.ej. ESP). | character varying(3) | sí | FK → ref.country.code |
-| `index_type` | Tipo de índice de vivienda. | character varying(50) | sí |  |
-
-#### `alt.housing_index_value` · tabla · ~0 filas
-Valor de índice inmobiliario.
-
-| Columna | Qué es | Tipo | Nulo | Clave |
-|---|---|---|---|---|
-| `id` | Identificador único de la fila. | integer | no | PK |
-| `index_id` | Índice de mercado. | integer | no | FK → alt.housing_index.id |
-| `date` | Fecha del dato. | date | no |  |
-| `value` | Valor del dato. | numeric(12,4) | no |  |
-| `yoy_change_pct` | Variación interanual (%). | numeric(8,4) | sí |  |
 
 #### `alt.sentiment_indicator` · tabla · ~0 filas
 Definición de indicador de sentimiento.
@@ -715,6 +2759,8 @@ Definición de indicador de sentimiento.
 | `code` | Código identificador. | character varying(50) | no |  |
 | `name` | Nombre. | character varying(200) | sí |  |
 | `description` | Descripción libre. | text | sí |  |
+| `source_id` | Fuente de la que procede el dato. | integer | sí |  |
+| `fetch_run_id` | Descarga que trajo el dato (auditoría). | integer | sí |  |
 
 #### `alt.sentiment_value` · tabla · ~6,254 filas
 Valor diario de indicador de sentimiento.
@@ -725,13 +2771,15 @@ Valor diario de indicador de sentimiento.
 | `indicator_id` | Indicador al que pertenece. | integer | no | FK → alt.sentiment_indicator.id |
 | `date` | Fecha del dato. | date | no |  |
 | `value` | Valor del dato. | numeric(12,4) | no |  |
+| `source_id` | Fuente de la que procede el dato. | integer | sí |  |
+| `fetch_run_id` | Descarga que trajo el dato (auditoría). | integer | sí |  |
 
 ## Economía mundial
 
 ### Esquema `macro`
 _Economía mundial como series país × indicador × fecha._
 
-#### `macro.data_point` · tabla · ~9,066,970 filas
+#### `macro.data_point` · tabla · ~9,089,682 filas
 El dato en sí: el valor de una serie en una fecha (p.ej. inflación de España en 2022 = 8,3%).
 
 | Columna | Qué es | Tipo | Nulo | Clave |
@@ -741,7 +2789,9 @@ El dato en sí: el valor de una serie en una fecha (p.ej. inflación de España 
 | `date` | Fecha del dato. | date | no |  |
 | `value` | El valor del indicador en esa fecha. | numeric(20,6) | no |  |
 | `source_id` | Fuente de la que procede el dato. | integer | sí | FK → meta.data_source.id |
-| `fetched_at` | Cuándo se descargó. | timestamp without time zone | no |  |
+| `fetched_at` | Cuándo se descargó. | timestamp with time zone | no |  |
+| `is_forecast` |  | boolean | no |  |
+| `fetch_run_id` | Descarga que trajo el dato (auditoría). | integer | sí |  |
 
 #### `macro.data_point_vintage` · tabla · ~85,467 filas
 Como data_point pero 'point-in-time': guarda qué valor se conocía en cada fecha de publicación. Permite reconstruir los datos disponibles en el pasado sin sesgo de revisión (p.ej. el PIB de EE.UU. que se sabía en 2008, antes de revisarse).
@@ -753,8 +2803,10 @@ Como data_point pero 'point-in-time': guarda qué valor se conocía en cada fech
 | `obs_date` | Fecha a la que se refiere el dato (p.ej. el trimestre medido). | date | no |  |
 | `vintage_date` | Fecha de publicación: desde cuándo se conocía ese valor. | date | no |  |
 | `value` | El valor tal como se publicó en esa fecha (luego puede haberse revisado). | numeric(20,6) | no |  |
+| `source_id` | Fuente de la que procede el dato. | integer | sí |  |
+| `fetch_run_id` | Descarga que trajo el dato (auditoría). | integer | sí |  |
 
-#### `macro.indicator` · tabla · ~1,669 filas
+#### `macro.indicator` · tabla · ~1,835 filas
 El catálogo de indicadores económicos que seguimos (PIB, inflación, paro...). Cada fila es un indicador.
 
 | Columna | Qué es | Tipo | Nulo | Clave |
@@ -768,8 +2820,10 @@ El catálogo de indicadores económicos que seguimos (PIB, inflación, paro...).
 | `frequency` | Frecuencia (anual, mensual, diario...). | character varying(20) | sí |  |
 | `seasonal_adjustment` | Ajuste estacional aplicado. | character varying(20) | sí |  |
 | `description` | Descripción libre. | text | sí |  |
+| `source_id` | Fuente de la que procede el dato. | integer | sí |  |
+| `fetch_run_id` | Descarga que trajo el dato (auditoría). | integer | sí |  |
 
-#### `macro.indicator_source` · tabla · ~1,636 filas
+#### `macro.indicator_source` · tabla · ~1,762 filas
 Cómo se llama cada indicador en cada fuente (el mismo 'PIB' tiene códigos distintos en IMF y World Bank).
 
 | Columna | Qué es | Tipo | Nulo | Clave |
@@ -780,8 +2834,9 @@ Cómo se llama cada indicador en cada fuente (el mismo 'PIB' tiene códigos dist
 | `external_code` | Código del indicador en la fuente. | character varying(200) | no |  |
 | `external_name` | Nombre en la fuente. | character varying(500) | sí |  |
 | `priority` | Prioridad si hay varias fuentes. | smallint | no |  |
+| `fetch_run_id` | Descarga que trajo el dato (auditoría). | integer | sí |  |
 
-#### `macro.series` · tabla · ~268,745 filas
+#### `macro.series` · tabla · ~272,274 filas
 Una serie = un indicador para un país concreto (p.ej. 'inflación de España'). Agrupa sus valores en el tiempo.
 
 | Columna | Qué es | Tipo | Nulo | Clave |
@@ -793,24 +2848,27 @@ Una serie = un indicador para un país concreto (p.ej. 'inflación de España').
 | `last_value` | Último valor conocido de la serie. | numeric(20,6) | sí |  |
 | `last_date` | Fecha del último dato disponible. | date | sí |  |
 | `point_count` | Cuántos datos tiene la serie. | integer | no |  |
+| `source_id` | Fuente de la que procede el dato. | integer | sí |  |
+| `fetch_run_id` | Descarga que trajo el dato (auditoría). | integer | sí |  |
 
 ### Esquema `trade`
 _Comercio internacional bilateral (país × socio)._
 
-#### `trade.flow` · tabla · ~1,075,295 filas
+#### `trade.flow` · tabla · ~1,121,103 filas
 Comercio entre dos países: cuánto exporta/importa un país a otro cada año (a nivel total o por producto HS).
 
 | Columna | Qué es | Tipo | Nulo | Clave |
 |---|---|---|---|---|
 | `id` | Identificador único de la fila. | bigint | no | PK |
-| `reporter_code` | País que declara (exporta/importa). | character varying(3) | no | FK → ref.country.code |
-| `partner_code` | País socio comercial. | character varying(3) | no |  |
-| `product_code` | Producto (Total = todos los productos). | character varying(20) | no |  |
+| `reporter_code` | País que declara (exporta/importa). | character varying(3) | no | FK → ref.area.code |
+| `partner_code` | País socio comercial. | character varying(3) | no | FK → ref.area.code |
+| `product_code` | Producto (Total = todos los productos). | character varying(20) | no | FK → ref.hs_product.code |
 | `flow` | Sentido: X = exportación, M = importación. | character varying(1) | no |  |
 | `period` | Año del dato. | smallint | no |  |
 | `value_usd_k` | Valor comerciado en miles de dólares. | numeric(20,3) | sí |  |
 | `source_id` | Fuente de la que procede el dato. | integer | sí | FK → meta.data_source.id |
-| `fetched_at` | Cuándo se descargó. | timestamp without time zone | no |  |
+| `fetched_at` | Cuándo se descargó. | timestamp with time zone | no |  |
+| `fetch_run_id` | Descarga que trajo el dato (auditoría). | integer | sí |  |
 
 ### Esquema `energy`
 _Balance energético por país, fuente y flujo._
@@ -828,12 +2886,13 @@ Energía por país y fuente (carbón, gas, solar...): cuánto se produce y consu
 | `value` | Valor del dato. | numeric(18,4) | sí |  |
 | `unit` | Unidad de medida. | character varying(20) | sí |  |
 | `source_id` | Fuente de la que procede el dato. | integer | sí | FK → meta.data_source.id |
-| `fetched_at` | Cuándo se descargó. | timestamp without time zone | no |  |
+| `fetched_at` | Cuándo se descargó. | timestamp with time zone | no |  |
+| `fetch_run_id` | Descarga que trajo el dato (auditoría). | integer | sí |  |
 
 ### Esquema `agri`
 _Producción agrícola por país, cultivo/ganado y elemento._
 
-#### `agri.production` · tabla · ~2,929,268 filas
+#### `agri.production` · tabla · ~2,938,249 filas
 Producción agrícola: cuánto trigo, maíz, carne... produce cada país cada año.
 
 | Columna | Qué es | Tipo | Nulo | Clave |
@@ -847,7 +2906,8 @@ Producción agrícola: cuánto trigo, maíz, carne... produce cada país cada a�
 | `value` | Valor del dato. | numeric(24,3) | sí |  |
 | `unit` | Unidad de medida. | character varying(40) | sí |  |
 | `source_id` | Fuente de la que procede el dato. | integer | sí | FK → meta.data_source.id |
-| `fetched_at` | Cuándo se descargó. | timestamp without time zone | no |  |
+| `fetched_at` | Cuándo se descargó. | timestamp with time zone | no |  |
+| `fetch_run_id` | Descarga que trajo el dato (auditoría). | integer | sí |  |
 
 ### Esquema `country`
 _Perfiles de país: demografía, impuestos._
@@ -866,8 +2926,10 @@ Datos demográficos por país.
 | `life_expectancy` | Esperanza de vida. | numeric(5,2) | sí |  |
 | `fertility_rate` | Tasa de fertilidad. | numeric(4,2) | sí |  |
 | `labor_force` | Población activa. | bigint | sí |  |
+| `source_id` | Fuente de la que procede el dato. | integer | sí |  |
+| `fetch_run_id` | Descarga que trajo el dato (auditoría). | integer | sí |  |
 
-#### `country.profile` · tabla · ~40 filas
+#### `country.profile` · tabla · ~212 filas
 Perfil de cada país (datos generales).
 
 | Columna | Qué es | Tipo | Nulo | Clave |
@@ -881,9 +2943,11 @@ Perfil de cada país (datos generales).
 | `gini_index` | Índice de Gini (desigualdad). | numeric(5,2) | sí |  |
 | `ease_of_business_rank` | Ranking de facilidad para hacer negocios. | smallint | sí |  |
 | `political_stability_index` | Índice de estabilidad política. | numeric(6,4) | sí |  |
-| `last_updated` | Última actualización. | timestamp without time zone | sí |  |
+| `last_updated` | Última actualización. | timestamp with time zone | sí |  |
+| `source_id` | Fuente de la que procede el dato. | integer | sí |  |
+| `fetch_run_id` | Descarga que trajo el dato (auditoría). | integer | sí |  |
 
-#### `country.tax_rate` · tabla · ~0 filas
+#### `country.tax_rate` · tabla · ~155 filas
 Tipos impositivos por país y año.
 
 | Columna | Qué es | Tipo | Nulo | Clave |
@@ -895,13 +2959,144 @@ Tipos impositivos por país y año.
 | `top_income_tax_rate` | Tipo máximo de IRPF (%). | numeric(6,3) | sí |  |
 | `vat_rate` | IVA (%). | numeric(6,3) | sí |  |
 | `capital_gains_tax_rate` | Impuesto sobre plusvalías (%). | numeric(6,3) | sí |  |
+| `source_id` | Fuente de la que procede el dato. | integer | sí |  |
+| `fetch_run_id` | Descarga que trajo el dato (auditoría). | integer | sí |  |
+
+### Esquema `realestate`
+_Inmobiliario: índices de precio de vivienda por país._
+
+#### `realestate.price_index` · tabla · ~85 filas
+Catálogo de índices de precio de vivienda (BIS, OCDE, Case-Shiller).
+
+| Columna | Qué es | Tipo | Nulo | Clave |
+|---|---|---|---|---|
+| `id` | Identificador único de la fila. | integer | no | PK |
+| `code` | Código identificador. | character varying(80) | no |  |
+| `name` | Nombre. | character varying(300) | no |  |
+| `country_code` | País (código ISO-3, p.ej. ESP). | character varying(3) | sí | FK → ref.country.code |
+| `segment` |  | character varying(20) | sí |  |
+| `measure` |  | character varying(20) | sí |  |
+| `frequency` | Frecuencia (anual, mensual, diario...). | character varying(20) | sí |  |
+| `base_period` |  | character varying(20) | sí |  |
+| `unit` | Unidad de medida. | character varying(50) | sí |  |
+| `source_id` | Fuente de la que procede el dato. | integer | sí | FK → meta.data_source.id |
+| `fetch_run_id` | Descarga que trajo el dato (auditoría). | integer | sí |  |
+
+#### `realestate.price_index_value` · tabla · ~14,982 filas
+Serie temporal de cada índice inmobiliario.
+
+| Columna | Qué es | Tipo | Nulo | Clave |
+|---|---|---|---|---|
+| `id` | Identificador único de la fila. | bigint | no | PK |
+| `index_id` | Índice de mercado. | integer | no | FK → realestate.price_index.id |
+| `date` | Fecha del dato. | date | no |  |
+| `value` | Valor del dato. | numeric(18,6) | no |  |
+| `is_forecast` |  | boolean | no |  |
+| `fetched_at` | Cuándo se descargó. | timestamp with time zone | no |  |
+| `source_id` | Fuente de la que procede el dato. | integer | sí |  |
+| `fetch_run_id` | Descarga que trajo el dato (auditoría). | integer | sí |  |
+
+### Esquema `calendar`
+_Calendario económico: publicaciones macro y sus fechas._
+
+#### `calendar.release` · tabla · ~330 filas
+Publicación periódica de un organismo estadístico (nóminas, IPC, PIB...).
+
+| Columna | Qué es | Tipo | Nulo | Clave |
+|---|---|---|---|---|
+| `id` | Identificador único de la fila. | integer | no | PK |
+| `external_id` |  | character varying(50) | no |  |
+| `name` | Nombre. | character varying(300) | no |  |
+| `country_code` | País (código ISO-3, p.ej. ESP). | character varying(3) | sí | FK → ref.country.code |
+| `agency` |  | character varying(200) | sí |  |
+| `link` |  | character varying(500) | sí |  |
+| `source_id` | Fuente de la que procede el dato. | integer | sí | FK → meta.data_source.id |
+| `fetch_run_id` | Descarga que trajo el dato (auditoría). | integer | sí |  |
+
+#### `calendar.release_date` · tabla · ~91,326 filas
+Fecha en que una publicación sale o saldrá; `is_scheduled` marca las futuras.
+
+| Columna | Qué es | Tipo | Nulo | Clave |
+|---|---|---|---|---|
+| `id` | Identificador único de la fila. | integer | no | PK |
+| `release_id` |  | integer | no | FK → calendar.release.id |
+| `date` | Fecha del dato. | date | no |  |
+| `is_scheduled` |  | boolean | no |  |
+| `fetched_at` | Cuándo se descargó. | timestamp with time zone | no |  |
+| `source_id` | Fuente de la que procede el dato. | integer | sí |  |
+| `fetch_run_id` | Descarga que trajo el dato (auditoría). | integer | sí |  |
 
 ## Derivados
 
 ### Esquema `deriv`
 _Derivados: snapshots de cadenas de opciones._
 
-#### `deriv.option_snapshot` · tabla · ~19,245 filas
+#### `deriv.cot_contract` · tabla · ~946 filas
+Contrato de futuros del informe COT de la CFTC.
+
+| Columna | Qué es | Tipo | Nulo | Clave |
+|---|---|---|---|---|
+| `code` | Código identificador. | character varying(12) | no | PK |
+| `name` | Nombre. | character varying(200) | no |  |
+| `exchange` |  | character varying(20) | sí |  |
+| `commodity_group` |  | character varying(60) | sí |  |
+| `commodity_subgroup` |  | character varying(80) | sí |  |
+| `contract_units` |  | character varying(120) | sí |  |
+| `source_id` | Fuente de la que procede el dato. | integer | sí |  |
+| `fetch_run_id` | Descarga que trajo el dato (auditoría). | integer | sí |  |
+
+#### `deriv.cot_report` · tabla · ~286,694 filas
+Posicionamiento semanal declarado a la CFTC.
+
+| Columna | Qué es | Tipo | Nulo | Clave |
+|---|---|---|---|---|
+| `id` | Identificador único de la fila. | bigint | no | PK |
+| `contract_code` |  | character varying(12) | no | FK → deriv.cot_contract.code |
+| `report_date` |  | date | no |  |
+| `open_interest` |  | bigint | sí |  |
+| `comm_long` |  | bigint | sí |  |
+| `comm_short` |  | bigint | sí |  |
+| `noncomm_long` |  | bigint | sí |  |
+| `noncomm_short` |  | bigint | sí |  |
+| `noncomm_spread` |  | bigint | sí |  |
+| `nonrept_long` |  | bigint | sí |  |
+| `nonrept_short` |  | bigint | sí |  |
+| `traders_total` |  | integer | sí |  |
+| `source_id` | Fuente de la que procede el dato. | integer | sí | FK → meta.data_source.id |
+| `fetched_at` | Cuándo se descargó. | timestamp with time zone | no |  |
+| `fetch_run_id` | Descarga que trajo el dato (auditoría). | integer | sí |  |
+
+#### `deriv.futures_contract` · tabla · ~0 filas
+Contrato de futuros (índice, bono, divisa).
+
+| Columna | Qué es | Tipo | Nulo | Clave |
+|---|---|---|---|---|
+| `id` | Identificador único de la fila. | integer | no | PK |
+| `code` | Código identificador. | character varying(20) | no |  |
+| `name` | Nombre. | character varying(200) | no |  |
+| `underlying` |  | character varying(50) | sí |  |
+| `category` | Categoría o dominio. | character varying(30) | sí |  |
+| `yfinance_ticker` |  | character varying(30) | no |  |
+| `source_id` | Fuente de la que procede el dato. | integer | sí |  |
+| `fetch_run_id` | Descarga que trajo el dato (auditoría). | integer | sí |  |
+
+#### `deriv.futures_daily` · tabla · ~92,083 filas
+Precio diario de futuros.
+
+| Columna | Qué es | Tipo | Nulo | Clave |
+|---|---|---|---|---|
+| `id` | Identificador único de la fila. | integer | no | PK |
+| `contract_id` |  | integer | no | FK → deriv.futures_contract.id |
+| `date` | Fecha del dato. | date | no |  |
+| `open` | Precio de apertura. | numeric(24,10) | sí |  |
+| `high` | Precio máximo del día. | numeric(24,10) | sí |  |
+| `low` | Precio mínimo del día. | numeric(24,10) | sí |  |
+| `close` | Precio de cierre. | numeric(24,10) | no |  |
+| `volume` | Volumen negociado. | bigint | sí |  |
+| `source_id` | Fuente de la que procede el dato. | integer | sí | FK → meta.data_source.id |
+| `fetch_run_id` | Descarga que trajo el dato (auditoría). | integer | sí |  |
+
+#### `deriv.option_snapshot` · tabla · ~69,602 filas
 Foto diaria de las opciones (contratos de compra/venta) de las empresas más líquidas.
 
 | Columna | Qué es | Tipo | Nulo | Clave |
@@ -918,58 +3113,88 @@ Foto diaria de las opciones (contratos de compra/venta) de las empresas más lí
 | `volume` | Volumen negociado. | integer | sí |  |
 | `open_interest` | Contratos abiertos vivos. | integer | sí |  |
 | `implied_vol` | Volatilidad implícita. | numeric(10,6) | sí |  |
-| `fetched_at` | Cuándo se descargó. | timestamp without time zone | no |  |
+| `fetched_at` | Cuándo se descargó. | timestamp with time zone | no |  |
+| `source_id` | Fuente de la que procede el dato. | integer | sí |  |
+| `fetch_run_id` | Descarga que trajo el dato (auditoría). | integer | sí |  |
+
+#### `deriv.volatility_daily` · tabla · ~56,877 filas
+Precio diario de índice de volatilidad.
+
+| Columna | Qué es | Tipo | Nulo | Clave |
+|---|---|---|---|---|
+| `id` | Identificador único de la fila. | integer | no | PK |
+| `index_id` | Índice de mercado. | integer | no | FK → deriv.volatility_index.id |
+| `date` | Fecha del dato. | date | no |  |
+| `open` | Precio de apertura. | numeric(10,4) | sí |  |
+| `high` | Precio máximo del día. | numeric(10,4) | sí |  |
+| `low` | Precio mínimo del día. | numeric(10,4) | sí |  |
+| `close` | Precio de cierre. | numeric(10,4) | no |  |
+| `source_id` | Fuente de la que procede el dato. | integer | sí | FK → meta.data_source.id |
+| `fetch_run_id` | Descarga que trajo el dato (auditoría). | integer | sí |  |
+
+#### `deriv.volatility_index` · tabla · ~0 filas
+Índice de volatilidad de referencia.
+
+| Columna | Qué es | Tipo | Nulo | Clave |
+|---|---|---|---|---|
+| `id` | Identificador único de la fila. | integer | no | PK |
+| `code` | Código identificador. | character varying(20) | no |  |
+| `name` | Nombre. | character varying(200) | no |  |
+| `underlying` |  | character varying(50) | sí |  |
+| `yfinance_ticker` |  | character varying(30) | no |  |
+| `source_id` | Fuente de la que procede el dato. | integer | sí |  |
+| `fetch_run_id` | Descarga que trajo el dato (auditoría). | integer | sí |  |
 
 ## Medallion — aterrizaje y analítica
 
 ### Esquema `bronze`
 _Aterrizaje crudo (JSONB) de las fuentes nuevas._
 
-#### `bronze.analyst_snapshot` · tabla · ~62,766 filas
+#### `bronze.analyst_snapshot` · tabla · ~99,120 filas
 Foto diaria de datos de analistas de yfinance (por ticker).
 
 | Columna | Qué es | Tipo | Nulo | Clave |
 |---|---|---|---|---|
 | `id` | Identificador único de la fila. | bigint | no | PK |
 | `fetch_run_id` | Descarga que trajo el dato (auditoría). | integer | sí |  |
-| `ingested_at` | Cuándo se guardó el dato crudo. | timestamp without time zone | no |  |
+| `ingested_at` | Cuándo se guardó el dato crudo. | timestamp with time zone | no |  |
 | `ticker` | Símbolo bursátil (p.ej. AAPL). | character varying(20) | no |  |
 | `snapshot_date` | Día de la foto (los datos se acumulan por día). | date | no |  |
 | `payload` | Respuesta cruda de la API (JSON), tal cual llegó. | jsonb | no |  |
 
-#### `bronze.api_response` · tabla · ~316 filas
+#### `bronze.api_response` · tabla · ~319 filas
 La respuesta cruda de una API macro, guardada tal cual por si hay que reprocesarla.
 
 | Columna | Qué es | Tipo | Nulo | Clave |
 |---|---|---|---|---|
 | `id` | Identificador único de la fila. | bigint | no | PK |
 | `fetch_run_id` | Descarga que trajo el dato (auditoría). | integer | sí |  |
-| `ingested_at` | Cuándo se guardó el dato crudo. | timestamp without time zone | no |  |
+| `ingested_at` | Cuándo se guardó el dato crudo. | timestamp with time zone | no |  |
 | `source_name` | Nombre de la fuente. | character varying(50) | no |  |
 | `dataset` | Conjunto de datos descargado. | character varying(120) | no |  |
 | `params` | Parámetros usados en la ejecución. | jsonb | sí |  |
 | `payload` | Respuesta cruda de la API (JSON), tal cual llegó. | jsonb | no |  |
 
-#### `bronze.constituents_snapshot` · tabla · ~0 filas
+#### `bronze.constituents_snapshot` · tabla · ~6 filas
 Foto cruda de constituyentes de un índice (Wikipedia/GitHub).
 
 | Columna | Qué es | Tipo | Nulo | Clave |
 |---|---|---|---|---|
 | `id` | Identificador único de la fila. | bigint | no | PK |
 | `fetch_run_id` | Descarga que trajo el dato (auditoría). | integer | sí |  |
-| `ingested_at` | Cuándo se guardó el dato crudo. | timestamp without time zone | no |  |
+| `ingested_at` | Cuándo se guardó el dato crudo. | timestamp with time zone | no |  |
 | `index_code` | Índice (SP500...). | character varying(50) | no |  |
 | `source_kind` | Origen (wikipedia/github). | character varying(30) | no |  |
 | `payload` | Respuesta cruda de la API (JSON), tal cual llegó. | jsonb | no |  |
 
-#### `bronze.sec_companyfacts` · tabla · ~26,329 filas
+#### `bronze.sec_companyfacts` · tabla · ~28,351 filas
 El JSON crudo con todos los datos financieros que publica la SEC de cada empresa.
 
 | Columna | Qué es | Tipo | Nulo | Clave |
 |---|---|---|---|---|
 | `id` | Identificador único de la fila. | bigint | no | PK |
 | `fetch_run_id` | Descarga que trajo el dato (auditoría). | integer | sí |  |
-| `ingested_at` | Cuándo se guardó el dato crudo. | timestamp without time zone | no |  |
+| `ingested_at` | Cuándo se guardó el dato crudo. | timestamp with time zone | no |  |
 | `cik` | Identificador CIK de la empresa en SEC. | character varying(10) | no |  |
 | `ticker` | Símbolo bursátil (p.ej. AAPL). | character varying(20) | sí |  |
 | `payload` | Respuesta cruda de la API (JSON), tal cual llegó. | jsonb | no |  |
@@ -981,7 +3206,7 @@ El perfil completo de una empresa tal cual lo devuelve yfinance.
 |---|---|---|---|---|
 | `id` | Identificador único de la fila. | bigint | no | PK |
 | `fetch_run_id` | Descarga que trajo el dato (auditoría). | integer | sí |  |
-| `ingested_at` | Cuándo se guardó el dato crudo. | timestamp without time zone | no |  |
+| `ingested_at` | Cuándo se guardó el dato crudo. | timestamp with time zone | no |  |
 | `ticker` | Símbolo bursátil (p.ej. AAPL). | character varying(20) | no |  |
 | `snapshot_date` | Día de la foto (los datos se acumulan por día). | date | no |  |
 | `payload` | Respuesta cruda de la API (JSON), tal cual llegó. | jsonb | no |  |
@@ -989,7 +3214,7 @@ El perfil completo de una empresa tal cual lo devuelve yfinance.
 ### Esquema `gold`
 _Capa analítica point-in-time: hechos, dimensiones y marts._
 
-#### `gold.dim_company` · tabla · ~10,491 filas
+#### `gold.dim_company` · tabla · ~11,012 filas
 Ficha resumida de cada empresa para análisis (con su sector ya incorporado).
 
 | Columna | Qué es | Tipo | Nulo | Clave |
@@ -1005,6 +3230,8 @@ Ficha resumida de cada empresa para análisis (con su sector ya incorporado).
 | `currency_code` | Moneda del importe. | character varying(3) | sí |  |
 | `is_active` | Si sigue cotizando (no deslistada). | boolean | no |  |
 | `delisted_date` | Fecha en que dejó de cotizar. | date | sí |  |
+| `source_id` | Fuente de la que procede el dato. | integer | sí |  |
+| `fetch_run_id` | Descarga que trajo el dato (auditoría). | integer | sí |  |
 
 #### `gold.dim_country` · tabla · ~250 filas
 Ficha de cada país (región, grupo de renta).
@@ -1016,6 +3243,8 @@ Ficha de cada país (región, grupo de renta).
 | `region` | Región. | character varying(100) | sí |  |
 | `sub_region` | Subregión. | character varying(100) | sí |  |
 | `income_group` | Grupo de renta. | character varying(50) | sí |  |
+| `source_id` | Fuente de la que procede el dato. | integer | sí |  |
+| `fetch_run_id` | Descarga que trajo el dato (auditoría). | integer | sí |  |
 
 #### `gold.dim_data_source` · vista · ~0 filas
 | Columna | Qué es | Tipo | Nulo | Clave |
@@ -1026,10 +3255,10 @@ Ficha de cada país (región, grupo de renta).
 | `is_enabled` |  | boolean | sí |  |
 | `total_runs` |  | bigint | sí |  |
 | `successful_runs` |  | bigint | sí |  |
-| `last_run` |  | timestamp without time zone | sí |  |
+| `last_run` |  | timestamp with time zone | sí |  |
 | `total_records` |  | bigint | sí |  |
 
-#### `gold.dim_date` · tabla · ~23,552 filas
+#### `gold.dim_date` · tabla · ~23,593 filas
 Calendario: una fila por día, con año, trimestre...
 
 | Columna | Qué es | Tipo | Nulo | Clave |
@@ -1041,6 +3270,8 @@ Calendario: una fila por día, con año, trimestre...
 | `day_of_week` | Día de la semana. | smallint | no |  |
 | `is_month_end` | Si es fin de mes. | boolean | no |  |
 | `is_trading_day` | Si hubo mercado ese día. | boolean | sí |  |
+| `source_id` | Fuente de la que procede el dato. | integer | sí |  |
+| `fetch_run_id` | Descarga que trajo el dato (auditoría). | integer | sí |  |
 
 #### `gold.dim_indicator` · vista · ~0 filas
 Catálogo autodocumentado de indicadores macro (código, fuente, cobertura, rango).
@@ -1058,7 +3289,7 @@ Catálogo autodocumentado de indicadores macro (código, fuente, cobertura, rang
 | `last_date` | Fecha del último dato. | date | sí |  |
 | `n_points` | Nº total de datos. | bigint | sí |  |
 
-#### `gold.fact_factor_scores` · tabla · ~170,960 filas
+#### `gold.fact_factor_scores` · tabla · ~175,255 filas
 Puntuaciones de factores de inversión (Value/Quality/Momentum) de cada empresa, normalizadas por sector.
 
 | Columna | Qué es | Tipo | Nulo | Clave |
@@ -1071,10 +3302,11 @@ Puntuaciones de factores de inversión (Value/Quality/Momentum) de cada empresa,
 | `raw_value` | Valor crudo del factor. | numeric(18,6) | sí |  |
 | `z_score` | Puntuación normalizada (global). | numeric(10,6) | sí |  |
 | `z_sector_neutral` | Puntuación normalizada dentro de su sector (para comparar manzanas con manzanas). | numeric(10,6) | sí |  |
-| `percentile` | Percentil dentro del universo. | numeric(6,4) | sí |  |
+| `percentile` | Percentil dentro del universo. | numeric(7,4) | sí |  |
 | `source_id` | Fuente de la que procede el dato. | integer | sí |  |
+| `fetch_run_id` | Descarga que trajo el dato (auditoría). | integer | sí |  |
 
-#### `gold.fact_fundamentals_pit` · tabla · ~31,615,424 filas
+#### `gold.fact_fundamentals_pit` · tabla · ~33,174,290 filas
 Todos los datos financieros de las empresas US con la fecha en que se publicaron (para saber qué se sabía en cada momento). Es la tabla más grande.
 
 | Columna | Qué es | Tipo | Nulo | Clave |
@@ -1092,6 +3324,7 @@ Todos los datos financieros de las empresas US con la fecha en que se publicaron
 | `currency_code` | Moneda del importe. | character varying(3) | sí |  |
 | `form` | Formulario SEC (10-K, 10-Q...). | character varying(10) | sí |  |
 | `source_id` | Fuente de la que procede el dato. | integer | sí |  |
+| `fetch_run_id` | Descarga que trajo el dato (auditoría). | integer | sí |  |
 
 #### `gold.index_membership` · tabla · ~1,264 filas
 Qué empresas estaban en el S&P 500 en cada momento del pasado (para análisis sin 'trampa').
@@ -1105,8 +3338,9 @@ Qué empresas estaban en el S&P 500 en cada momento del pasado (para análisis s
 | `start_date` | Cuándo entró en el índice. | date | no |  |
 | `end_date` | Cuándo salió (vacío = sigue dentro). | date | sí |  |
 | `source_id` | Fuente de la que procede el dato. | integer | sí |  |
+| `fetch_run_id` | Descarga que trajo el dato (auditoría). | integer | sí |  |
 
-#### `gold.mart_benchmark_returns` · materializada · ~32,456 filas
+#### `gold.mart_benchmark_returns` · materializada · ~32,464 filas
 Retorno diario del pool S&P 500 equiponderado (survivorship-free) vs SPY.
 
 | Columna | Qué es | Tipo | Nulo | Clave |
@@ -1115,7 +3349,7 @@ Retorno diario del pool S&P 500 equiponderado (survivorship-free) vs SPY.
 | `method` | Método: equal_weight (pool) o spy. | character varying(20) | sí |  |
 | `ret` | Retorno diario. | numeric | sí |  |
 
-#### `gold.mart_climate_risk` · materializada · ~40,516 filas
+#### `gold.mart_climate_risk` · materializada · ~40,539 filas
 | Columna | Qué es | Tipo | Nulo | Clave |
 |---|---|---|---|---|
 | `country_code` | País (código ISO-3, p.ej. ESP). | character varying(3) | sí |  |
@@ -1133,7 +3367,7 @@ Retorno diario del pool S&P 500 equiponderado (survivorship-free) vs SPY.
 | `edgar_ch4_mt` |  | numeric | sí |  |
 | `edgar_n2o_mt` |  | numeric | sí |  |
 
-#### `gold.mart_company_macro` · materializada · ~2,261,610 filas
+#### `gold.mart_company_macro` · materializada · ~118,561 filas
 Cada empresa cruzada con la macro de su país: PIB, inflación, paro, tipos... por año. Para correlacionar rendimiento empresarial con el ciclo económico.
 
 | Columna | Qué es | Tipo | Nulo | Clave |
@@ -1172,9 +3406,6 @@ Cada empresa cruzada con la macro de su país: PIB, inflación, paro, tipos... p
 | `fh_freedom_score` |  | numeric | sí |  |
 | `fh_political_rights` |  | numeric | sí |  |
 | `fh_civil_liberties` |  | numeric | sí |  |
-| `hf_econ_freedom` |  | numeric | sí |  |
-| `hf_trade_freedom` |  | numeric | sí |  |
-| `hf_fiscal_health` |  | numeric | sí |  |
 | `fsi_total` |  | numeric | sí |  |
 | `fsi_cohesion` |  | numeric | sí |  |
 | `fsi_economic` |  | numeric | sí |  |
@@ -1184,7 +3415,7 @@ Cada empresa cruzada con la macro de su país: PIB, inflación, paro, tipos... p
 | `vdem_media_freedom` |  | numeric | sí |  |
 | `vdem_judicial_indep` |  | numeric | sí |  |
 
-#### `gold.mart_country_year` · materializada · ~40,516 filas
+#### `gold.mart_country_year` · materializada · ~40,539 filas
 La tabla estrella: una fila por país y año con TODO junto (PIB, inflación, paro, CO2, energía, comercio...).
 
 | Columna | Qué es | Tipo | Nulo | Clave |
@@ -1276,8 +3507,6 @@ La tabla estrella: una fila por país y año con TODO junto (PIB, inflación, pa
 | `hdi_score` |  | numeric | sí |  |
 | `gender_dev_index` |  | numeric | sí |  |
 | `gender_ineq_index` |  | numeric | sí |  |
-| `econ_freedom_score` |  | numeric | sí |  |
-| `trade_freedom_score` |  | numeric | sí |  |
 | `ndgain_score` |  | numeric | sí |  |
 | `ndgain_vulnerability` |  | numeric | sí |  |
 | `ndgain_readiness` |  | numeric | sí |  |
@@ -1307,6 +3536,7 @@ La tabla estrella: una fila por país y año con TODO junto (PIB, inflación, pa
 | `edgar_co2_industry_mt` |  | numeric | sí |  |
 | `edgar_ch4_mt` |  | numeric | sí |  |
 | `edgar_n2o_mt` |  | numeric | sí |  |
+| `is_forecast` |  | boolean | sí |  |
 | `primary_energy_twh` | Energía primaria consumida (TWh). | numeric | sí |  |
 | `electricity_twh` | Electricidad generada (TWh). | numeric | sí |  |
 | `renewables_elec_twh` | Electricidad renovable (TWh). | numeric | sí |  |
@@ -1315,7 +3545,21 @@ La tabla estrella: una fila por país y año con TODO junto (PIB, inflación, pa
 | `imports_usd_bn` | Importaciones de bienes (miles de millones USD). | numeric | sí |  |
 | `trade_balance_usd_bn` | Balanza comercial (exportaciones − importaciones). | numeric | sí |  |
 
-#### `gold.mart_earnings_surprise` · materializada · ~181,884 filas
+#### `gold.mart_crypto_overview` · materializada · ~246 filas
+| Columna | Qué es | Tipo | Nulo | Clave |
+|---|---|---|---|---|
+| `symbol` | Símbolo o código corto. | character varying(20) | sí |  |
+| `name` | Nombre. | character varying(200) | sí |  |
+| `category` | Categoría o dominio. | character varying(50) | sí |  |
+| `market_cap_rank` |  | smallint | sí |  |
+| `last_date` | Fecha del último dato disponible. | date | sí |  |
+| `last_price` |  | numeric(24,10) | sí |  |
+| `last_volume` |  | numeric(18,2) | sí |  |
+| `last_mcap` |  | numeric(18,2) | sí |  |
+| `return_30d_pct` |  | numeric | sí |  |
+| `return_1y_pct` |  | numeric | sí |  |
+
+#### `gold.mart_earnings_surprise` · materializada · ~182,045 filas
 Sorpresas de beneficios: lo que los analistas esperaban vs lo que reportó la empresa, con el porcentaje de sorpresa.
 
 | Columna | Qué es | Tipo | Nulo | Clave |
@@ -1328,6 +3572,17 @@ Sorpresas de beneficios: lo que los analistas esperaban vs lo que reportó la em
 | `reported_eps` |  | numeric(12,4) | sí |  |
 | `surprise` |  | numeric | sí |  |
 | `surprise_pct` |  | numeric(10,4) | sí |  |
+
+#### `gold.mart_etf_category` · materializada · ~104 filas
+| Columna | Qué es | Tipo | Nulo | Clave |
+|---|---|---|---|---|
+| `asset_class` |  | character varying(50) | sí |  |
+| `geography` |  | character varying(100) | sí |  |
+| `strategy` |  | character varying(100) | sí |  |
+| `n_funds` |  | bigint | sí |  |
+| `avg_nav` |  | numeric | sí |  |
+| `avg_return_1y_pct` |  | numeric | sí |  |
+| `total_nav_points` |  | numeric | sí |  |
 
 #### `gold.mart_pool_membership` · vista · ~0 filas
 Universo S&P 500 point-in-time expandido a días de cotización.
@@ -1351,7 +3606,7 @@ Cuántas empresas hay de cada sector en cada país, cuántas están activas y su
 | `n_active` |  | bigint | sí |  |
 | `avg_market_cap` |  | numeric | sí |  |
 
-#### `gold.mart_sovereign_risk` · materializada · ~40,516 filas
+#### `gold.mart_sovereign_risk` · materializada · ~40,539 filas
 Riesgo soberano: combina el rating crediticio del país, su deuda, balance fiscal y volatilidad del PIB en los últimos 5 años.
 
 | Columna | Qué es | Tipo | Nulo | Clave |
@@ -1395,3 +3650,29 @@ Matriz de comercio: exportaciones e importaciones entre cada par de países.
 | `year` | Año. | smallint | sí |  |
 | `exports_usd_k` | Exportaciones del reporter al socio (miles de USD). | numeric(20,3) | sí |  |
 | `imports_usd_k` | Importaciones del reporter desde el socio (miles de USD). | numeric(20,3) | sí |  |
+
+#### `gold.mart_volatility_regime` · materializada · ~56,904 filas
+| Columna | Qué es | Tipo | Nulo | Clave |
+|---|---|---|---|---|
+| `code` | Código identificador. | character varying(20) | sí |  |
+| `index_name` |  | character varying(200) | sí |  |
+| `date` | Fecha del dato. | date | sí |  |
+| `value` | Valor del dato. | numeric(10,4) | sí |  |
+| `sma_20` |  | numeric | sí |  |
+| `sma_60` |  | numeric | sí |  |
+| `std_60d` |  | numeric | sí |  |
+| `regime` |  | text | sí |  |
+
+#### `gold.mart_yield_curve` · materializada · ~16,142 filas
+| Columna | Qué es | Tipo | Nulo | Clave |
+|---|---|---|---|---|
+| `country_code` | País (código ISO-3, p.ej. ESP). | character varying(3) | sí |  |
+| `date` | Fecha del dato. | date | sí |  |
+| `yield_3m` |  | numeric | sí |  |
+| `yield_2y` |  | numeric | sí |  |
+| `yield_5y` |  | numeric | sí |  |
+| `yield_10y` |  | numeric | sí |  |
+| `yield_30y` |  | numeric | sí |  |
+| `spread_10y_2y` |  | numeric | sí |  |
+| `spread_10y_3m` |  | numeric | sí |  |
+| `invertida_10y_2y` |  | boolean | sí |  |

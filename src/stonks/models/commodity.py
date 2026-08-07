@@ -16,9 +16,10 @@ from sqlalchemy.dialects.postgresql import TIMESTAMP
 from sqlalchemy.orm import Mapped, mapped_column
 
 from stonks.db import Base
+from stonks.models.linaje import Linaje, LinajeEjecucion
 
 
-class Commodity(Base):
+class Commodity(Base, Linaje):
     """Materia prima."""
 
     __tablename__ = "commodity"
@@ -35,12 +36,13 @@ class Commodity(Base):
     yfinance_ticker: Mapped[str | None] = mapped_column(String(20))
 
 
-class CommodityPrice(Base):
+class CommodityPrice(Base, LinajeEjecucion):
     """Precio diario de materia prima."""
 
     __tablename__ = "price_daily"
     __table_args__ = (
         UniqueConstraint("commodity_id", "date"),
+        Index("ix_commodity_price_source", "source_id"),
         Index(
             "ix_comm_price_id_date",
             "commodity_id",
@@ -58,10 +60,10 @@ class CommodityPrice(Base):
         nullable=False,
     )
     date: Mapped[date] = mapped_column(Date, nullable=False)
-    open: Mapped[float | None] = mapped_column(Numeric(14, 4))
-    high: Mapped[float | None] = mapped_column(Numeric(14, 4))
-    low: Mapped[float | None] = mapped_column(Numeric(14, 4))
-    close: Mapped[float] = mapped_column(Numeric(14, 4), nullable=False)
+    open: Mapped[float | None] = mapped_column(Numeric(20, 10))
+    high: Mapped[float | None] = mapped_column(Numeric(20, 10))
+    low: Mapped[float | None] = mapped_column(Numeric(20, 10))
+    close: Mapped[float] = mapped_column(Numeric(20, 10), nullable=False)
     volume: Mapped[int | None] = mapped_column(BigInteger)
     source_id: Mapped[int | None] = mapped_column(
         Integer, ForeignKey("meta.data_source.id")
@@ -93,8 +95,8 @@ class CommodityPriceIntraday(Base):
         TIMESTAMP(timezone=True), primary_key=True
     )
     interval: Mapped[str] = mapped_column(String(3), primary_key=True)
-    open: Mapped[float | None] = mapped_column(Numeric(14, 4))
-    high: Mapped[float | None] = mapped_column(Numeric(14, 4))
-    low: Mapped[float | None] = mapped_column(Numeric(14, 4))
-    close: Mapped[float | None] = mapped_column(Numeric(14, 4))
+    open: Mapped[float | None] = mapped_column(Numeric(20, 10))
+    high: Mapped[float | None] = mapped_column(Numeric(20, 10))
+    low: Mapped[float | None] = mapped_column(Numeric(20, 10))
+    close: Mapped[float | None] = mapped_column(Numeric(20, 10))
     volume: Mapped[int | None] = mapped_column(BigInteger)

@@ -2,6 +2,7 @@
 
 from datetime import datetime
 
+import pandas as pd
 import yaml
 import yfinance as yf
 from sqlalchemy import and_, text
@@ -144,6 +145,80 @@ def load_tickers_from_yaml(
     return tickers
 
 
+# Yahoo devuelve algunos mercados en la subunidad de su moneda, no en
+# la moneda: Londres cotiza en peniques (GBp), Johannesburgo en
+# centimos (ZAc) y Tel Aviv en agorot (ILA). Sin normalizar, AZN.L
+# figuraba a 12.087 cuando AstraZeneca cotiza a 120 GBP, y `ZAc` ni
+# siquiera existe en ref.currency, asi que la FK reventaba y el cron
+# fallaba cada noche con esas empresas.
+# (codigo de Yahoo) -> (moneda real, factor de division)
+# Antiguedad maxima admisible del tipo de cambio, en dias. Un par
+# que lleve mas de un mes sin actualizarse no sirve para convertir
+# una capitalizacion de hoy.
+MAX_ANTIGUEDAD_TIPO = 30
+
+SUBUNIDADES = {
+    "GBp": ("GBP", 100),
+    "ZAc": ("ZAR", 100),
+    "ILA": ("ILS", 100),
+}
+
+# Sufijo de ticker -> (moneda del mercado, divisor de subunidad).
+# Londres cotiza en peniques, Johannesburgo en centimos y Tel Aviv en
+# agorot.
+SUBUNIDAD_POR_SUFIJO = {
+    ".L": ("GBP", 100),
+    ".JO": ("ZAR", 100),
+    ".TA": ("ILS", 100),
+}
+
+
+def _normalizar_moneda(codigo: str | None) -> tuple[str | None, int]:
+    """Devolver (moneda real, divisor) para una moneda de Yahoo."""
+    if not codigo:
+        return None, 1
+    real, factor = SUBUNIDADES.get(codigo, (codigo, 1))
+    return real, factor
+
+
+def _sanear_ohlc(apertura, maximo, minimo, cierre):
+    """Devolver un OHLC coherente, anulando lo que no lo sea.
+
+    yfinance devuelve de vez en cuando un cierre fuera del rango del
+    dia: HSBA.L el 2008-06-13 llega con open=high=low=7,198 y
+    close=7,163. Es un artefacto de la fuente, no del calculo.
+
+    Se conserva el cierre, que es el valor que importa y el unico
+    obligatorio, y se anulan las otras tres columnas en lugar de
+    inventar un rango que las contenga. Es la misma politica que
+    aplico la migracion que limpio las filas historicas.
+    """
+    valores = [v for v in (apertura, maximo, minimo) if v is not None]
+    if not valores or cierre is None:
+        return apertura, maximo, minimo
+
+    coherente = (
+        (maximo is None or minimo is None or maximo >= minimo)
+        and (minimo is None or cierre >= minimo)
+        and (maximo is None or cierre <= maximo)
+        and (
+            apertura is None
+            or minimo is None
+            or maximo is None
+            or minimo <= apertura <= maximo
+        )
+    )
+    if coherente:
+        return apertura, maximo, minimo
+    return None, None, None
+
+
+def _escalar(valor, divisor: int):
+    """Pasar un precio de subunidad a moneda, tolerando nulos."""
+    numero = _safe_float(valor)
+    return None if numero is None else numero / divisor
+
+
 class YFinanceFetcher(BaseFetcher):
     """Descarga precios e info de empresas desde
     Yahoo Finance."""
@@ -171,8 +246,14 @@ class YFinanceFetcher(BaseFetcher):
                         "longName",
                         info.get("shortName", ticker),
                     ),
-                    currency_code=info.get("currency"),
-                    market_cap_usd=info.get("marketCap"),
+                    currency_code=_normalizar_moneda(
+                        info.get("currency")
+                    )[0],
+                    market_cap_usd=self._a_usd(
+                        session,
+                        info.get("marketCap"),
+                        info.get("currency"),
+                    ),
                     shares_outstanding=info.get("sharesOutstanding"),
                     website=info.get("website"),
                     description=info.get("longBusinessSummary"),
@@ -184,7 +265,17 @@ class YFinanceFetcher(BaseFetcher):
                 )
                 session.add(company)
             else:
-                company.market_cap_usd = info.get("marketCap")
+                # La rama de actualizacion no fijaba la moneda, asi
+                # que las empresas ya creadas se quedaban con
+                # `currency_code` a nulo para siempre.
+                company.currency_code = _normalizar_moneda(
+                    info.get("currency")
+                )[0]
+                company.market_cap_usd = self._a_usd(
+                    session,
+                    info.get("marketCap"),
+                    info.get("currency"),
+                )
                 company.shares_outstanding = info.get("sharesOutstanding")
                 company.last_updated = datetime.now()
 
@@ -197,6 +288,116 @@ class YFinanceFetcher(BaseFetcher):
             logger.error("Error info %s: %s", ticker, e)
             session.close()
             return None
+
+    @staticmethod
+    def _a_usd(session, importe, moneda: str | None):
+        """Convertir un importe a dolares con el ultimo tipo de cambio.
+
+        yfinance devuelve `marketCap` en la moneda de cotizacion, pero
+        la columna se llama `market_cap_usd`. Toyota figuraba con 34,5
+        billones, que son yenes: la media de las coreanas salia a
+        148.667 "miles de millones de dolares". Aqui se convierte de
+        verdad, para que la columna signifique lo que dice su nombre.
+
+        Si no hay tipo de cambio para esa moneda se devuelve None en
+        lugar del importe sin convertir: es preferible no tener dato a
+        tener uno que miente sobre su unidad.
+        """
+        if importe is None:
+            return None
+
+        # Ojo con la asimetria de Yahoo: para Londres cotiza los
+        # PRECIOS en peniques pero informa la CAPITALIZACION en libras,
+        # aunque el campo `currency` diga GBp en ambos casos.
+        # Comprobado: AstraZeneca sale con marketCap 187.460.829.184,
+        # que son 187 mil millones de libras, no de peniques. Aqui
+        # solo se traduce el codigo de moneda, sin dividir.
+        moneda, _ = _normalizar_moneda(moneda)
+        importe = float(importe)
+
+        if not moneda or moneda == "USD":
+            return importe
+
+        # El par puede estar guardado en cualquiera de los dos
+        # sentidos: USDJPY existe, pero el euro y el dolar australiano
+        # se cotizan al reves (EURUSD, AUDUSD). Se admite el invertido
+        # y se toma su reciproco.
+        # La capitalizacion es una foto de hoy, asi que se convierte
+        # con el tipo de cambio vigente. Se exige que sea reciente: un
+        # tipo de hace anos convertiria mal y en silencio.
+        tipo = session.execute(
+            text(
+                "SELECT r.close FROM forex.rate_daily r "
+                "JOIN forex.currency_pair p ON p.id = r.pair_id "
+                "WHERE p.base_currency = 'USD' "
+                "AND p.quote_currency = :m "
+                "AND r.date > CURRENT_DATE - :dias "
+                "ORDER BY r.date DESC LIMIT 1"
+            ),
+            {"m": moneda, "dias": MAX_ANTIGUEDAD_TIPO},
+        ).scalar()
+
+        if not tipo:
+            inverso = session.execute(
+                text(
+                    "SELECT r.close FROM forex.rate_daily r "
+                    "JOIN forex.currency_pair p ON p.id = r.pair_id "
+                    "WHERE p.base_currency = :m "
+                    "AND p.quote_currency = 'USD' "
+                    "AND r.date > CURRENT_DATE - :dias "
+                    "ORDER BY r.date DESC LIMIT 1"
+                ),
+                {"m": moneda, "dias": MAX_ANTIGUEDAD_TIPO},
+            ).scalar()
+            if inverso and float(inverso) > 0:
+                tipo = 1.0 / float(inverso)
+
+        if not tipo or float(tipo) <= 0:
+            logger.warning(
+                "Sin tipo de cambio USD/%s de los ultimos %d dias: "
+                "capitalizacion sin convertir",
+                moneda,
+                MAX_ANTIGUEDAD_TIPO,
+            )
+            return None
+        return float(importe) / float(tipo)
+
+    @staticmethod
+    def _divisores(ticker_to_id: dict) -> dict:
+        """Divisor de subunidad para cada company_id.
+
+        El sufijo del ticker dice en que mercado cotiza el valor, pero
+        no basta por si solo: en la Bolsa de Londres hay valores que
+        Yahoo devuelve en dolares o en euros, no en peniques. Compass
+        Group acabo figurando a 0,33 —cotiza sobre 24 libras— porque
+        se le dividio por 100 un precio que ya venia en dolares, y
+        Metlen igual con euros.
+
+        Asi que se divide solo cuando la moneda declarada por Yahoo es
+        la del mercado, o cuando no se conoce (que es el caso de la
+        mayoria y donde el sufijo sigue siendo la mejor pista).
+        """
+        salida = {}
+        with get_session() as session:
+            monedas = dict(
+                session.execute(
+                    text(
+                        "SELECT ticker, currency_code "
+                        "FROM equity.company WHERE ticker = ANY(:t)"
+                    ),
+                    {"t": list(ticker_to_id)},
+                ).fetchall()
+            )
+
+        for ticker, cid in ticker_to_id.items():
+            for sufijo, (moneda, divisor) in SUBUNIDAD_POR_SUFIJO.items():
+                if not ticker.upper().endswith(sufijo):
+                    continue
+                declarada = monedas.get(ticker)
+                if declarada in (None, moneda):
+                    salida[cid] = divisor
+                break
+        return salida
 
     def fetch_prices(
         self,
@@ -258,7 +459,12 @@ class YFinanceFetcher(BaseFetcher):
 
             # Descargar datos
             t = yf.Ticker(ticker)
-            df = t.history(period=period)
+            # auto_adjust=False: `Close` es el cierre real y
+            # `Adj Close` el ajustado. Con el valor por defecto de
+            # yfinance (True) solo llega el ajustado y sin etiquetar.
+            df = t.history(period=period, auto_adjust=False)
+            # Londres cotiza en peniques y Johannesburgo en centimos.
+            div = self._divisores({ticker: 0}).get(0, 1)
 
             if df.empty:
                 logger.warning("Sin precios para %s", ticker)
@@ -282,11 +488,21 @@ class YFinanceFetcher(BaseFetcher):
                 )
 
                 if existing:
-                    if float(existing.close) != float(row["Close"]):
-                        existing.open = row.get("Open")
-                        existing.high = row.get("High")
-                        existing.low = row.get("Low")
-                        existing.close = row["Close"]
+                    if float(existing.close) != float(row["Close"]) / div:
+                        cierre = float(row["Close"]) / div
+                        ap, mx, mn = _sanear_ohlc(
+                            _escalar(row.get("Open"), div),
+                            _escalar(row.get("High"), div),
+                            _escalar(row.get("Low"), div),
+                            cierre,
+                        )
+                        existing.open = ap
+                        existing.high = mx
+                        existing.low = mn
+                        existing.close = cierre
+                        existing.adj_close = _escalar(
+                            row.get("Adj Close"), div
+                        )
                         existing.volume = row.get("Volume")
                         stats["updated"] += 1
                 else:
@@ -294,10 +510,20 @@ class YFinanceFetcher(BaseFetcher):
                         PriceDaily(
                             company_id=company_id,
                             date=dt,
-                            open=row.get("Open"),
-                            high=row.get("High"),
-                            low=row.get("Low"),
-                            close=row["Close"],
+                            **dict(
+                                zip(
+                                    ("open", "high", "low"),
+                                    _sanear_ohlc(
+                                        _escalar(row.get("Open"), div),
+                                        _escalar(row.get("High"), div),
+                                        _escalar(row.get("Low"), div),
+                                        float(row["Close"]) / div,
+                                    ),
+                                    strict=True,
+                                )
+                            ),
+                            close=float(row["Close"]) / div,
+                            adj_close=_escalar(row.get("Adj Close"), div),
                             volume=int(row.get("Volume", 0)),
                             source_id=src_id,
                         )
@@ -405,13 +631,31 @@ class YFinanceFetcher(BaseFetcher):
             src_id = src
 
             # Descarga batch
-            df = batch_download(tickers, period=period, interval="1d")
+            # auto_adjust=False para que `close` sea el cierre
+            # real y `adj_close` el ajustado por splits y
+            # dividendos. Con el valor por defecto de yfinance
+            # (True) `close` venia ya ajustado y no habia
+            # columna "Adj Close": las 24 M de filas de
+            # adj_close estaban vacias y los ajustes
+            # retroactivos generaban precios negativos.
+            df = batch_download(
+                tickers,
+                period=period,
+                interval="1d",
+                auto_adjust=False,
+            )
             if df.empty:
                 logger.warning("batch_download vacío")
                 self._finish_run(run_id, "success", **stats)
                 return stats
 
             stats["fetched"] = len(df)
+
+            # Divisor por ticker: los mercados que cotizan en
+            # subunidades (Londres en peniques, Johannesburgo en
+            # centimos) hay que pasarlos a la moneda, o AZN.L figura a
+            # 12.087 cuando AstraZeneca vale 120 GBP.
+            divisor_por_id = self._divisores(ticker_to_id)
 
             # Preparar filas para upsert
             upsert_rows = []
@@ -420,24 +664,38 @@ class YFinanceFetcher(BaseFetcher):
                 cid = ticker_to_id.get(ticker)
                 if cid is None:
                     continue
+                div = divisor_por_id.get(cid, 1)
                 close = row.get("Close")
                 if close is None or (
                     hasattr(close, "__float__") and str(close) == "nan"
                 ):
                     continue
-                dt = row.get("Date")
+                dt = row.get("ts")
+                if dt is None or pd.isna(dt):
+                    continue
                 if hasattr(dt, "date"):
                     dt = dt.date()
                 upsert_rows.append(
                     {
                         "company_id": cid,
                         "date": dt,
-                        "open": _safe_float(row.get("Open")),
-                        "high": _safe_float(row.get("High")),
-                        "low": _safe_float(row.get("Low")),
-                        "close": float(close),
+                        **dict(
+                            zip(
+                                ("open", "high", "low"),
+                                _sanear_ohlc(
+                                    _escalar(row.get("Open"), div),
+                                    _escalar(row.get("High"), div),
+                                    _escalar(row.get("Low"), div),
+                                    float(close) / div,
+                                ),
+                                strict=True,
+                            )
+                        ),
+                        "close": float(close) / div,
+                        "adj_close": _escalar(row.get("Adj Close"), div),
                         "volume": _safe_int(row.get("Volume")),
                         "source_id": src_id,
+                        "fetch_run_id": run_id,
                     }
                 )
 
@@ -445,17 +703,21 @@ class YFinanceFetcher(BaseFetcher):
             upsert_sql = text("""
                 INSERT INTO equity.price_daily
                     (company_id, date, open, high, low,
-                     close, volume, source_id)
+                     close, adj_close, volume, source_id,
+                     fetch_run_id)
                 VALUES
                     (:company_id, :date, :open, :high,
-                     :low, :close, :volume, :source_id)
+                     :low, :close, :adj_close, :volume, :source_id,
+                     :fetch_run_id)
                 ON CONFLICT (company_id, date) DO UPDATE SET
                     open = EXCLUDED.open,
                     high = EXCLUDED.high,
                     low = EXCLUDED.low,
                     close = EXCLUDED.close,
+                    adj_close = EXCLUDED.adj_close,
                     volume = EXCLUDED.volume,
-                    source_id = EXCLUDED.source_id
+                    source_id = EXCLUDED.source_id,
+                    fetch_run_id = EXCLUDED.fetch_run_id
             """)
 
             total_rows = len(upsert_rows)
@@ -480,10 +742,15 @@ class YFinanceFetcher(BaseFetcher):
         except Exception as e:
             stats["errors"] += 1
             logger.error("Error bulk: %s", e)
+            # `stats` usa la clave "upserted" y _finish_run espera
+            # "inserted": pasar **stats hacia el manejador reventaba
+            # con un TypeError que tapaba el error de verdad.
             self._finish_run(
                 run_id,
                 "failed",
-                **stats,
+                fetched=stats["fetched"],
+                inserted=stats["upserted"],
+                errors=stats["errors"],
                 error_log={"msg": str(e)},
             )
 

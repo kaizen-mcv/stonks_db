@@ -3,9 +3,11 @@
 from datetime import date
 
 from sqlalchemy import (
+    BigInteger,
     Boolean,
     Date,
     ForeignKey,
+    Index,
     Integer,
     Numeric,
     String,
@@ -14,14 +16,16 @@ from sqlalchemy import (
 from sqlalchemy.orm import Mapped, mapped_column
 
 from stonks.db import Base
+from stonks.models.linaje import Linaje
 
 
-class Fund(Base):
+class Fund(Base, Linaje):
     """Fondo / ETF."""
 
     __tablename__ = "fund"
     __table_args__ = (
         UniqueConstraint("ticker", "exchange_id"),
+        Index("ix_fund_exchange", "exchange_id"),
         {"schema": "fund"},
     )
 
@@ -43,7 +47,7 @@ class Fund(Base):
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
 
 
-class NavDaily(Base):
+class NavDaily(Base, Linaje):
     """NAV diario del fondo."""
 
     __tablename__ = "nav_daily"
@@ -61,5 +65,7 @@ class NavDaily(Base):
         nullable=False,
     )
     date: Mapped[date] = mapped_column(Date, nullable=False)
-    nav: Mapped[float] = mapped_column(Numeric(14, 6), nullable=False)
-    volume: Mapped[int | None] = mapped_column(Integer)
+    nav: Mapped[float] = mapped_column(Numeric(20, 10), nullable=False)
+    # BigInteger: los ETF muy liquidos pasan de 2.147 millones de
+    # participaciones en un dia de panico. SPY lo hizo el 10/10/2008.
+    volume: Mapped[int | None] = mapped_column(BigInteger)

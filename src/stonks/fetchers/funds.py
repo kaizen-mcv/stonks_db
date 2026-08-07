@@ -987,7 +987,15 @@ class FundFetcher(BaseFetcher):
                 logger.info("  ETF: %s...", fund.ticker)
                 try:
                     t = yf.Ticker(fund.ticker)
-                    df = t.history(period=period)
+                    # auto_adjust=False: el NAV debe ser el valor
+                    # liquidativo real, no el ajustado por
+                    # distribuciones. Con el valor por defecto de
+                    # yfinance, SPY figuraba a 461,39 el 2023-12-29
+                    # cuando cerro a 475,31: un 2,93 % de desvio.
+                    # Los ETF reparten dividendos, asi que aqui si
+                    # importa; en indices, materias primas, crypto y
+                    # divisas el ajuste no cambia nada.
+                    df = t.history(period=period, auto_adjust=False)
                 except Exception as e:
                     logger.warning(
                         "  Error %s: %s",
@@ -1031,7 +1039,15 @@ class FundFetcher(BaseFetcher):
                         .first()
                     )
 
+                    # Actualizar, no saltar: con el `continue` de antes
+                    # un NAV mal cargado se quedaba para siempre y
+                    # relanzar el fetcher no servia de nada.
                     if exists:
+                        if float(exists.nav) != float(close):
+                            exists.nav = float(close)
+                            exists.source_id = self._source_id
+                            exists.fetch_run_id = self._run_id
+                            stats["updated"] += 1
                         continue
 
                     session.add(
@@ -1040,6 +1056,7 @@ class FundFetcher(BaseFetcher):
                             date=dt,
                             nav=float(close),
                             volume=int(row.get("Volume", 0)) or None,
+                            **self.linaje(),
                         )
                     )
                     stats["inserted"] += 1

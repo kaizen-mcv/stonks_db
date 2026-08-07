@@ -223,16 +223,6 @@ undp:
   domains:
     - macro
 
-heritage:
-  enabled: true
-  display_name: "Heritage Foundation Economic Freedom"
-  base_url: "https://www.heritage.org/index"
-  api_key_env: null
-  rate_limit: 1.0
-  daily_limit: null
-  domains:
-    - macro
-
 ndgain:
   enabled: true
   display_name: "ND-GAIN Country Index"
@@ -332,3 +322,71 @@ edgar:
   daily_limit: null
   domains:
     - macro
+
+# ── Fuentes incorporadas en la auditoría 2026-08 ──
+
+cftc_cot:
+  enabled: true
+  display_name: "CFTC Commitments of Traders"
+  base_url: "https://publicreporting.cftc.gov/resource"
+  api_key_env: null
+  rate_limit: 1.0
+  daily_limit: null
+  domains:
+    - deriv
+
+gleif:
+  enabled: true
+  display_name: "GLEIF (Legal Entity Identifier)"
+  base_url: "https://api.gleif.org/api/v1"
+  api_key_env: null
+  rate_limit: 2.0
+  daily_limit: null
+  domains:
+    - ref
+    - equity
+
+damodaran:
+  enabled: true
+  display_name: "Damodaran Online (NYU Stern)"
+  base_url: "https://pages.stern.nyu.edu/~adamodar"
+  api_key_env: null
+  rate_limit: 0.5
+  daily_limit: null
+  domains:
+    - fi
+    - country
+
+fama_french:
+  enabled: true
+  display_name: "Kenneth French Data Library"
+  base_url: "https://mba.tuck.dartmouth.edu/pages/faculty/ken.french/ftp"
+  api_key_env: null
+  rate_limit: 1.0
+  daily_limit: null
+  domains:
+    - equity
+
+tiingo:
+  # Segunda fuente de precios. Requiere clave gratuita; sin ella el
+  # fetcher aborta con un mensaje explicito en vez de fallar en
+  # silencio. Sustituye a Stooq, que desde 2026 bloquea el acceso
+  # programatico con un desafio JavaScript.
+  enabled: true
+  display_name: "Tiingo (precios EOD)"
+  base_url: "https://api.tiingo.com/tiingo/daily"
+  api_key_env: "STONKS_TIINGO_KEY"
+  rate_limit: 1.0
+  daily_limit: null
+  domains:
+    - equity
+
+# ── Fuentes retiradas ────────────────────────────
+# heritage (Index of Economic Freedom): retirada en la auditoría
+# 2026-08. heritage.org devuelve 403 a todo acceso automatizado
+# (desafío Cloudflare en el dominio entero, incluida la portada).
+# Repararlo exigiría evadir una medida antibot deliberada.
+# La gobernanza queda cubierta por V-Dem, Freedom House, TI-CPI y FSI.
+#
+# stooq (precios históricos): retirada por el mismo motivo. Sustituida
+# por tiingo, que sí tiene API documentada.

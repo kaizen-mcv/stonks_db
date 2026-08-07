@@ -3,6 +3,7 @@
 
 import logging
 
+import pandas as pd
 from sqlalchemy import text
 
 from stonks.db import engine
@@ -173,6 +174,7 @@ class IntradayMultiFetcher(BaseFetcher):
 
             stats["fetched"] = len(df)
             upsert_rows = []
+            descartadas = 0
 
             for _, row in df.iterrows():
                 ticker = row.get("Ticker", "")
@@ -183,7 +185,14 @@ class IntradayMultiFetcher(BaseFetcher):
                 if close is None:
                     continue
 
-                ts = row.get("Datetime", row.get("Date"))
+                # batch_download normaliza la columna temporal a
+                # `ts`. Se descartan las filas sin marca de tiempo:
+                # antes llegaban como NaT y reventaban la insercion en
+                # la tabla particionada, tirando el lote entero.
+                ts = row.get("ts")
+                if ts is None or pd.isna(ts):
+                    descartadas += 1
+                    continue
                 entry = {
                     "ref_id": ref_id,
                     "ts": ts,
@@ -199,11 +208,33 @@ class IntradayMultiFetcher(BaseFetcher):
 
                 upsert_rows.append(entry)
 
+            # Cada chunk en su propio SAVEPOINT: antes iban todos en
+            # una sola transaccion y una fila mala tiraba las 10.000
+            # del lote, que es por lo que las tablas quedaron a cero.
             with engine.begin() as conn:
                 for j in range(0, len(upsert_rows), UPSERT_CHUNK):
                     chunk = upsert_rows[j : j + UPSERT_CHUNK]
-                    conn.execute(cfg["upsert_sql"], chunk)
-                    stats["upserted"] += len(chunk)
+                    try:
+                        with conn.begin_nested():
+                            conn.execute(cfg["upsert_sql"], chunk)
+                        stats["upserted"] += len(chunk)
+                    except Exception as e:  # noqa: BLE001
+                        stats["errors"] += 1
+                        log.warning(
+                            "Intraday %s: chunk %d descartado (%d filas): %s",
+                            domain,
+                            j // UPSERT_CHUNK,
+                            len(chunk),
+                            e,
+                        )
+
+            if descartadas:
+                log.warning(
+                    "Intraday %s %s: %d filas sin marca de tiempo",
+                    domain,
+                    interval,
+                    descartadas,
+                )
 
             log.info(
                 "Intraday %s %s: %d → %d upserted",
@@ -214,9 +245,10 @@ class IntradayMultiFetcher(BaseFetcher):
             )
             self._finish_run(
                 run_id,
-                "success",
+                "success" if not stats["errors"] else "partial",
                 fetched=stats["fetched"],
                 inserted=stats["upserted"],
+                errors=stats["errors"],
             )
 
         except Exception as e:

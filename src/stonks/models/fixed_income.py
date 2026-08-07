@@ -16,14 +16,16 @@ from sqlalchemy import (
 from sqlalchemy.orm import Mapped, mapped_column
 
 from stonks.db import Base
+from stonks.models.linaje import Linaje, LinajeEjecucion
 
 
-class BondIssuer(Base):
+class BondIssuer(Base, Linaje):
     """Emisor de bonos."""
 
     __tablename__ = "bond_issuer"
     __table_args__ = (
         UniqueConstraint("name", "country_code", "issuer_type"),
+        Index("ix_fi_issuer_country", "country_code"),
         {"schema": "fi"},
     )
 
@@ -35,7 +37,7 @@ class BondIssuer(Base):
     )
 
 
-class CreditRating(Base):
+class CreditRating(Base, Linaje):
     """Rating crediticio."""
 
     __tablename__ = "credit_rating"
@@ -57,7 +59,7 @@ class CreditRating(Base):
     previous_rating: Mapped[str | None] = mapped_column(String(10))
 
 
-class YieldCurve(Base):
+class YieldCurve(Base, LinajeEjecucion):
     """Punto de curva de tipos por país y fecha."""
 
     __tablename__ = "yield_curve"
@@ -72,6 +74,7 @@ class YieldCurve(Base):
             "country_code",
             "date",
         ),
+        Index("ix_fi_yc_source", "source_id"),
         {"schema": "fi"},
     )
 
@@ -91,11 +94,14 @@ class YieldCurve(Base):
     )
 
 
-class Bond(Base):
+class Bond(Base, Linaje):
     """Bono individual."""
 
     __tablename__ = "bond"
-    __table_args__ = {"schema": "fi"}
+    __table_args__ = (
+        Index("ix_fi_bond_issuer", "issuer_id"),
+        {"schema": "fi"},
+    )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     issuer_id: Mapped[int | None] = mapped_column(
@@ -111,3 +117,40 @@ class Bond(Base):
     currency_code: Mapped[str | None] = mapped_column(String(3))
     bond_type: Mapped[str | None] = mapped_column(String(30))
     is_callable: Mapped[bool] = mapped_column(Boolean, default=False)
+
+
+class CountryRiskPremium(Base, LinajeEjecucion):
+    """Prima de riesgo por país (datasets de Damodaran, NYU).
+
+    Aswath Damodaran publica cada año, de forma gratuita, la prima de
+    riesgo de renta variable por país junto con el diferencial de riesgo
+    soberano implícito en la calificación crediticia. Es el complemento
+    natural de `gold.mart_sovereign_risk`, que hasta ahora solo cruzaba
+    rating con macro sin ninguna medida de prima exigida.
+    """
+
+    __tablename__ = "country_risk_premium"
+    __table_args__ = (
+        UniqueConstraint("country_code", "year"),
+        Index("ix_fi_crp_year", "year"),
+        Index("ix_fi_crp_source", "source_id"),
+        {"schema": "fi"},
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    country_code: Mapped[str] = mapped_column(
+        String(3), ForeignKey("ref.country.code"), nullable=False
+    )
+    year: Mapped[int] = mapped_column(SmallInteger, nullable=False)
+    # Prima de riesgo de mercado total exigida al pais (%)
+    equity_risk_premium: Mapped[float | None] = mapped_column(Numeric(8, 4))
+    # Sobreprima frente a un mercado maduro (%)
+    country_risk_premium: Mapped[float | None] = mapped_column(
+        Numeric(8, 4)
+    )
+    # Diferencial de impago implicito en el rating (%)
+    default_spread: Mapped[float | None] = mapped_column(Numeric(8, 4))
+    moodys_rating: Mapped[str | None] = mapped_column(String(10))
+    source_id: Mapped[int | None] = mapped_column(
+        Integer, ForeignKey("meta.data_source.id")
+    )

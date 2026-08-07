@@ -76,8 +76,15 @@ stonks intraday fetch -d commodity -i 1h >> "$LOG" 2>&1 || true
 echo "[$(date +%H:%M)] Intraday 1h equity (top 5000)..." >> "$LOG"
 stonks intraday fetch -d equity -i 1h -n 5000 >> "$LOG" 2>&1 || true
 
-# 12. Pipeline daily (analyst, options, pipeline steps)
+# 12. Posicionamiento COT (la CFTC publica los viernes)
+echo "[$(date +%H:%M)] Actualizando COT..." >> "$LOG"
+stonks deriv cot-fetch >> "$LOG" 2>&1 || true
+
+# 13. Pipeline daily (analyst, options, pipeline steps)
+#     Incluye la construccion de gold al final: antes habia un
+#     segundo cron a las 21:30 que hacia lo mismo en paralelo y
+#     competia por los locks de este.
 echo "[$(date +%H:%M)] Pipeline daily..." >> "$LOG"
-stonks update -c daily --no-build >> "$LOG" 2>&1 || true
+stonks update -c daily >> "$LOG" 2>&1 || true
 
 echo "[$(date +%H:%M)] === Update completado ===" >> "$LOG"

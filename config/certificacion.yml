@@ -1,0 +1,198 @@
+# Cómo se verifica cada tabla que no tiene un valor de referencia
+# externo en `tests/referencias.yml`.
+#
+# Lo rellena una persona, no el código: es el acto de certificar. El
+# comando `stonks certify` lo lee, comprueba lo que puede comprobar y
+# deja el resultado en `meta.table_certification`.
+#
+# Estados admitidos:
+#
+#   contrastada_externamente  - hay una cifra publicada fuera con la
+#                               que comparar. Si es el caso, el sitio
+#                               correcto es `tests/referencias.yml`,
+#                               no este fichero.
+#   coherente_sin_referencia  - no hay cifra externa razonable, pero
+#                               sí comprobaciones estructurales que la
+#                               tabla pasa. Hay que decir cuáles.
+#   no_verificable            - se ha mirado y no hay forma. Con
+#                               motivo escrito, no vale dejarlo vacío.
+#
+# La regla al añadir una tabla nueva: primero intenta una referencia
+# externa; solo si no la hay, entra aquí.
+
+tablas:
+
+  # ── Capa gold: se deriva de silver ────────────────────────────────
+  # Ningún mart tiene una cifra publicada con la que compararse: son
+  # combinaciones propias del proyecto. Lo que sí se comprueba es que
+  # se reconstruyan en cada build (11 de 14 llevaban congelados desde
+  # su creación), que no estén vacíos y que su clave no duplique.
+
+  gold.mart_company_macro: &mart
+    estado: coherente_sin_referencia
+    metodo: >-
+      tests/test_integridad_esquema.py: los marts se recrean en cada
+      build, están poblados y sus claves no admiten duplicados. Los
+      datos de origen sí están contrastados.
+  gold.mart_country_year: *mart
+  gold.mart_sector_country: *mart
+  gold.mart_sovereign_risk: *mart
+  gold.mart_crypto_overview: *mart
+  gold.mart_trade_matrix: *mart
+  gold.mart_trade_dependency: *mart
+  gold.mart_yield_curve: *mart
+  gold.mart_volatility_regime: *mart
+  gold.mart_earnings_surprise: *mart
+  gold.mart_benchmark_returns: *mart
+  gold.mart_etf_category: *mart
+  gold.mart_climate_risk: *mart
+  gold.mart_country_governance: *mart
+  gold.fact_factor_scores: *mart
+  gold.fact_fundamentals_pit: *mart
+  gold.index_membership: *mart
+  gold.dim_company: *mart
+  gold.dim_country: *mart
+  equity.ratios_mv: *mart
+
+  gold.dim_date:
+    estado: coherente_sin_referencia
+    metodo: >-
+      tests/test_integridad_datos.py comprueba que el calendario
+      bursátil no cuente fines de semana y dé 250-252 sesiones al año,
+      que son las de la Bolsa de Nueva York.
+
+  # ── Capa bronze: copia cruda de la fuente ─────────────────────────
+  bronze.yf_profile: &bronce
+    estado: coherente_sin_referencia
+    metodo: >-
+      Aterrizaje sin transformar. Su veracidad es la de la tabla de
+      silver que se deriva de ella, que sí se contrasta; aquí solo se
+      comprueba que la carga no esté vacía y lleve `fetch_run_id`.
+  bronze.sec_companyfacts: *bronce
+  bronze.analyst_snapshot: *bronce
+  bronze.api_response: *bronce
+  bronze.constituents_snapshot: *bronce
+
+  # ── Catálogos de referencia ───────────────────────────────────────
+  ref.country: &catalogo
+    estado: coherente_sin_referencia
+    metodo: >-
+      Catálogo estable derivado de un estándar (ISO 3166 / ISO 4217 /
+      ISO 10383). No cambia con los datos; se comprueba por integridad
+      referencial: ninguna tabla apunta a un código que no exista.
+  ref.currency: *catalogo
+  ref.exchange: *catalogo
+  ref.sector: *catalogo
+  ref.area: *catalogo
+  ref.hs_product: *catalogo
+
+  # ── Fundamentales: la identidad contable los valida ───────────────
+  equity.balance_sheet: &contable
+    estado: coherente_sin_referencia
+    metodo: >-
+      check_identidad_contable: activo = pasivo + patrimonio. Descuadran
+      7 balances de 18.697, que es ruido de la fuente, no de la carga.
+  equity.income_statement: *contable
+  equity.cash_flow: *contable
+
+  # ── Ficha 360° de yfinance ────────────────────────────────────────
+  equity.holder:
+    estado: coherente_sin_referencia
+    metodo: >-
+      tests/test_referencias.py comprueba que `pct_held` esté en
+      porcentaje, que ningún accionista pase del 100 % y que la suma
+      por empresa solo lo pase en la minoría conocida (17 de 3.525,
+      por el denominador desactualizado de Yahoo en small caps).
+
+  equity.insider_transaction:
+    estado: coherente_sin_referencia
+    metodo: >-
+      tests/test_referencias.py: el precio implícito de cada operación
+      (importe entre acciones) no puede pasar de cien veces el precio
+      de mercado de ese día.
+
+  deriv.option_snapshot:
+    estado: coherente_sin_referencia
+    metodo: >-
+      tests/test_referencias.py: los strikes de cada cadena rodean el
+      precio del subyacente.
+
+  equity.dividend: &yf_360
+    estado: coherente_sin_referencia
+    metodo: >-
+      Dato de yfinance sin publicación oficial con la que cuadrar fila
+      a fila. Se comprueba estructuralmente: sin nulos en las columnas
+      obligatorias, sin duplicados de clave y con volumen coherente
+      con el número de empresas cubiertas.
+  equity.split: *yf_360
+  equity.earnings_date: *yf_360
+  equity.upgrade_downgrade: *yf_360
+  equity.recommendation_trend: *yf_360
+  equity.shares_history: *yf_360
+  equity.analyst_estimate: *yf_360
+  equity.earnings_revision: *yf_360
+  equity.index_constituent_current: *yf_360
+  equity.market_index: *yf_360
+
+  # ── Catálogos de instrumentos ─────────────────────────────────────
+  deriv.futures_contract: &instrumentos
+    estado: coherente_sin_referencia
+    metodo: >-
+      Catálogo de instrumentos, no serie de datos. Se valida por
+      integridad referencial: toda fila de precios apunta a uno de
+      estos contratos.
+  deriv.volatility_index: *instrumentos
+  deriv.cot_contract: *instrumentos
+  fi.bond_issuer: *instrumentos
+  fi.bond: *instrumentos
+  alt.sentiment_indicator: *instrumentos
+
+  # ── Series con comprobación estructural ───────────────────────────
+  deriv.volatility_daily:
+    estado: coherente_sin_referencia
+    metodo: >-
+      check_ohlc_coherente sobre la serie y contraste implícito con
+      `commodity.price_daily`, que sí tiene referencia externa: ambas
+      vienen del mismo fetcher.
+
+  crypto.market_dominance:
+    estado: coherente_sin_referencia
+    metodo: >-
+      La capitalización total y el peso de Bitcoin se cruzan contra la
+      suma de `crypto.price_daily.market_cap_usd`, que sí está
+      contrastada contra CoinGecko.
+
+  fi.credit_rating:
+    estado: coherente_sin_referencia
+    metodo: >-
+      Las calificaciones soberanas se comprueban por dominio (escala
+      cerrada AAA-D) y por continuidad temporal: un país no salta más
+      de tres escalones entre dos revisiones consecutivas.
+
+  calendar.release:
+    estado: coherente_sin_referencia
+    metodo: >-
+      Catálogo de publicaciones estadísticas. Se valida contra
+      `calendar.release_date`, que sí tiene fechas contrastables.
+
+  macro.indicator_source:
+    estado: coherente_sin_referencia
+    metodo: >-
+      Tabla de enlace entre indicador y fuente. Se valida por
+      integridad referencial en los dos extremos.
+
+  macro.data_point_vintage:
+    estado: coherente_sin_referencia
+    metodo: >-
+      Vintages de ALFRED: cada fila es lo que FRED publicaba en una
+      fecha dada. Se comprueba que el último vintage de cada serie
+      coincida con el valor vigente en `macro.data_point`.
+
+  alt.sentiment_value:
+    estado: no_verificable
+    motivo: >-
+      Índices de sentimiento (Fear & Greed y similares) cuyo histórico
+      no publica nadie de forma estable: el proveedor solo expone el
+      valor del día y lo recalcula sin avisar. Lo que hay en la base
+      es la serie que el proyecto ha ido acumulando, y no existe
+      publicación contra la que contrastarla hacia atrás.

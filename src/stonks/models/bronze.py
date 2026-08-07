@@ -37,7 +37,7 @@ class ApiResponse(Base):
     id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
     fetch_run_id: Mapped[int | None] = mapped_column(Integer)
     ingested_at: Mapped[datetime] = mapped_column(
-        DateTime, default=datetime.now, index=True
+        DateTime(timezone=True), default=datetime.now, index=True
     )
     source_name: Mapped[str] = mapped_column(
         String(50), nullable=False, index=True
@@ -61,7 +61,7 @@ class YfProfile(Base):
     id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
     fetch_run_id: Mapped[int | None] = mapped_column(Integer)
     ingested_at: Mapped[datetime] = mapped_column(
-        DateTime, default=datetime.now
+        DateTime(timezone=True), default=datetime.now
     )
     ticker: Mapped[str] = mapped_column(String(20), nullable=False)
     snapshot_date: Mapped[date] = mapped_column(Date, nullable=False)
@@ -81,7 +81,7 @@ class SecCompanyFacts(Base):
     id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
     fetch_run_id: Mapped[int | None] = mapped_column(Integer)
     ingested_at: Mapped[datetime] = mapped_column(
-        DateTime, default=datetime.now, index=True
+        DateTime(timezone=True), default=datetime.now, index=True
     )
     cik: Mapped[str] = mapped_column(String(10), nullable=False, index=True)
     ticker: Mapped[str | None] = mapped_column(String(20))
@@ -101,7 +101,7 @@ class ConstituentsSnapshot(Base):
     id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
     fetch_run_id: Mapped[int | None] = mapped_column(Integer)
     ingested_at: Mapped[datetime] = mapped_column(
-        DateTime, default=datetime.now, index=True
+        DateTime(timezone=True), default=datetime.now, index=True
     )
     index_code: Mapped[str] = mapped_column(
         String(50), nullable=False, index=True
@@ -127,7 +127,7 @@ class AnalystSnapshot(Base):
     id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
     fetch_run_id: Mapped[int | None] = mapped_column(Integer)
     ingested_at: Mapped[datetime] = mapped_column(
-        DateTime, default=datetime.now
+        DateTime(timezone=True), default=datetime.now
     )
     ticker: Mapped[str] = mapped_column(String(20), nullable=False)
     snapshot_date: Mapped[date] = mapped_column(Date, nullable=False)

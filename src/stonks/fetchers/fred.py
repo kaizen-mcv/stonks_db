@@ -19,6 +19,7 @@ from stonks.models.macro import (
     Series,
 )
 from stonks.models.meta import DataSource
+from stonks.seed.unidades import normalizar_unidad
 
 # Series FRED con frecuencia mensual/diaria
 # (code_interno, fred_series_id, descripcion,
@@ -794,6 +795,57 @@ class FredFetcher(BaseFetcher):
         finally:
             session.close()
         return stats
+
+    def fetch_units(self) -> dict[str, str]:
+        """Traer la unidad oficial de cada serie de FRED.
+
+        El fetcher solo llamaba a `series/observations`, que devuelve
+        los valores pero no su unidad, asi que los 65 indicadores de
+        FRED quedaban con `unit` a NULL. `/fred/series` la da gratis, a
+        una llamada por serie.
+        """
+        if not self.api_key:
+            logger.error("STONKS_FRED_API_KEY no configurada")
+            return {}
+
+        session = get_session()
+        aplicadas: dict[str, str] = {}
+        try:
+            for entrada in FRED_SERIES:
+                code, fred_id = entrada[0], entrada[1]
+                self._rate_limit()
+                try:
+                    datos = self._fred_get(
+                        "series", {"series_id": fred_id}
+                    )
+                except Exception as e:  # noqa: BLE001
+                    # Las series retiradas devuelven 400. Es un dato
+                    # util, no un fallo: conviene saber cuales son.
+                    logger.warning(
+                        "FRED %s (%s) sin metadatos: %s", code, fred_id, e
+                    )
+                    continue
+
+                bruto = (datos.get("seriess") or [{}])[0].get("units")
+                unidad = normalizar_unidad(bruto)
+                if not unidad:
+                    continue
+
+                ind = session.query(Indicator).filter_by(code=code).first()
+                if ind is None:
+                    continue
+                ind.unit = unidad
+                aplicadas[code] = unidad
+
+            session.commit()
+        except Exception as e:  # noqa: BLE001
+            session.rollback()
+            logger.error("Error trayendo unidades de FRED: %s", e)
+        finally:
+            session.close()
+
+        logger.info("FRED: unidad recuperada de %d series", len(aplicadas))
+        return aplicadas
 
     def fetch_all_vintages(self) -> dict[str, dict]:
         """Descargar vintages ALFRED de todas las series clave."""

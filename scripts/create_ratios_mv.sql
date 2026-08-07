@@ -7,6 +7,17 @@
 -- Refrescar: REFRESH MATERIALIZED VIEW CONCURRENTLY equity.ratios_mv;
 --
 -- Notas:
+-- - **Los ratios que mezclan precio y contabilidad se calculan en
+--   dolares.** El precio esta en la moneda de cotizacion y las cuentas
+--   en la de reporte, y no son la misma: Central Puerto cotiza en
+--   dolares y reporta en pesos (PER 0,006), Novo Nordisk reporta en
+--   coronas y su ADR cotiza en dolares (PER 2,0 frente a 12,7 en
+--   Copenhague, con el mismo BPA). Eran 620 PER no comparables de
+--   2.285, y salian los primeros al ordenar por PER: justo donde uno
+--   busca gangas.
+-- - Si falta el tipo de cambio de alguna de las dos monedas, el ratio
+--   sale NULL y `moneda_coherente` a FALSE. Es preferible no dar el
+--   dato a darlo mintiendo.
 -- - "Ultimo periodo" = el de mayor period_end_date por company.
 -- - Si no hay estados (pre-2021 para muchos tickers), la fila no
 --   aparece. Es intencional: sin datos no hay ratio.
@@ -21,6 +32,7 @@ WITH latest_income AS (
     SELECT DISTINCT ON (company_id)
         company_id,
         period_end_date        AS income_period,
+        currency_code,
         revenue,
         gross_profit,
         operating_income,
@@ -66,6 +78,30 @@ latest_price AS (
         adj_close
     FROM equity.price_daily
     ORDER BY company_id, date DESC
+),
+-- Ultimo USD/moneda de cada divisa, admitiendo el par guardado al
+-- reves (existe USDJPY pero el euro se cotiza EURUSD). El DISTINCT ON
+-- importa: con los dos pares presentes habria dos filas por moneda.
+tipos_todos AS (
+    SELECT p.quote_currency AS moneda, r.close AS valor
+    FROM forex.rate_daily r
+    JOIN forex.currency_pair p ON p.id = r.pair_id
+    WHERE p.base_currency = 'USD'
+      AND r.date = (SELECT max(r2.date) FROM forex.rate_daily r2
+                     WHERE r2.pair_id = r.pair_id)
+    UNION ALL
+    SELECT p.base_currency, 1.0 / r.close
+    FROM forex.rate_daily r
+    JOIN forex.currency_pair p ON p.id = r.pair_id
+    WHERE p.quote_currency = 'USD' AND r.close > 0
+      AND r.date = (SELECT max(r2.date) FROM forex.rate_daily r2
+                     WHERE r2.pair_id = r.pair_id)
+    UNION ALL
+    SELECT 'USD', 1.0
+),
+tipo AS (
+    SELECT DISTINCT ON (moneda) moneda, valor
+    FROM tipos_todos WHERE valor > 0 ORDER BY moneda, valor
 )
 SELECT
     c.id                       AS company_id,
@@ -82,22 +118,37 @@ SELECT
     b.balance_period,
     cf.cashflow_period,
 
-    -- Valoracion
+    -- Moneda de las cuentas, distinta de la de cotizacion.
+    i.currency_code                                           AS moneda_cuentas,
+    -- NULL si la empresa no tiene cuentas: ahi no hay nada que
+    -- convertir y decir FALSE seria confundir "no aplica" con "no
+    -- cuadra".
+    CASE WHEN i.company_id IS NOT NULL
+         THEN (tc.valor IS NOT NULL AND tr.valor IS NOT NULL)
+    END                                                       AS moneda_coherente,
+
+    -- Valoracion. Precio y contabilidad se llevan a dolares antes de
+    -- dividir; si falta el tipo de cambio de cualquiera de las dos
+    -- monedas, el ratio sale NULL en vez de mezclar unidades.
     p.close                                                   AS last_close,
     CASE
         WHEN i.eps_diluted IS NOT NULL AND i.eps_diluted > 0
-        THEN p.close / i.eps_diluted
+         AND tc.valor IS NOT NULL AND tr.valor IS NOT NULL
+        THEN (p.close / tc.valor) / (i.eps_diluted / tr.valor)
     END                                                       AS pe_ratio,
     CASE
         WHEN b.total_equity IS NOT NULL AND b.total_equity > 0
          AND c.shares_outstanding IS NOT NULL
          AND c.shares_outstanding > 0
-        THEN p.close / (b.total_equity / c.shares_outstanding)
+         AND tc.valor IS NOT NULL AND tr.valor IS NOT NULL
+        THEN (p.close / tc.valor)
+             / ((b.total_equity / tr.valor) / c.shares_outstanding)
     END                                                       AS pb_ratio,
     CASE
         WHEN i.revenue IS NOT NULL AND i.revenue > 0
          AND c.market_cap_usd IS NOT NULL
-        THEN c.market_cap_usd / i.revenue
+         AND tr.valor IS NOT NULL
+        THEN c.market_cap_usd / (i.revenue / tr.valor)
     END                                                       AS ps_ratio,
 
     -- Rentabilidad
@@ -150,10 +201,13 @@ SELECT
     END                                                       AS debt_assets,
 
     -- Flujo de caja
+    -- Tambien mezclaba: capitalizacion en dolares sobre flujo en
+    -- moneda de reporte.
     CASE
         WHEN c.market_cap_usd IS NOT NULL AND c.market_cap_usd > 0
          AND cf.free_cash_flow IS NOT NULL
-        THEN cf.free_cash_flow / c.market_cap_usd
+         AND tr.valor IS NOT NULL
+        THEN (cf.free_cash_flow / tr.valor) / c.market_cap_usd
     END                                                       AS fcf_yield,
 
     -- Datos crudos (utiles para features derivadas)
@@ -171,6 +225,9 @@ LEFT JOIN latest_price    p  ON p.company_id  = c.id
 LEFT JOIN latest_income   i  ON i.company_id  = c.id
 LEFT JOIN latest_balance  b  ON b.company_id  = c.id
 LEFT JOIN latest_cashflow cf ON cf.company_id = c.id
+-- tc: tipo de la moneda de COTIZACION; tr: el de la de REPORTE.
+LEFT JOIN tipo tc ON tc.moneda = c.currency_code
+LEFT JOIN tipo tr ON tr.moneda = i.currency_code
 WHERE c.is_active = TRUE;
 
 -- Indices para consultas por ticker / sector / rankings.

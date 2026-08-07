@@ -25,6 +25,8 @@ class Settings(BaseSettings):
     comtrade_key: str = ""
     # EIA: clave gratuita en eia.gov/opendata/register.php
     eia_key: str = ""
+    # Tiingo: segunda fuente de precios (tiingo.com/account/api/token)
+    tiingo_key: str = ""
 
     # SEC EDGAR exige User-Agent con email de contacto (o devuelve 403)
     sec_contact_email: str = ""

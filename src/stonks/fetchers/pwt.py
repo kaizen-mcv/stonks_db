@@ -26,55 +26,68 @@ from stonks.models.meta import DataSource
 
 STATA_URL = "https://dataverse.nl/api/access/datafile/554030"
 
-# Variables PWT a extraer: (columna, code, nombre, categoría)
+# Variables PWT a extraer:
+# (columna, code, nombre, categoría, unidad)
+#
+# La unidad la documenta PWT y no se puede deducir del nombre:
+# `rkna` y `rtfpna` son índices con base 2017=1, no importes, y
+# `labsh` e `irr` son fracciones (0,52 y 0,11), no porcentajes.
 VARIABLES = [
     (
         "ctfp",
         "PWT_TFP_LEVEL",
         "TFP level at current PPPs (USA=1)",
         "productivity",
+        "index",
     ),
     (
         "rtfpna",
         "PWT_TFP_NATIONAL",
         "TFP at constant national prices",
         "productivity",
+        "index",
     ),
     (
         "labsh",
         "PWT_LABOR_SHARE",
         "Labour share of GDP",
         "productivity",
+        "ratio",
     ),
     (
         "hc",
         "PWT_HUMAN_CAPITAL",
         "Human capital index",
         "education",
+        "index",
     ),
     (
         "rgdpna",
         "PWT_REAL_GDP",
         "Real GDP at constant nat. prices",
         "national_accounts",
+        "usd_millions",
     ),
     (
         "rkna",
         "PWT_CAPITAL_STOCK",
         "Capital stock at const. nat. prices",
         "national_accounts",
+        "index",
     ),
     (
         "irr",
         "PWT_IRR",
         "Internal rate of return on capital",
         "productivity",
+        "ratio",
     ),
     (
         "avh",
         "PWT_AVG_HOURS",
         "Average annual hours worked",
         "labor",
+        "hours",
     ),
 ]
 
@@ -110,12 +123,12 @@ class PWTFetcher(BaseFetcher):
             }
 
             total = 0
-            for col, code, name, cat in VARIABLES:
+            for col, code, name, cat, unidad in VARIABLES:
                 if col not in df.columns:
                     logger.warning("PWT: columna %s no existe", col)
                     continue
                 ind_id = self._ensure_indicator(
-                    session, code, name, cat, src_id
+                    session, code, name, cat, src_id, unidad
                 )
                 sub = df[["countrycode", "year", col]].dropna(subset=[col])
                 batch = []
@@ -185,7 +198,9 @@ class PWTFetcher(BaseFetcher):
         return src.id
 
     @staticmethod
-    def _ensure_indicator(session, code, name, cat, src_id) -> int:
+    def _ensure_indicator(
+        session, code, name, cat, src_id, unidad=None
+    ) -> int:
         ind = session.query(Indicator).filter_by(code=code).first()
         if ind is None:
             ind = Indicator(
@@ -193,6 +208,7 @@ class PWTFetcher(BaseFetcher):
                 name=name[:300],
                 category=cat,
                 frequency="annual",
+                unit=unidad,
             )
             session.add(ind)
             session.flush()

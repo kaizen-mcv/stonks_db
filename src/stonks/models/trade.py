@@ -22,9 +22,10 @@ from sqlalchemy import (
 from sqlalchemy.orm import Mapped, mapped_column
 
 from stonks.db import Base
+from stonks.models.linaje import LinajeEjecucion
 
 
-class Flow(Base):
+class Flow(Base, LinajeEjecucion):
     """Flujo comercial bilateral (exportación/importación)."""
 
     __tablename__ = "flow"
@@ -38,17 +39,26 @@ class Flow(Base):
         ),
         Index("ix_trade_flow_reporter", "reporter_code", "period"),
         Index("ix_trade_flow_partner", "partner_code", "period"),
+        Index("ix_trade_flow_product", "product_code"),
+        Index("ix_trade_flow_source", "source_id"),
         {"schema": "trade"},
     )
 
     id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+    # Declarante y socio referencian `ref.area`, no `ref.country`: las
+    # fuentes usan tambien agregados ('WLD') y entidades historicas
+    # ('CSK'). Asi ambos extremos quedan validados por igual.
     reporter_code: Mapped[str] = mapped_column(
-        String(3), ForeignKey("ref.country.code"), nullable=False
+        String(3), ForeignKey("ref.area.code"), nullable=False
     )
-    # Socio: ISO3 o agregado ('WLD'); sin FK para permitir agregados.
-    partner_code: Mapped[str] = mapped_column(String(3), nullable=False)
+    partner_code: Mapped[str] = mapped_column(
+        String(3), ForeignKey("ref.area.code"), nullable=False
+    )
     product_code: Mapped[str] = mapped_column(
-        String(20), nullable=False, default="Total"
+        String(20),
+        ForeignKey("ref.hs_product.code"),
+        nullable=False,
+        default="Total",
     )
     flow: Mapped[str] = mapped_column(String(1), nullable=False)  # X | M
     period: Mapped[int] = mapped_column(SmallInteger, nullable=False)
@@ -57,5 +67,5 @@ class Flow(Base):
         Integer, ForeignKey("meta.data_source.id")
     )
     fetched_at: Mapped[datetime] = mapped_column(
-        DateTime, default=datetime.now
+        DateTime(timezone=True), default=datetime.now
     )

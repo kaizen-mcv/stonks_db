@@ -3,6 +3,7 @@ yfinance y upsert en tablas particionadas."""
 
 import logging
 
+import pandas as pd
 from sqlalchemy import text
 
 from stonks.db import engine
@@ -104,6 +105,7 @@ class IntradayFetcher(BaseFetcher):
             stats["fetched"] = len(df)
 
             upsert_rows = []
+            descartadas = 0
             for _, row in df.iterrows():
                 ticker = row.get("Ticker", "")
                 cid = ticker_to_id.get(ticker)
@@ -113,7 +115,14 @@ class IntradayFetcher(BaseFetcher):
                 if close is None:
                     continue
 
-                ts = row.get("Datetime", row.get("Date"))
+                # batch_download normaliza la columna temporal a
+                # `ts`. Se descartan las filas sin marca de tiempo:
+                # antes llegaban como NaT y reventaban la insercion en
+                # la tabla particionada, tirando el lote entero.
+                ts = row.get("ts")
+                if ts is None or pd.isna(ts):
+                    descartadas += 1
+                    continue
                 upsert_rows.append(
                     {
                         "company_id": cid,

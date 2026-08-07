@@ -15,9 +15,10 @@ from sqlalchemy import (
 from sqlalchemy.orm import Mapped, mapped_column
 
 from stonks.db import Base
+from stonks.models.linaje import Linaje
 
 
-class CountryProfile(Base):
+class CountryProfile(Base, Linaje):
     """Perfil económico de un país."""
 
     __tablename__ = "profile"
@@ -38,10 +39,12 @@ class CountryProfile(Base):
     political_stability_index: Mapped[float | None] = mapped_column(
         Numeric(6, 4)
     )
-    last_updated: Mapped[datetime | None] = mapped_column(DateTime)
+    last_updated: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True)
+    )
 
 
-class TaxRate(Base):
+class TaxRate(Base, Linaje):
     """Tipos impositivos por país y año."""
 
     __tablename__ = "tax_rate"
@@ -63,7 +66,7 @@ class TaxRate(Base):
     capital_gains_tax_rate: Mapped[float | None] = mapped_column(Numeric(6, 3))
 
 
-class Demographics(Base):
+class Demographics(Base, Linaje):
     """Datos demográficos por país y año."""
 
     __tablename__ = "demographics"

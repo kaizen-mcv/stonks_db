@@ -57,6 +57,18 @@ intraday_app = typer.Typer(
     help="Datos intraday (1m/5m/1h)",
     no_args_is_help=True,
 )
+realestate_app = typer.Typer(
+    help="Inmobiliario (indices de precio de vivienda)",
+    no_args_is_help=True,
+)
+calendar_app = typer.Typer(
+    help="Calendario economico (publicaciones macro)",
+    no_args_is_help=True,
+)
+ref_app = typer.Typer(
+    help="Datos de referencia (LEI, areas, catalogos)",
+    no_args_is_help=True,
+)
 app.add_typer(macro_app, name="macro")
 app.add_typer(equity_app, name="equity")
 app.add_typer(fi_app, name="fi")
@@ -69,6 +81,9 @@ app.add_typer(alt_app, name="alt")
 app.add_typer(index_app, name="index")
 app.add_typer(deriv_app, name="deriv")
 app.add_typer(intraday_app, name="intraday")
+app.add_typer(realestate_app, name="realestate")
+app.add_typer(calendar_app, name="calendar")
+app.add_typer(ref_app, name="ref")
 
 console = Console()
 
@@ -127,7 +142,7 @@ def world(
         text(
             "SELECT year, gdp_usd_bn, gdp_per_capita_usd, gdp_growth_pct, "
             "inflation_pct, unemployment_pct, gov_debt_pct_gdp, co2_mt, "
-            "exports_usd_bn FROM gold.mart_country_year "
+            "exports_usd_bn, is_forecast FROM gold.mart_country_year "
             "WHERE country_code = :c "
             "  AND year <= extract(year FROM now()) "
             "ORDER BY year DESC LIMIT :n"
@@ -158,9 +173,13 @@ def world(
         return "-" if v is None else f"{float(v):,.{dec}f}"
 
     for r in reversed(rows):
-        # r: año, pib_bn, pib_pc, crec, infl, paro, deuda, co2, export
+        # r: año, pib_bn, pib_pc, crec, infl, paro, deuda, co2, export,
+        #    is_forecast
+        # Los años proyectados llevan asterisco: son previsiones del
+        # FMI y hasta ahora se mostraban igual que los datos reales.
+        etiqueta = f"{int(r[0])}*" if r[9] else str(int(r[0]))
         table.add_row(
-            str(int(r[0])),
+            etiqueta,
             _fmt(r[1], 0),
             _fmt(r[2], 0),
             _fmt(r[3], 1),
@@ -169,8 +188,13 @@ def world(
             _fmt(r[6], 1),
             _fmt(r[7], 0),
             _fmt(r[8], 0),
+            style="dim" if r[9] else None,
         )
     console.print(table)
+    if any(r[9] for r in rows):
+        console.print(
+            "  [dim]* proyección del FMI, no dato realizado[/dim]"
+        )
 
 
 @app.command()
@@ -267,79 +291,164 @@ def indicators(
 
 
 @app.command()
-def audit() -> None:
-    """Auditoría completa de calidad de datos."""
+def audit(
+    dominio: str = typer.Option(
+        None, "--dominio", "-d", help="Filtrar por dominio"
+    ),
+    detalle: bool = typer.Option(
+        False, "--detalle", help="Mostrar tambien los checks en verde"
+    ),
+    estricto: bool = typer.Option(
+        False,
+        "--estricto",
+        help="Salir con codigo 1 si hay algun problema",
+    ),
+) -> None:
+    """Auditoría completa de calidad de datos.
+
+    Ejecuta los checks de cobertura e integridad y los de veracidad y
+    completitud, y persiste el resultado en `meta.data_quality`. Antes
+    solo corría tres de ellos y no guardaba nada.
+    """
+    from sqlalchemy import text
+
+    from stonks.db import get_session
     from stonks.logger import setup_logger
-    from stonks.quality import (
-        check_indicator_emptiness,
-        check_mart_column_coverage,
-        check_temporal_gaps,
-    )
+    from stonks.quality import run_all_checks
 
     setup_logger("stonks.cli")
 
-    # Indicadores fantasma
-    console.print("\n[bold]1. Indicadores fantasma[/bold]")
-    fantasma = check_indicator_emptiness()
-    t1 = Table(title="Sin data_points")
-    t1.add_column("Categoría", style="cyan")
-    t1.add_column("Cantidad", justify="right")
-    for cat, n in sorted(
-        fantasma["por_categoria"].items(),
-        key=lambda x: -x[1],
-    ):
-        t1.add_row(cat, str(n))
-    t1.add_row(
-        "[bold]TOTAL[/bold]",
-        f"[bold]{fantasma['total_fantasma']}[/bold]",
-    )
-    console.print(t1)
+    console.print("Ejecutando checks de calidad...")
+    run_all_checks()
 
-    # Cobertura mart
-    console.print("\n[bold]2. Cobertura mart_country_year[/bold]")
-    cob = check_mart_column_coverage()
-    t2 = Table(title="Columnas con baja cobertura (<50 países)")
-    t2.add_column("Columna", style="cyan")
-    t2.add_column("Países", justify="right")
-    t2.add_column("%", justify="right")
-    bajas = {k: v for k, v in cob.items() if v["countries"] < 50}
-    for col, info in sorted(
-        bajas.items(),
-        key=lambda x: x[1]["countries"],
-    ):
-        t2.add_row(
-            col,
-            str(info["countries"]),
-            f"{info['pct']}%",
+    session = get_session()
+    try:
+        sql = (
+            "SELECT domain, entity_type, entity_id, completeness_score, "
+            "       source_count, freshness_days "
+            "FROM meta.data_quality "
         )
-    if bajas:
-        console.print(t2)
+        params: dict = {}
+        if dominio:
+            sql += "WHERE domain = :d "
+            params["d"] = dominio
+        sql += "ORDER BY completeness_score NULLS LAST, domain, entity_type"
+        filas = session.execute(text(sql), params).fetchall()
+    finally:
+        session.close()
+
+    problemas = [f for f in filas if (f[3] or 100) < 100]
+    mostrar = filas if detalle else problemas
+
+    if not mostrar:
+        console.print("\n[green]✓ Sin problemas de calidad[/green]")
     else:
-        console.print("[green]Todas las columnas ≥50 países[/green]")
+        tabla = Table(
+            title=(
+                "Calidad de datos"
+                if detalle
+                else "Problemas de calidad detectados"
+            )
+        )
+        tabla.add_column("Dominio", style="cyan")
+        tabla.add_column("Check")
+        tabla.add_column("Entidad")
+        tabla.add_column("Score", justify="right")
+        tabla.add_column("N", justify="right")
+
+        for dom, tipo, entidad, score, n, _dias in mostrar[:60]:
+            color = "green" if (score or 0) >= 100 else "yellow"
+            tabla.add_row(
+                dom,
+                tipo,
+                (entidad or "")[:52],
+                f"[{color}]{float(score):.0f}[/{color}]"
+                if score is not None
+                else "-",
+                str(n) if n is not None else "-",
+            )
+        console.print(tabla)
+        if len(mostrar) > 60:
+            console.print(f"  ... y {len(mostrar) - 60} mas")
+
     console.print(
-        f"  Total columnas: {len(cob)}, baja cobertura: {len(bajas)}"
+        f"\n{len(filas)} checks ejecutados, "
+        f"[{'yellow' if problemas else 'green'}]{len(problemas)}"
+        f"[/{'yellow' if problemas else 'green'}] con hallazgos"
     )
 
-    # Huecos temporales
-    console.print("\n[bold]3. Huecos temporales (>2 años)[/bold]")
-    gaps = check_temporal_gaps()
-    for code, items in gaps.items():
-        if items:
-            t3 = Table(title=code)
-            t3.add_column("País", style="cyan")
-            t3.add_column("Año", justify="right")
-            t3.add_column("Gap", justify="right")
-            for g in items[:10]:
-                t3.add_row(
-                    g["country"],
-                    str(g["year"]),
-                    str(g["gap"]),
-                )
-            console.print(t3)
-        else:
-            console.print(f"  {code}: [green]sin huecos[/green]")
+    if estricto and problemas:
+        raise typer.Exit(code=1)
 
-    console.print("\n[green]✓ Auditoría completada[/green]")
+
+@app.command()
+def certify(
+    estricto: bool = typer.Option(
+        False,
+        "--estricto",
+        help="Salir con código 1 si queda alguna tabla sin certificar",
+    ),
+    detalle: bool = typer.Option(
+        False, "--detalle", help="Listar tabla por tabla"
+    ),
+) -> None:
+    """Certificar cómo se ha verificado cada tabla de datos.
+
+    Con datos de terceros no se puede garantizar que cada cifra sea
+    cierta. Lo que sí se puede es que de cada tabla conste cómo se ha
+    comprobado, o que conste que no se puede y por qué.
+    """
+    from stonks.certificacion import (
+        CONTRASTADA,
+        NO_VERIFICABLE,
+        SIN_CERTIFICAR,
+        certificar,
+    )
+
+    resultado = certificar()
+
+    conteo: dict[str, int] = {}
+    for r in resultado:
+        conteo[r["estado"]] = conteo.get(r["estado"], 0) + 1
+
+    colores = {
+        CONTRASTADA: "green",
+        NO_VERIFICABLE: "yellow",
+        SIN_CERTIFICAR: "red",
+    }
+    resumen = Table(title="Certificación de stonks_db")
+    resumen.add_column("Estado", style="cyan")
+    resumen.add_column("Tablas", justify="right")
+    for estado, n in sorted(conteo.items(), key=lambda x: -x[1]):
+        color = colores.get(estado, "white")
+        resumen.add_row(estado, f"[{color}]{n}[/{color}]")
+    console.print(resumen)
+
+    pendientes = [
+        r for r in resultado if r["estado"] == SIN_CERTIFICAR
+    ]
+    if pendientes:
+        console.print("\n[red]Sin certificar:[/red]")
+        for r in pendientes:
+            console.print(f"  {r['tabla']} ({r['filas']} filas)")
+        console.print(
+            "\nDeclara cada una en config/certificacion.yml, o mejor, "
+            "añade un valor de referencia en tests/referencias.yml."
+        )
+
+    if detalle:
+        tabla = Table(title="Detalle")
+        tabla.add_column("Tabla", style="white")
+        tabla.add_column("Estado", style="cyan")
+        tabla.add_column("Filas", justify="right")
+        for r in resultado:
+            tabla.add_row(
+                r["tabla"], r["estado"], f"{r['filas']:,}"
+            )
+        console.print(tabla)
+
+    if estricto and pendientes:
+        raise typer.Exit(code=1)
 
 
 @app.command()
@@ -714,6 +823,68 @@ def equity_fetch(
         )
     else:
         console.print("[yellow]Usa --ticker o --batch[/yellow]")
+
+
+@equity_app.command("fetch-tiingo")
+def equity_fetch_stooq(
+    ticker: str | None = typer.Option(
+        None,
+        "--ticker",
+        "-t",
+        help="Ticker específico (ej: AAPL)",
+    ),
+    limite: int | None = typer.Option(
+        None,
+        "--limite",
+        "-n",
+        help="Máximo de empresas a procesar",
+    ),
+    sobrescribir: bool = typer.Option(
+        False,
+        "--sobrescribir",
+        help="Pisar precios existentes en vez de solo rellenar huecos",
+    ),
+) -> None:
+    """Rellenar huecos de precios con Tiingo (fuente secundaria)."""
+    from stonks.fetchers.tiingo import TiingoFetcher
+    from stonks.logger import setup_logger
+
+    setup_logger("stonks.fetch")
+
+    fetcher = TiingoFetcher()
+    stats = fetcher.fetch_prices(
+        ticker=ticker,
+        limite=limite,
+        solo_huecos=not sobrescribir,
+    )
+    console.print(
+        f"[green]✓ {stats['empresas']} empresas, "
+        f"{stats['puntos']} puntos nuevos, "
+        f"{stats['errores']} errores[/green]"
+    )
+
+
+@equity_app.command("validar-precios")
+def equity_validar_precios(
+    limite: int = typer.Option(
+        200,
+        "--limite",
+        "-n",
+        help="Empresas a comparar",
+    ),
+) -> None:
+    """Contrastar los cierres cargados contra Tiingo."""
+    from stonks.fetchers.tiingo import TiingoFetcher
+    from stonks.logger import setup_logger
+
+    setup_logger("stonks.fetch")
+
+    stats = TiingoFetcher().validar(limite=limite)
+    color = "yellow" if stats["divergentes"] else "green"
+    console.print(
+        f"[{color}]{stats['comparadas']} comparadas, "
+        f"{stats['divergentes']} divergentes[/{color}]"
+    )
 
 
 @equity_app.command("list")
@@ -1608,3 +1779,147 @@ def intraday_partitions(
             console.print(f"    ... y {len(created) - 10} más")
     else:
         console.print("  Todas las particiones ya existen")
+
+
+# ── Dominios incorporados en la auditoria 2026-08 ────
+
+
+@deriv_app.command("cot-fetch")
+def deriv_cot_fetch(
+    desde: str | None = typer.Option(
+        None,
+        "--desde",
+        "-d",
+        help="Fecha minima YYYY-MM-DD (por defecto, incremental)",
+    ),
+) -> None:
+    """Descargar el informe COT de posicionamiento (CFTC)."""
+    from stonks.fetchers.cftc_cot import CftcCotFetcher
+    from stonks.logger import setup_logger
+
+    setup_logger("stonks.fetch")
+    stats = CftcCotFetcher().fetch(desde=desde)
+    console.print(
+        f"[green]✓ {stats['contratos']} contratos, "
+        f"{stats['informes']} informes[/green]"
+    )
+
+
+@equity_app.command("constituents-world")
+def equity_constituents_world(
+    indice: list[str] = typer.Option(
+        None, "--indice", "-i", help="Codigos de indice (repetible)"
+    ),
+    con_precios: bool = typer.Option(
+        False,
+        "--con-precios",
+        help="Descargar tambien el historico de las empresas nuevas",
+    ),
+) -> None:
+    """Cargar constituyentes de los indices mundiales."""
+    from stonks.fetchers.index_constituents import (
+        IndexConstituentsFetcher,
+    )
+    from stonks.logger import setup_logger
+
+    setup_logger("stonks.fetch")
+    stats = IndexConstituentsFetcher().fetch(
+        indices=list(indice) if indice else None,
+        con_precios=con_precios,
+    )
+    console.print(
+        f"[green]✓ {stats['indices']} indices, "
+        f"{stats['empresas_nuevas']} empresas nuevas, "
+        f"{stats['vinculos']} vinculos[/green]"
+    )
+    if stats["sin_tabla"]:
+        console.print(
+            f"[yellow]Sin tabla legible: "
+            f"{', '.join(stats['sin_tabla'])}[/yellow]"
+        )
+
+
+@equity_app.command("factors-fetch")
+def equity_factors_fetch() -> None:
+    """Descargar los factores de Fama-French por region."""
+    from stonks.fetchers.fama_french import FamaFrenchFetcher
+    from stonks.logger import setup_logger
+
+    setup_logger("stonks.fetch")
+    stats = FamaFrenchFetcher().fetch()
+    console.print(
+        f"[green]✓ {stats['observaciones']} observaciones, "
+        f"{stats['series']} series[/green]"
+    )
+
+
+@fi_app.command("risk-premium-fetch")
+def fi_risk_premium_fetch(
+    anio: int | None = typer.Option(
+        None, "--anio", "-a", help="Ejercicio a cargar"
+    ),
+) -> None:
+    """Descargar primas de riesgo pais y tipos de sociedades."""
+    from stonks.fetchers.damodaran import DamodaranFetcher
+    from stonks.logger import setup_logger
+
+    setup_logger("stonks.fetch")
+    stats = DamodaranFetcher().fetch(anio=anio)
+    console.print(
+        f"[green]✓ {stats['primas']} primas de riesgo, "
+        f"{stats['tipos']} tipos impositivos[/green]"
+    )
+
+
+@realestate_app.command("fetch")
+def realestate_fetch(
+    pais: list[str] = typer.Option(
+        None, "--pais", "-c", help="Codigos ISO3 (repetible)"
+    ),
+) -> None:
+    """Descargar indices de precios de vivienda."""
+    from stonks.fetchers.realestate import RealEstateFetcher
+    from stonks.logger import setup_logger
+
+    setup_logger("stonks.fetch")
+    stats = RealEstateFetcher().fetch(paises=list(pais) if pais else None)
+    console.print(
+        f"[green]✓ {stats['indices']} indices, "
+        f"{stats['observaciones']} observaciones[/green]"
+    )
+
+
+@calendar_app.command("fetch")
+def calendar_fetch(
+    desde: str = typer.Option(
+        "2015-01-01", "--desde", "-d", help="Fecha inicial"
+    ),
+) -> None:
+    """Descargar el calendario de publicaciones macro (FRED)."""
+    from stonks.fetchers.calendar_fred import CalendarFetcher
+    from stonks.logger import setup_logger
+
+    setup_logger("stonks.fetch")
+    stats = CalendarFetcher().fetch(desde=desde)
+    console.print(
+        f"[green]✓ {stats['publicaciones']} publicaciones, "
+        f"{stats['fechas']} fechas[/green]"
+    )
+
+
+@ref_app.command("lei-fetch")
+def ref_lei_fetch(
+    limite: int = typer.Option(
+        200, "--limite", "-n", help="Empresas a resolver en esta pasada"
+    ),
+) -> None:
+    """Asignar identificadores LEI a las empresas (GLEIF)."""
+    from stonks.fetchers.gleif import GleifFetcher
+    from stonks.logger import setup_logger
+
+    setup_logger("stonks.fetch")
+    stats = GleifFetcher().enlazar_empresas(limite=limite)
+    console.print(
+        f"[green]✓ {stats['enlazadas']} enlazadas[/green] de "
+        f"{stats['buscadas']} ({stats['sin_match']} sin coincidencia)"
+    )

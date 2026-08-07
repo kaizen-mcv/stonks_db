@@ -363,7 +363,7 @@ asia_pacific:
   - KOTAKBANK.NS
   - ASIANPAINT.NS
   - MARUTI.NS
-  - TATAMOTORS.NS
+  # TATAMOTORS.NS  # retirado 2026-08: Yahoo ya no resuelve el ticker (404)
   # Singapur
   - D05.SI     # DBS
   - O39.SI     # OCBC
@@ -429,7 +429,7 @@ middle_east_africa:
   - CHKP
   - NICE
   - MNDY
-  - CYBR
+  # CYBR  # retirado 2026-08: Yahoo ya no resuelve el ticker (404)
   - WIX
   # Turquía
   - THYAO.IS   # Turkish Airlines

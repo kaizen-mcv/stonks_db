@@ -325,12 +325,12 @@ PIPELINE: dict[str, list[Step]] = {
             ],
             [],
         ),
-        # Gobernanza extendida: libertad económica (Heritage),
-        # fragilidad estatal (FSI).
+        # Gobernanza extendida: fragilidad estatal (FSI).
+        # Heritage se retiró en la auditoría 2026-08: su dominio
+        # devuelve 403 a todo acceso automatizado (desafío Cloudflare).
         Step(
             "governance-ext",
             [
-                _fetcher("heritage", "HeritageFetcher"),
                 _fetcher("fsi", "FSIFetcher"),
             ],
             [],

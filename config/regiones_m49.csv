@@ -1,0 +1,251 @@
+codigo_pais,nombre,alpha2,region,subregion,es_agregado
+ABW,Aruba,AW,América,Caribe,no
+AFG,Afghanistan,AF,Asia,Asia meridional,no
+AGO,Angola,AO,África,África central,no
+AIA,Anguilla,AI,América,Caribe,no
+ALA,Åland Islands,AX,Europa,Europa septentrional,no
+ALB,Albania,AL,Europa,Europa meridional,no
+AND,Andorra,AD,Europa,Europa meridional,no
+ARE,United Arab Emirates,AE,Asia,Asia occidental,no
+ARG,Argentina,AR,América,América del Sur,no
+ARM,Armenia,AM,Asia,Asia occidental,no
+ASM,American Samoa,AS,Oceanía,Polinesia,no
+ATA,Antarctica,AQ,Antártida,Antártida,no
+ATF,French Southern Territories,TF,África,África oriental,no
+ATG,Antigua and Barbuda,AG,América,Caribe,no
+AUS,Australia,AU,Oceanía,Australia y Nueva Zelanda,no
+AUT,Austria,AT,Europa,Europa occidental,no
+AZE,Azerbaijan,AZ,Asia,Asia occidental,no
+BDI,Burundi,BI,África,África oriental,no
+BEL,Belgium,BE,Europa,Europa occidental,no
+BEN,Benin,BJ,África,África occidental,no
+BES,"Bonaire, Sint Eustatius and Saba",BQ,América,Caribe,no
+BFA,Burkina Faso,BF,África,África occidental,no
+BGD,Bangladesh,BD,Asia,Asia meridional,no
+BGR,Bulgaria,BG,Europa,Europa oriental,no
+BHR,Bahrain,BH,Asia,Asia occidental,no
+BHS,Bahamas,BS,América,Caribe,no
+BIH,Bosnia and Herzegovina,BA,Europa,Europa meridional,no
+BLM,Saint Barthélemy,BL,América,Caribe,no
+BLR,Belarus,BY,Europa,Europa oriental,no
+BLZ,Belize,BZ,América,América Central,no
+BMU,Bermuda,BM,América,América del Norte,no
+BOL,"Bolivia, Plurinational State of",BO,América,América del Sur,no
+BRA,Brazil,BR,América,América del Sur,no
+BRB,Barbados,BB,América,Caribe,no
+BRN,Brunei Darussalam,BN,Asia,Asia sudoriental,no
+BTN,Bhutan,BT,Asia,Asia meridional,no
+BVT,Bouvet Island,BV,Antártida,Antártida,no
+BWA,Botswana,BW,África,África meridional,no
+CAF,Central African Republic,CF,África,África central,no
+CAN,Canada,CA,América,América del Norte,no
+CCK,Cocos (Keeling) Islands,CC,Oceanía,Australia y Nueva Zelanda,no
+CHE,Switzerland,CH,Europa,Europa occidental,no
+CHL,Chile,CL,América,América del Sur,no
+CHN,China,CN,Asia,Asia oriental,no
+CIV,Côte d'Ivoire,CI,África,África occidental,no
+CMR,Cameroon,CM,África,África central,no
+COD,"Congo, The Democratic Republic of the",CD,África,África central,no
+COG,Congo,CG,África,África central,no
+COK,Cook Islands,CK,Oceanía,Polinesia,no
+COL,Colombia,CO,América,América del Sur,no
+COM,Comoros,KM,África,África oriental,no
+CPV,Cabo Verde,CV,África,África occidental,no
+CRI,Costa Rica,CR,América,América Central,no
+CUB,Cuba,CU,América,Caribe,no
+CUW,Curaçao,CW,América,Caribe,no
+CXR,Christmas Island,CX,Oceanía,Australia y Nueva Zelanda,no
+CYM,Cayman Islands,KY,América,Caribe,no
+CYP,Cyprus,CY,Asia,Asia occidental,no
+CZE,Czechia,CZ,Europa,Europa oriental,no
+DEU,Germany,DE,Europa,Europa occidental,no
+DJI,Djibouti,DJ,África,África oriental,no
+DMA,Dominica,DM,América,Caribe,no
+DNK,Denmark,DK,Europa,Europa septentrional,no
+DOM,Dominican Republic,DO,América,Caribe,no
+DZA,Algeria,DZ,África,África septentrional,no
+ECU,Ecuador,EC,América,América del Sur,no
+EGY,Egypt,EG,África,África septentrional,no
+ERI,Eritrea,ER,África,África oriental,no
+ESH,Western Sahara,EH,África,África septentrional,no
+ESP,Spain,ES,Europa,Europa meridional,no
+EST,Estonia,EE,Europa,Europa septentrional,no
+ETH,Ethiopia,ET,África,África oriental,no
+EUZ,Euro Area,,,,si
+FIN,Finland,FI,Europa,Europa septentrional,no
+FJI,Fiji,FJ,Oceanía,Melanesia,no
+FLK,Falkland Islands (Malvinas),FK,América,América del Sur,no
+FRA,France,FR,Europa,Europa occidental,no
+FRO,Faroe Islands,FO,Europa,Europa septentrional,no
+FSM,"Micronesia, Federated States of",FM,Oceanía,Micronesia,no
+GAB,Gabon,GA,África,África central,no
+GBR,United Kingdom,GB,Europa,Europa septentrional,no
+GEO,Georgia,GE,Asia,Asia occidental,no
+GGY,Guernsey,GG,Europa,Europa septentrional,no
+GHA,Ghana,GH,África,África occidental,no
+GIB,Gibraltar,GI,Europa,Europa meridional,no
+GIN,Guinea,GN,África,África occidental,no
+GLP,Guadeloupe,GP,América,Caribe,no
+GMB,Gambia,GM,África,África occidental,no
+GNB,Guinea-Bissau,GW,África,África occidental,no
+GNQ,Equatorial Guinea,GQ,África,África central,no
+GRC,Greece,GR,Europa,Europa meridional,no
+GRD,Grenada,GD,América,Caribe,no
+GRL,Greenland,GL,América,América del Norte,no
+GTM,Guatemala,GT,América,América Central,no
+GUF,French Guiana,GF,América,América del Sur,no
+GUM,Guam,GU,Oceanía,Micronesia,no
+GUY,Guyana,GY,América,América del Sur,no
+HKG,Hong Kong,HK,Asia,Asia oriental,no
+HMD,Heard Island and McDonald Islands,HM,Oceanía,Australia y Nueva Zelanda,no
+HND,Honduras,HN,América,América Central,no
+HRV,Croatia,HR,Europa,Europa meridional,no
+HTI,Haiti,HT,América,Caribe,no
+HUN,Hungary,HU,Europa,Europa oriental,no
+IDN,Indonesia,ID,Asia,Asia sudoriental,no
+IMN,Isle of Man,IM,Europa,Europa septentrional,no
+IND,India,IN,Asia,Asia meridional,no
+IOT,British Indian Ocean Territory,IO,África,África oriental,no
+IRL,Ireland,IE,Europa,Europa septentrional,no
+IRN,"Iran, Islamic Republic of",IR,Asia,Asia meridional,no
+IRQ,Iraq,IQ,Asia,Asia occidental,no
+ISL,Iceland,IS,Europa,Europa septentrional,no
+ISR,Israel,IL,Asia,Asia occidental,no
+ITA,Italy,IT,Europa,Europa meridional,no
+JAM,Jamaica,JM,América,Caribe,no
+JEY,Jersey,JE,Europa,Europa septentrional,no
+JOR,Jordan,JO,Asia,Asia occidental,no
+JPN,Japan,JP,Asia,Asia oriental,no
+KAZ,Kazakhstan,KZ,Asia,Asia central,no
+KEN,Kenya,KE,África,África oriental,no
+KGZ,Kyrgyzstan,KG,Asia,Asia central,no
+KHM,Cambodia,KH,Asia,Asia sudoriental,no
+KIR,Kiribati,KI,Oceanía,Micronesia,no
+KNA,Saint Kitts and Nevis,KN,América,Caribe,no
+KOR,"Korea, Republic of",KR,Asia,Asia oriental,no
+KWT,Kuwait,KW,Asia,Asia occidental,no
+LAO,Lao People's Democratic Republic,LA,Asia,Asia sudoriental,no
+LBN,Lebanon,LB,Asia,Asia occidental,no
+LBR,Liberia,LR,África,África occidental,no
+LBY,Libya,LY,África,África septentrional,no
+LCA,Saint Lucia,LC,América,Caribe,no
+LIE,Liechtenstein,LI,Europa,Europa occidental,no
+LKA,Sri Lanka,LK,Asia,Asia meridional,no
+LSO,Lesotho,LS,África,África meridional,no
+LTU,Lithuania,LT,Europa,Europa septentrional,no
+LUX,Luxembourg,LU,Europa,Europa occidental,no
+LVA,Latvia,LV,Europa,Europa septentrional,no
+MAC,Macao,MO,Asia,Asia oriental,no
+MAF,Saint Martin (French part),MF,América,Caribe,no
+MAR,Morocco,MA,África,África septentrional,no
+MCO,Monaco,MC,Europa,Europa occidental,no
+MDA,"Moldova, Republic of",MD,Europa,Europa oriental,no
+MDG,Madagascar,MG,África,África oriental,no
+MDV,Maldives,MV,Asia,Asia meridional,no
+MEX,Mexico,MX,América,América Central,no
+MHL,Marshall Islands,MH,Oceanía,Micronesia,no
+MKD,North Macedonia,MK,Europa,Europa meridional,no
+MLI,Mali,ML,África,África occidental,no
+MLT,Malta,MT,Europa,Europa meridional,no
+MMR,Myanmar,MM,Asia,Asia sudoriental,no
+MNE,Montenegro,ME,Europa,Europa meridional,no
+MNG,Mongolia,MN,Asia,Asia oriental,no
+MNP,Northern Mariana Islands,MP,Oceanía,Micronesia,no
+MOZ,Mozambique,MZ,África,África oriental,no
+MRT,Mauritania,MR,África,África occidental,no
+MSR,Montserrat,MS,América,Caribe,no
+MTQ,Martinique,MQ,América,Caribe,no
+MUS,Mauritius,MU,África,África oriental,no
+MWI,Malawi,MW,África,África oriental,no
+MYS,Malaysia,MY,Asia,Asia sudoriental,no
+MYT,Mayotte,YT,África,África oriental,no
+NAM,Namibia,NA,África,África meridional,no
+NCL,New Caledonia,NC,Oceanía,Melanesia,no
+NER,Niger,NE,África,África occidental,no
+NFK,Norfolk Island,NF,Oceanía,Australia y Nueva Zelanda,no
+NGA,Nigeria,NG,África,África occidental,no
+NIC,Nicaragua,NI,América,América Central,no
+NIU,Niue,NU,Oceanía,Polinesia,no
+NLD,Netherlands,NL,Europa,Europa occidental,no
+NOR,Norway,NO,Europa,Europa septentrional,no
+NPL,Nepal,NP,Asia,Asia meridional,no
+NRU,Nauru,NR,Oceanía,Micronesia,no
+NZL,New Zealand,NZ,Oceanía,Australia y Nueva Zelanda,no
+OMN,Oman,OM,Asia,Asia occidental,no
+PAK,Pakistan,PK,Asia,Asia meridional,no
+PAN,Panama,PA,América,América Central,no
+PCN,Pitcairn,PN,Oceanía,Polinesia,no
+PER,Peru,PE,América,América del Sur,no
+PHL,Philippines,PH,Asia,Asia sudoriental,no
+PLW,Palau,PW,Oceanía,Micronesia,no
+PNG,Papua New Guinea,PG,Oceanía,Melanesia,no
+POL,Poland,PL,Europa,Europa oriental,no
+PRI,Puerto Rico,PR,América,Caribe,no
+PRK,"Korea, Democratic People's Republic of",KP,Asia,Asia oriental,no
+PRT,Portugal,PT,Europa,Europa meridional,no
+PRY,Paraguay,PY,América,América del Sur,no
+PSE,"Palestine, State of",PS,Asia,Asia occidental,no
+PYF,French Polynesia,PF,Oceanía,Polinesia,no
+QAT,Qatar,QA,Asia,Asia occidental,no
+REU,Réunion,RE,África,África oriental,no
+ROU,Romania,RO,Europa,Europa oriental,no
+RUS,Russian Federation,RU,Europa,Europa oriental,no
+RWA,Rwanda,RW,África,África oriental,no
+SAU,Saudi Arabia,SA,Asia,Asia occidental,no
+SDN,Sudan,SD,África,África septentrional,no
+SEN,Senegal,SN,África,África occidental,no
+SGP,Singapore,SG,Asia,Asia sudoriental,no
+SGS,South Georgia and the South Sandwich Islands,GS,América,América del Sur,no
+SHN,"Saint Helena, Ascension and Tristan da Cunha",SH,África,África occidental,no
+SJM,Svalbard and Jan Mayen,SJ,Europa,Europa septentrional,no
+SLB,Solomon Islands,SB,Oceanía,Melanesia,no
+SLE,Sierra Leone,SL,África,África occidental,no
+SLV,El Salvador,SV,América,América Central,no
+SMR,San Marino,SM,Europa,Europa meridional,no
+SOM,Somalia,SO,África,África oriental,no
+SPM,Saint Pierre and Miquelon,PM,América,América del Norte,no
+SRB,Serbia,RS,Europa,Europa meridional,no
+SSD,South Sudan,SS,África,África oriental,no
+STP,Sao Tome and Principe,ST,África,África central,no
+SUR,Suriname,SR,América,América del Sur,no
+SVK,Slovakia,SK,Europa,Europa oriental,no
+SVN,Slovenia,SI,Europa,Europa meridional,no
+SWE,Sweden,SE,Europa,Europa septentrional,no
+SWZ,Eswatini,SZ,África,África meridional,no
+SXM,Sint Maarten (Dutch part),SX,América,Caribe,no
+SYC,Seychelles,SC,África,África oriental,no
+SYR,Syrian Arab Republic,SY,Asia,Asia occidental,no
+TCA,Turks and Caicos Islands,TC,América,Caribe,no
+TCD,Chad,TD,África,África central,no
+TGO,Togo,TG,África,África occidental,no
+THA,Thailand,TH,Asia,Asia sudoriental,no
+TJK,Tajikistan,TJ,Asia,Asia central,no
+TKL,Tokelau,TK,Oceanía,Polinesia,no
+TKM,Turkmenistan,TM,Asia,Asia central,no
+TLS,Timor-Leste,TL,Asia,Asia sudoriental,no
+TON,Tonga,TO,Oceanía,Polinesia,no
+TTO,Trinidad and Tobago,TT,América,Caribe,no
+TUN,Tunisia,TN,África,África septentrional,no
+TUR,Türkiye,TR,Asia,Asia occidental,no
+TUV,Tuvalu,TV,Oceanía,Polinesia,no
+TWN,"Taiwan, Province of China",TW,Asia,Asia oriental,no
+TZA,"Tanzania, United Republic of",TZ,África,África oriental,no
+UGA,Uganda,UG,África,África oriental,no
+UKR,Ukraine,UA,Europa,Europa oriental,no
+UMI,United States Minor Outlying Islands,UM,Oceanía,Micronesia,no
+URY,Uruguay,UY,América,América del Sur,no
+USA,United States,US,América,América del Norte,no
+UZB,Uzbekistan,UZ,Asia,Asia central,no
+VAT,Holy See (Vatican City State),VA,Europa,Europa meridional,no
+VCT,Saint Vincent and the Grenadines,VC,América,Caribe,no
+VEN,"Venezuela, Bolivarian Republic of",VE,América,América del Sur,no
+VGB,"Virgin Islands, British",VG,América,Caribe,no
+VIR,"Virgin Islands, U.S.",VI,América,Caribe,no
+VNM,Viet Nam,VN,Asia,Asia sudoriental,no
+VUT,Vanuatu,VU,Oceanía,Melanesia,no
+WLF,Wallis and Futuna,WF,Oceanía,Polinesia,no
+WSM,Samoa,WS,Oceanía,Polinesia,no
+YEM,Yemen,YE,Asia,Asia occidental,no
+ZAF,South Africa,ZA,África,África meridional,no
+ZMB,Zambia,ZM,África,África oriental,no
+ZWE,Zimbabwe,ZW,África,África oriental,no

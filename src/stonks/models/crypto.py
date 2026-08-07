@@ -16,13 +16,23 @@ from sqlalchemy.dialects.postgresql import TIMESTAMP
 from sqlalchemy.orm import Mapped, mapped_column
 
 from stonks.db import Base
+from stonks.models.linaje import Linaje
 
 
-class Coin(Base):
+class Coin(Base, Linaje):
     """Criptomoneda."""
 
     __tablename__ = "coin"
-    __table_args__ = {"schema": "crypto"}
+    __table_args__ = (
+        # Dentro de este universo curado de majors, el simbolo
+        # identifica la moneda. Sin esta restriccion, CoinGecko
+        # publica el mismo activo con un id antiguo y otro nuevo
+        # (SNX aparecia como 'havven' y 'synthetix-network-token'),
+        # se cargaban las dos filas y gold.mart_crypto_overview no
+        # podia refrescarse por conflicto en su indice unico.
+        UniqueConstraint("symbol"),
+        {"schema": "crypto"},
+    )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     coingecko_id: Mapped[str] = mapped_column(
@@ -34,7 +44,7 @@ class Coin(Base):
     market_cap_rank: Mapped[int | None] = mapped_column(SmallInteger)
 
 
-class CryptoPrice(Base):
+class CryptoPrice(Base, Linaje):
     """Precio diario de criptomoneda."""
 
     __tablename__ = "price_daily"
@@ -57,15 +67,15 @@ class CryptoPrice(Base):
         nullable=False,
     )
     date: Mapped[date] = mapped_column(Date, nullable=False)
-    open: Mapped[float | None] = mapped_column(Numeric(18, 8))
-    high: Mapped[float | None] = mapped_column(Numeric(18, 8))
-    low: Mapped[float | None] = mapped_column(Numeric(18, 8))
-    close: Mapped[float] = mapped_column(Numeric(18, 8), nullable=False)
+    open: Mapped[float | None] = mapped_column(Numeric(20, 10))
+    high: Mapped[float | None] = mapped_column(Numeric(20, 10))
+    low: Mapped[float | None] = mapped_column(Numeric(20, 10))
+    close: Mapped[float] = mapped_column(Numeric(20, 10), nullable=False)
     volume_usd: Mapped[float | None] = mapped_column(Numeric(18, 2))
     market_cap_usd: Mapped[float | None] = mapped_column(Numeric(18, 2))
 
 
-class MarketDominance(Base):
+class MarketDominance(Base, Linaje):
     """Snapshot diario del mercado crypto."""
 
     __tablename__ = "market_dominance"
@@ -103,8 +113,8 @@ class CryptoPriceIntraday(Base):
         TIMESTAMP(timezone=True), primary_key=True
     )
     interval: Mapped[str] = mapped_column(String(3), primary_key=True)
-    open: Mapped[float | None] = mapped_column(Numeric(18, 8))
-    high: Mapped[float | None] = mapped_column(Numeric(18, 8))
-    low: Mapped[float | None] = mapped_column(Numeric(18, 8))
-    close: Mapped[float | None] = mapped_column(Numeric(18, 8))
+    open: Mapped[float | None] = mapped_column(Numeric(20, 10))
+    high: Mapped[float | None] = mapped_column(Numeric(20, 10))
+    low: Mapped[float | None] = mapped_column(Numeric(20, 10))
+    close: Mapped[float | None] = mapped_column(Numeric(20, 10))
     volume_usd: Mapped[float | None] = mapped_column(Numeric(18, 2))

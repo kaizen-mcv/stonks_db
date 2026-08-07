@@ -514,6 +514,13 @@ def check_temporal_gaps() -> dict:
     return resumen
 
 
+def _run_checks_datos() -> dict:
+    """Puente hacia los checks de veracidad."""
+    from stonks.quality_datos import run_checks_datos
+
+    return run_checks_datos()
+
+
 def run_all_checks() -> dict:
     """Ejecutar todos los checks de calidad (safe, no bloquea)."""
     results = {}
@@ -526,6 +533,9 @@ def run_all_checks() -> dict:
         ("indicadores_fantasma", check_indicator_emptiness),
         ("cobertura_mart", check_mart_column_coverage),
         ("huecos_temporales", check_temporal_gaps),
+        # Veracidad y completitud: viven en quality_datos
+        # para no engordar mas este modulo.
+        ("datos", _run_checks_datos),
     ]:
         try:
             results[name] = fn()

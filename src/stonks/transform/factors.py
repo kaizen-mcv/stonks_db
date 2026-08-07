@@ -203,7 +203,10 @@ class FactorScoreTransform(BaseTransform):
             serie = df[factor].astype(float)
             z = _zscore(serie)
             z_sec = serie.groupby(df["sector_id"]).transform(_zscore)
-            pct = serie.rank(pct=True)
+            # `rank(pct=True)` da 0-1; la columna se llama `percentile`
+            # y debe ir en 0-100, como el resto de columnas de
+            # porcentaje del proyecto.
+            pct = serie.rank(pct=True) * 100
             for cid in df.index:
                 if pd.isna(serie[cid]):
                     continue

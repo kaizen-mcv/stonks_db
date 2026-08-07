@@ -21,15 +21,17 @@ from sqlalchemy import (
 from sqlalchemy.orm import Mapped, mapped_column
 
 from stonks.db import Base
+from stonks.models.linaje import LinajeEjecucion
 
 
-class Production(Base):
+class Production(Base, LinajeEjecucion):
     """Producción agrícola por país, item y elemento."""
 
     __tablename__ = "production"
     __table_args__ = (
         UniqueConstraint("country_code", "item_code", "element", "period"),
         Index("ix_agri_prod_country", "country_code", "period"),
+        Index("ix_agri_prod_source", "source_id"),
         {"schema": "agri"},
     )
 
@@ -47,5 +49,5 @@ class Production(Base):
         Integer, ForeignKey("meta.data_source.id")
     )
     fetched_at: Mapped[datetime] = mapped_column(
-        DateTime, default=datetime.now
+        DateTime(timezone=True), default=datetime.now
     )

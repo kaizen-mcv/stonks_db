@@ -6,6 +6,7 @@ from stonks.models import (
     agri,  # noqa: F401
     alternative,  # noqa: F401
     bronze,  # noqa: F401
+    calendar,  # noqa: F401
     commodity,  # noqa: F401
     country,  # noqa: F401
     crypto,  # noqa: F401
@@ -18,6 +19,7 @@ from stonks.models import (
     gold,  # noqa: F401
     macro,  # noqa: F401
     meta,  # noqa: F401
+    realestate,  # noqa: F401
     ref,  # noqa: F401
     trade,  # noqa: F401
 )

@@ -14,6 +14,9 @@ data/logs/
 data/downloads/
 data/state/
 data/exports/
+# Universo de tickers descargado, se regenera con
+# scripts/download_universe.py
+.data/
 
 # Build
 build/

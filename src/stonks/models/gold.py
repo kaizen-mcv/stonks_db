@@ -26,9 +26,10 @@ from sqlalchemy import (
 from sqlalchemy.orm import Mapped, mapped_column
 
 from stonks.db import Base
+from stonks.models.linaje import Linaje, LinajeEjecucion
 
 
-class DimDate(Base):
+class DimDate(Base, Linaje):
     """Dimensión de fecha (1 fila por día calendario)."""
 
     __tablename__ = "dim_date"
@@ -44,7 +45,7 @@ class DimDate(Base):
     is_trading_day: Mapped[bool | None] = mapped_column(Boolean)
 
 
-class DimCountry(Base):
+class DimCountry(Base, Linaje):
     """Dimensión de país (economía mundial)."""
 
     __tablename__ = "dim_country"
@@ -57,7 +58,7 @@ class DimCountry(Base):
     income_group: Mapped[str | None] = mapped_column(String(50))
 
 
-class DimCompany(Base):
+class DimCompany(Base, Linaje):
     """Dimensión de empresa (SCD-1; sector desnormalizado)."""
 
     __tablename__ = "dim_company"
@@ -81,7 +82,7 @@ class DimCompany(Base):
     delisted_date: Mapped[date | None] = mapped_column(Date)
 
 
-class IndexMembership(Base):
+class IndexMembership(Base, LinajeEjecucion):
     """Pertenencia point-in-time de una empresa a un índice.
 
     Un registro = un periodo de pertenencia. Miembro en la fecha t ⇔
@@ -92,6 +93,7 @@ class IndexMembership(Base):
     __tablename__ = "index_membership"
     __table_args__ = (
         UniqueConstraint("index_id", "company_id", "start_date"),
+        Index("ix_gold_idxmemb_company", "company_id"),
         Index(
             "ix_gold_member_idx_dates", "index_id", "start_date", "end_date"
         ),
@@ -112,7 +114,7 @@ class IndexMembership(Base):
     source_id: Mapped[int | None] = mapped_column(Integer)
 
 
-class FactFundamentalsPit(Base):
+class FactFundamentalsPit(Base, LinajeEjecucion):
     """Hecho fundamental point-in-time (formato long, una métrica/fila).
 
     El grano incluye filed_date: una misma fiscal_period puede tener
@@ -155,7 +157,7 @@ class FactFundamentalsPit(Base):
     source_id: Mapped[int | None] = mapped_column(Integer)
 
 
-class FactFactorScores(Base):
+class FactFactorScores(Base, LinajeEjecucion):
     """Scores de factores cross-section, neutralizados por sector.
 
     Un registro = (company_id, as_of_date, factor, universe). z_score es
@@ -180,5 +182,6 @@ class FactFactorScores(Base):
     raw_value: Mapped[float | None] = mapped_column(Numeric(18, 6))
     z_score: Mapped[float | None] = mapped_column(Numeric(10, 6))
     z_sector_neutral: Mapped[float | None] = mapped_column(Numeric(10, 6))
-    percentile: Mapped[float | None] = mapped_column(Numeric(6, 4))
+    # En 0-100, no en 0-1: tres digitos enteros para que quepa el 100.
+    percentile: Mapped[float | None] = mapped_column(Numeric(7, 4))
     source_id: Mapped[int | None] = mapped_column(Integer)

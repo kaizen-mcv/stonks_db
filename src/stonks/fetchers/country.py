@@ -79,6 +79,31 @@ class CountryProfileFetcher(BaseFetcher):
     RATE_LIMIT = 0.2
     BASE_URL = "https://api.worldbank.org/v2"
 
+    @staticmethod
+    def _paises_objetivo(session) -> list[str]:
+        """Codigos ISO3 para los que pedir perfil.
+
+        Se toman de `ref.country`; si por lo que sea el catalogo esta
+        vacio, se cae a la lista fija historica para no quedarse sin
+        hacer nada.
+        """
+        from sqlalchemy import text
+
+        # Solo los que el World Bank reconoce. `ref.country` incluye
+        # territorios sin estadisticas (Antartida, Isla Bouvet...) y
+        # basta con que uno sea invalido para que la API rechace el
+        # lote entero de 20, tumbando a los 19 buenos con el.
+        filas = session.execute(
+            text(
+                "SELECT DISTINCT s.country_code FROM macro.series s "
+                "JOIN macro.indicator i ON i.id = s.indicator_id "
+                "WHERE i.code = 'GDP_NOMINAL' "
+                "AND s.country_code IS NOT NULL "
+                "ORDER BY 1"
+            )
+        ).fetchall()
+        return [f[0] for f in filas] or list(PROFILE_COUNTRIES)
+
     def fetch_profiles(self) -> dict[str, int]:
         """Descargar perfiles de país (último dato)."""
         run_id = self._start_run(
@@ -95,10 +120,14 @@ class CountryProfileFetcher(BaseFetcher):
         session = get_session()
 
         try:
+            # Antes se usaba PROFILE_COUNTRIES, una lista fija de 40
+            # paises: por eso country.profile tenia 40 filas de 250.
+            # Se recorre el catalogo entero de ref.country.
+            paises = self._paises_objetivo(session)
+            logger.info("  Perfiles de %d paises", len(paises))
             # World Bank acepta max ~20 países
             chunks = [
-                PROFILE_COUNTRIES[i : i + 20]
-                for i in range(0, len(PROFILE_COUNTRIES), 20)
+                paises[i : i + 20] for i in range(0, len(paises), 20)
             ]
             for indicator_code, field in PROFILE_INDICATORS.items():
                 logger.info("  Perfil: %s...", indicator_code)

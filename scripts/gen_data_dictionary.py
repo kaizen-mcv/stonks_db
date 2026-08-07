@@ -20,7 +20,11 @@ GROUPS = [
         "Renta variable y mercados financieros",
         ["equity", "fi", "commodity", "forex", "crypto", "fund", "alt"],
     ),
-    ("Economía mundial", ["macro", "trade", "energy", "agri", "country"]),
+    (
+        "Economía mundial",
+        ["macro", "trade", "energy", "agri", "country",
+         "realestate", "calendar"],
+    ),
     ("Derivados", ["deriv"]),
     ("Medallion — aterrizaje y analítica", ["bronze", "gold"]),
 ]
@@ -43,6 +47,8 @@ SCHEMA_DESC = {
     "deriv": "Derivados: snapshots de cadenas de opciones.",
     "bronze": "Aterrizaje crudo (JSONB) de las fuentes nuevas.",
     "gold": "Capa analítica point-in-time: hechos, dimensiones y marts.",
+    "realestate": "Inmobiliario: índices de precio de vivienda por país.",
+    "calendar": "Calendario económico: publicaciones macro y sus fechas.",
 }
 
 # Descripción curada de vistas/materializadas de gold (no son modelos ORM)
@@ -64,6 +70,21 @@ KIND = {"r": "tabla", "m": "materializada", "v": "vista", "p": "tabla"}
 # Explicación NO técnica de cada tabla (en lenguaje llano). Si no está
 # aquí, se usa el docstring del modelo.
 TABLE_DESC = {
+    "realestate.price_index": (
+        "Catálogo de índices de precio de vivienda "
+        "(BIS, OCDE, Case-Shiller)."
+    ),
+    "realestate.price_index_value": (
+        "Serie temporal de cada índice inmobiliario."
+    ),
+    "calendar.release": (
+        "Publicación periódica de un organismo estadístico "
+        "(nóminas, IPC, PIB...)."
+    ),
+    "calendar.release_date": (
+        "Fecha en que una publicación sale o saldrá; "
+        "`is_scheduled` marca las futuras."
+    ),
     "ref.country": "Lista de países del mundo, con su código ISO.",
     "ref.currency": "Lista de monedas (euro, dólar...).",
     "ref.exchange": "Bolsas de valores (Nasdaq, NYSE...).",
@@ -586,8 +607,6 @@ COL_DESC = {
     "fund.fund.inception_date": "Fecha de creación del fondo.",
     "fund.nav_daily.nav": "Valor liquidativo (NAV).",
     # alt
-    "alt.housing_index.index_type": "Tipo de índice de vivienda.",
-    "alt.housing_index_value.yoy_change_pct": "Variación interanual (%).",
     # country
     "country.demographics.total_population": "Población total.",
     "country.demographics.median_age": "Edad mediana.",

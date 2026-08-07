@@ -1,4 +1,4 @@
-# ── Stonks DB v0.4.0: crontab recomendado ────────
+# ── Stonks DB v0.5.0: crontab recomendado ───────
 # Servidor en UTC. España = UTC+2 (verano CEST)
 # Instalar: crontab -e, pegar las líneas deseadas
 #
@@ -7,11 +7,30 @@
 
 # ── Daily: tras cierre Wall Street ──────────────
 # 20:30 UTC = 22:30 España (L-V)
+#
+# IMPORTANTE: una sola entrada diaria. La auditoría
+# de 2026-08 encontró el pipeline programado dos
+# veces (daily_update.sh a las 20:30 y un
+# `stonks update -c daily` suelto a las 21:30).
+# Se solapaban: el segundo arrancaba con el primero
+# aún corriendo, duplicaba las descargas y competía
+# por los locks de las mismas tablas.
+# daily_update.sh ya termina llamando al pipeline
+# y construyendo la capa gold.
 30 20 * * 1-5 /mnt/storage/Projects/db-projects/stonks/scripts/daily_update.sh
 
 # ── Weekly: domingos ────────────────────────────
 # 08:00 UTC = 10:00 España
+# Incluye constituyentes mundiales, factores
+# Fama-French, LEI, calendario económico,
+# inmobiliario y primas de riesgo país.
 0 8 * * 0 /mnt/storage/Projects/db-projects/stonks/scripts/weekly_update.sh
+
+# ── Cadencias largas del pipeline medallion ─────
+# Mensual: día 2 a las 06:00 UTC
+0 6 2 * * cd /mnt/storage/Projects/db-projects/stonks && .venv/bin/stonks update -c monthly >> data/logs/cron_pipeline_monthly.log 2>&1
+# Anual: 20 de abril y de octubre a las 06:00 UTC
+0 6 20 4,10 * cd /mnt/storage/Projects/db-projects/stonks && .venv/bin/stonks update -c yearly >> data/logs/cron_pipeline_yearly.log 2>&1
 
 # ── Intraday 1m: cada 5 min L-V ────────────────
 # Equity top 500, crypto, forex majors

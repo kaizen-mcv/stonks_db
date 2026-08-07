@@ -5,6 +5,8 @@ y refresca las vistas/materializadas. Es seguro re-ejecutar: dos
 corridas dejan el mismo estado. Se invoca al final del pipeline.
 """
 
+import re
+
 from sqlalchemy import text
 
 from stonks.db import engine, get_session
@@ -18,21 +20,54 @@ SP500_CODES = ("SPX", "SPY", "GSPC", "^GSPC", "SP500")
 
 # --- Dimensión fecha: un día por fecha con cotización disponible ---
 _DIM_DATE = """
+-- `is_trading_day` se deduce de si hubo cotizacion ese dia, no se
+-- pone a TRUE a ciegas. Antes los 6.740 fines de semana figuraban
+-- como habiles, y quien contara dias de mercado obtenia 365 al ano en
+-- lugar de ~252: las anualizaciones de volatilidad y de Sharpe salian
+-- desviadas en un factor de raiz(365/252), un 20 %.
+--
+-- `is_month_end` es el ultimo dia HABIL del mes, no el ultimo del
+-- calendario: un rebalanceo mensual en el 31 no encuentra precios en
+-- un tercio de los meses.
 INSERT INTO gold.dim_date AS d
     (date_key, year, quarter, month, day_of_week, is_month_end,
      is_trading_day)
-SELECT g::date,
-       extract(year FROM g)::smallint,
-       extract(quarter FROM g)::smallint,
-       extract(month FROM g)::smallint,
-       extract(isodow FROM g)::smallint,
-       (g = (date_trunc('month', g) + interval '1 month -1 day')),
-       TRUE
-FROM generate_series(
-        (SELECT min(date) FROM equity.price_daily),
-        (SELECT max(date) FROM equity.price_daily),
-        interval '1 day') AS g
-ON CONFLICT (date_key) DO NOTHING
+WITH sesiones AS (
+    -- Las fechas con cotizacion en el mercado ESTADOUNIDENSE, que es
+    -- quien consume este calendario (`mart_pool_membership` y el
+    -- benchmark del S&P 500). Tomar cualquier mercado metia los
+    -- sabados y domingos de la bolsa saudi, que abre en domingo, y
+    -- daba 310 dias habiles en 2023 en vez de ~252.
+    --
+    -- Comprobarlo con un EXISTS correlacionado por dia recorria los
+    -- 28 M de precios 23.552 veces y no terminaba: se resuelve de una
+    -- sola pasada.
+    SELECT DISTINCT p.date AS fecha
+    FROM equity.price_daily p
+    JOIN equity.company c ON c.id = p.company_id
+    WHERE c.ticker !~ '\\.'
+),
+dias AS (
+    SELECT g::date AS fecha,
+           (s.fecha IS NOT NULL) AS hubo_mercado
+    FROM generate_series(
+            (SELECT min(fecha) FROM sesiones),
+            (SELECT max(fecha) FROM sesiones),
+            interval '1 day') AS g
+    LEFT JOIN sesiones s ON s.fecha = g::date
+)
+SELECT fecha,
+       extract(year FROM fecha)::smallint,
+       extract(quarter FROM fecha)::smallint,
+       extract(month FROM fecha)::smallint,
+       extract(isodow FROM fecha)::smallint,
+       hubo_mercado AND fecha = max(fecha) FILTER (WHERE hubo_mercado)
+           OVER (PARTITION BY date_trunc('month', fecha)),
+       hubo_mercado
+FROM dias
+ON CONFLICT (date_key) DO UPDATE SET
+    is_trading_day = EXCLUDED.is_trading_day,
+    is_month_end = EXCLUDED.is_month_end
 """
 
 # --- Dimensión empresa: clave subrogada = id; sector desnormalizado ---
@@ -67,8 +102,22 @@ WHERE d.is_trading_day IS TRUE
 """
 
 # --- Materializada: retorno diario del pool (EW honesto) vs SPY ---
+#
+# El retorno de un miembro se acota a +-100 % antes de promediar. Una
+# media no tiene defensa alguna frente a un valor extremo: una sola
+# vela corrupta de las 494 del pool bastaba para arruinar el dia entero
+# —el 2012-04-03 salia un +2.539 % porque Titanium Metals figuraba a
+# 1,40 el dia anterior cotizando sobre 10.000—, y compuesta a lo largo
+# de la serie daba un indice de 10 elevado a 50.
+#
+# Las velas de ese tipo ya se purgaron (migracion d8e9f0a1b2c3) y hay
+# un check que avisa si vuelven, pero el mart no deberia depender de
+# que la limpieza se haya hecho: un +100 % diario en un miembro del
+# S&P 500 no existe, asi que descartarlo no pierde nada real.
+_LIMITE_RET_MIEMBRO = 1.0
+
 _MV_BENCHMARK = f"""
-CREATE MATERIALIZED VIEW IF NOT EXISTS gold.mart_benchmark_returns AS
+CREATE MATERIALIZED VIEW gold.mart_benchmark_returns AS
 WITH member_ret AS (
     SELECT pm.date,
            COALESCE(pd.adj_close, pd.close)
@@ -82,6 +131,7 @@ WITH member_ret AS (
 SELECT date, 'equal_weight'::varchar(20) AS method, avg(ret) AS ret
 FROM member_ret
 WHERE ret IS NOT NULL
+  AND abs(ret) <= {_LIMITE_RET_MIEMBRO}
 GROUP BY date
 UNION ALL
 SELECT ip.date, 'spy'::varchar(20),
@@ -111,7 +161,7 @@ ON CONFLICT (country_code) DO UPDATE SET
 
 # --- Panel ancho país × año, cross-dominio (macro + energía + comercio) ---
 _MV_COUNTRY_YEAR = """
-CREATE MATERIALIZED VIEW IF NOT EXISTS gold.mart_country_year AS
+CREATE MATERIALIZED VIEW gold.mart_country_year AS
 WITH macro_p AS (
     SELECT
         s.country_code,
@@ -362,13 +412,6 @@ WITH macro_p AS (
         max(dp.value) FILTER (
             WHERE i.code = 'UNDP_GII')
             AS gender_ineq_index,
-        -- Libertad económica (Heritage)
-        max(dp.value) FILTER (
-            WHERE i.code = 'HF_ECON_FREEDOM')
-            AS econ_freedom_score,
-        max(dp.value) FILTER (
-            WHERE i.code = 'HF_TRADE_FREEDOM')
-            AS trade_freedom_score,
         -- Vulnerabilidad climática (ND-GAIN)
         max(dp.value) FILTER (
             WHERE i.code = 'NDGAIN_OVERALL')
@@ -463,7 +506,20 @@ WITH macro_p AS (
             AS edgar_ch4_mt,
         max(dp.value) FILTER (
             WHERE i.code = 'EDGAR_N2O')
-            AS edgar_n2o_mt
+            AS edgar_n2o_mt,
+        -- Marca de proyeccion: `macro.data_point.is_forecast` existia
+        -- desde la primera auditoria pero nunca llegaba a gold, asi
+        -- que `stonks world ESP` mostraba la prevision del FMI para
+        -- 2026 igual que un dato realizado.
+        --
+        -- Se marca por el PIB, que es la cifra que encabeza el panel
+        -- y la que se lee. Exigir que TODAS las observaciones del ano
+        -- fueran proyeccion no servia: Espana 2026 tiene 83 datos
+        -- reales de otros indicadores junto a 24 previsiones, asi que
+        -- el ano quedaba sin marcar pese a que su PIB es una
+        -- prevision del FMI.
+        bool_or(dp.is_forecast) FILTER (WHERE i.code = 'IMF_NGDPD')
+            AS is_forecast
     FROM macro.data_point dp
     JOIN macro.series s ON s.id = dp.series_id
     JOIN macro.indicator i ON i.id = s.indicator_id
@@ -499,6 +555,7 @@ SELECT m.*,
           2) AS renewables_share_elec_pct,
     t.exports_usd_bn, t.imports_usd_bn,
     -- Balance comercial de bienes (calculado)
+    -- `is_forecast` llega por `m.*`, viene de la CTE macro_p.
     (t.exports_usd_bn - t.imports_usd_bn) AS trade_balance_usd_bn
 FROM macro_p m
 LEFT JOIN energy_p e
@@ -514,7 +571,7 @@ ON gold.mart_country_year (country_code, year)
 
 # --- Matriz de comercio bilateral país×país (exports + imports) ---
 _MV_TRADE = """
-CREATE MATERIALIZED VIEW IF NOT EXISTS gold.mart_trade_matrix AS
+CREATE MATERIALIZED VIEW gold.mart_trade_matrix AS
 SELECT x.reporter_code, x.partner_code, x.period AS year,
        x.value_usd_k AS exports_usd_k,
        m.value_usd_k AS imports_usd_k
@@ -536,7 +593,20 @@ ON gold.mart_trade_matrix (reporter_code, partner_code, year)
 
 # --- Empresa + macro de su país (cruce empresa↔economía) --------
 _MV_COMPANY_MACRO = """
-CREATE MATERIALIZED VIEW IF NOT EXISTS gold.mart_company_macro AS
+-- Una fila por empresa y ano en que la empresa EXISTIA. El JOIN
+-- emparejaba solo por pais, sin ninguna nocion temporal: el mart iba
+-- de 1750 a 2031 y el 43 % de sus filas eran anteriores a 1900, con
+-- Apple cotizando en el siglo XVIII. Se acota con el historial real
+-- de precios de cada empresa, que es el unico dato fiable de cuando
+-- estuvo listada, y con `delisted_date` cuando existe.
+CREATE MATERIALIZED VIEW gold.mart_company_macro AS
+WITH vida AS (
+    SELECT company_id,
+           extract(YEAR FROM min(date))::int AS primer_ano,
+           extract(YEAR FROM max(date))::int AS ultimo_ano
+    FROM equity.price_daily
+    GROUP BY company_id
+)
 SELECT
     dc.company_id, dc.ticker, dc.name AS company_name,
     dc.sector_name, dc.country_code, mcy.year,
@@ -547,8 +617,13 @@ SELECT
     mcy.exports_usd_bn, mcy.imports_usd_bn,
     mcy.fdi_inflows_usd_bn, mcy.reserves_total_usd_bn
 FROM gold.dim_company dc
+JOIN vida v ON v.company_id = dc.company_id
 JOIN gold.mart_country_year mcy
   ON mcy.country_code = dc.country_code
+ AND mcy.year BETWEEN v.primer_ano AND LEAST(
+       v.ultimo_ano,
+       COALESCE(extract(YEAR FROM dc.delisted_date)::int, v.ultimo_ano)
+     )
 WHERE dc.country_code IS NOT NULL
 """
 
@@ -559,17 +634,37 @@ ON gold.mart_company_macro (company_id, year)
 
 # --- Riesgo soberano (rating + deuda + volatilidad macro) --------
 _MV_SOVEREIGN_RISK = """
-CREATE MATERIALIZED VIEW IF NOT EXISTS gold.mart_sovereign_risk AS
-WITH latest_rating AS (
-    SELECT bi.country_code, cr.agency, cr.rating,
-           cr.outlook, cr.rating_date,
+-- El rating que se cruza con cada ano es el vigente ESE ano, no el de
+-- hoy. Antes se tomaba `rn = 1` (la calificacion mas reciente) y se
+-- estampaba sobre todos los anos, incluido 1750: cualquier estudio de
+-- "rating contra prima historica" salia circular, porque el rating ya
+-- incorporaba lo que iba a pasar.
+CREATE MATERIALIZED VIEW gold.mart_sovereign_risk AS
+WITH rating_por_ano AS (
+    SELECT bi.country_code, cr.agency, cr.rating, cr.outlook,
+           extract(YEAR FROM cr.rating_date)::int AS ano,
            ROW_NUMBER() OVER (
-               PARTITION BY bi.country_code, cr.agency
+               PARTITION BY bi.country_code, cr.agency,
+                            extract(YEAR FROM cr.rating_date)
                ORDER BY cr.rating_date DESC
            ) AS rn
     FROM fi.credit_rating cr
     JOIN fi.bond_issuer bi ON bi.id = cr.issuer_id
     WHERE bi.issuer_type = 'government'
+),
+-- Un rating se mantiene vigente hasta que llega el siguiente, asi que
+-- para cada pais-ano se toma la ultima calificacion emitida en ese ano
+-- o antes.
+vigente AS (
+    SELECT DISTINCT ON (r.country_code, r.agency, y.year)
+        r.country_code, r.agency, y.year, r.rating, r.outlook
+    FROM (SELECT DISTINCT country_code, year
+          FROM gold.mart_country_year) y
+    JOIN rating_por_ano r
+      ON r.country_code = y.country_code
+     AND r.ano <= y.year
+     AND r.rn = 1
+    ORDER BY r.country_code, r.agency, y.year, r.ano DESC
 )
 SELECT
     mcy.country_code, mcy.year,
@@ -588,8 +683,8 @@ SELECT
         ROWS BETWEEN 4 PRECEDING AND CURRENT ROW
     ) AS gdp_vol_5y
 FROM gold.mart_country_year mcy
-LEFT JOIN latest_rating lr
-  ON lr.country_code = mcy.country_code AND lr.rn = 1
+LEFT JOIN vigente lr
+  ON lr.country_code = mcy.country_code AND lr.year = mcy.year
 """
 
 _MV_SOVEREIGN_RISK_IX = """
@@ -599,7 +694,7 @@ ON gold.mart_sovereign_risk (country_code, year, rating_agency)
 
 # --- Dependencia comercial (top partners, concentración) ---------
 _MV_TRADE_DEP = """
-CREATE MATERIALIZED VIEW IF NOT EXISTS gold.mart_trade_dependency AS
+CREATE MATERIALIZED VIEW gold.mart_trade_dependency AS
 WITH ranked AS (
     SELECT reporter_code, partner_code, year,
            coalesce(exports_usd_k, 0)
@@ -632,7 +727,7 @@ ON gold.mart_trade_dependency (reporter_code, year)
 
 # --- Sorpresas de beneficios (estimado vs reportado) -------------
 _MV_EARNINGS_SURPRISE = """
-CREATE MATERIALIZED VIEW IF NOT EXISTS gold.mart_earnings_surprise AS
+CREATE MATERIALIZED VIEW gold.mart_earnings_surprise AS
 SELECT
     ed.company_id,
     dc.ticker,
@@ -655,7 +750,7 @@ ON gold.mart_earnings_surprise (company_id, announcement_date)
 
 # --- Sector × país (exposición sectorial geográfica) -------------
 _MV_SECTOR_COUNTRY = """
-CREATE MATERIALIZED VIEW IF NOT EXISTS gold.mart_sector_country AS
+CREATE MATERIALIZED VIEW gold.mart_sector_country AS
 SELECT
     dc.sector_name,
     dc.country_code,
@@ -680,7 +775,7 @@ ON gold.mart_sector_country (sector_name, country_code)
 
 # --- Panel gobernanza multidimensional (WGI + TI + FH + Heritage + FSI + V-Dem)
 _MV_GOVERNANCE = """
-CREATE MATERIALIZED VIEW IF NOT EXISTS
+CREATE MATERIALIZED VIEW
     gold.mart_country_governance AS
 SELECT
     s.country_code,
@@ -718,16 +813,6 @@ SELECT
     max(dp.value) FILTER (
         WHERE i.code = 'FH_CL')
         AS fh_civil_liberties,
-    -- Heritage Foundation (0-100)
-    max(dp.value) FILTER (
-        WHERE i.code = 'HF_ECON_FREEDOM')
-        AS hf_econ_freedom,
-    max(dp.value) FILTER (
-        WHERE i.code = 'HF_TRADE_FREEDOM')
-        AS hf_trade_freedom,
-    max(dp.value) FILTER (
-        WHERE i.code = 'HF_FISCAL')
-        AS hf_fiscal_health,
     -- Fragile States Index (0-120)
     max(dp.value) FILTER (
         WHERE i.code = 'FSI_TOTAL')
@@ -769,7 +854,7 @@ ON gold.mart_country_governance (country_code, year)
 
 # --- Panel riesgo climático (ND-GAIN + emisiones + renovables) ---
 _MV_CLIMATE_RISK = """
-CREATE MATERIALIZED VIEW IF NOT EXISTS
+CREATE MATERIALIZED VIEW
     gold.mart_climate_risk AS
 SELECT
     s.country_code,
@@ -847,7 +932,7 @@ GROUP BY i.id, i.code, i.name, i.category, i.unit, i.frequency
 
 # --- Regímenes de volatilidad (VIX + variantes) --------
 _MV_VOLATILITY_REGIME = """
-CREATE MATERIALIZED VIEW IF NOT EXISTS
+CREATE MATERIALIZED VIEW
     gold.mart_volatility_regime AS
 SELECT
     vi.code,
@@ -890,34 +975,40 @@ ON gold.mart_volatility_regime
 
 # --- Panorama crypto: top coins con retornos --------
 _MV_CRYPTO_OVERVIEW = """
-CREATE MATERIALIZED VIEW IF NOT EXISTS
+-- Precios de referencia POR MONEDA, no por fecha global. Antes las
+-- tres CTE filtraban por `max(date)` sobre toda la tabla y por
+-- igualdad exacta a `max(date) - 30` y `- 365`: como no todas las
+-- monedas tienen barra el mismo dia, el JOIN interno dejaba fuera 242
+-- de las 246, y los retornos a 1 ano salian nulos casi siempre.
+-- El patron correcto (DISTINCT ON + <=) ya se usaba en
+-- mart_etf_category; aqui se aplica igual.
+CREATE MATERIALIZED VIEW
     gold.mart_crypto_overview AS
 WITH latest AS (
-    SELECT coin_id,
+    SELECT DISTINCT ON (coin_id)
+           coin_id,
            close AS last_price,
            volume_usd AS last_volume,
            market_cap_usd AS last_mcap,
            date AS last_date
     FROM crypto.price_daily
-    WHERE date = (
-        SELECT max(date) FROM crypto.price_daily
-    )
+    ORDER BY coin_id, date DESC
 ),
 prev_30 AS (
-    SELECT coin_id, close AS price_30d
-    FROM crypto.price_daily
-    WHERE date = (
-        SELECT max(date) - 30
-        FROM crypto.price_daily
-    )
+    SELECT DISTINCT ON (p.coin_id)
+           p.coin_id, p.close AS price_30d
+    FROM crypto.price_daily p
+    JOIN latest l ON l.coin_id = p.coin_id
+    WHERE p.date <= l.last_date - 30
+    ORDER BY p.coin_id, p.date DESC
 ),
 prev_365 AS (
-    SELECT coin_id, close AS price_1y
-    FROM crypto.price_daily
-    WHERE date = (
-        SELECT max(date) - 365
-        FROM crypto.price_daily
-    )
+    SELECT DISTINCT ON (p.coin_id)
+           p.coin_id, p.close AS price_1y
+    FROM crypto.price_daily p
+    JOIN latest l ON l.coin_id = p.coin_id
+    WHERE p.date <= l.last_date - 365
+    ORDER BY p.coin_id, p.date DESC
 )
 SELECT
     c.symbol, c.name, c.category,
@@ -946,32 +1037,35 @@ ON gold.mart_crypto_overview (symbol)
 
 # --- Rendimiento ETF por categoría --------
 _MV_ETF_CATEGORY = """
-CREATE MATERIALIZED VIEW IF NOT EXISTS
+CREATE MATERIALIZED VIEW
     gold.mart_etf_category AS
 WITH latest_nav AS (
-    SELECT fund_id, close, date AS last_date
+    SELECT fund_id, nav, date AS last_date
     FROM fund.nav_daily
     WHERE date = (
         SELECT max(date) FROM fund.nav_daily
     )
 ),
+-- La sesion de hace un ano rara vez cae en dia habil: se toma el
+-- ultimo NAV disponible en o antes de esa fecha, por fondo.
 nav_1y AS (
-    SELECT fund_id, close AS nav_1y
+    SELECT DISTINCT ON (fund_id)
+        fund_id, nav AS nav_1y
     FROM fund.nav_daily
-    WHERE date = (
-        SELECT max(date) - 365
-        FROM fund.nav_daily
+    WHERE date <= (
+        SELECT max(date) - 365 FROM fund.nav_daily
     )
+    ORDER BY fund_id, date DESC
 )
 SELECT
     f.asset_class,
     f.geography,
     f.strategy,
     count(DISTINCT f.id) AS n_funds,
-    round(avg(ln.close)::numeric, 2)
+    round(avg(ln.nav)::numeric, 2)
         AS avg_nav,
     round(avg(
-        (ln.close / NULLIF(n1.nav_1y, 0)
+        (ln.nav / NULLIF(n1.nav_1y, 0)
          - 1) * 100
     )::numeric, 2) AS avg_return_1y_pct,
     sum(
@@ -996,51 +1090,46 @@ ON gold.mart_etf_category
 
 # --- Curva de tipos actual vs hace 1 año --------
 _MV_YIELD_CURVE = """
-CREATE MATERIALIZED VIEW IF NOT EXISTS
+-- fi.yield_curve esta en formato largo (una fila por vencimiento),
+-- no ancho: aqui se pivota a columnas y se calculan las pendientes.
+-- Cubre todos los paises con curva cargada, no solo el ultimo dia.
+CREATE MATERIALIZED VIEW
     gold.mart_yield_curve AS
-WITH latest AS (
-    SELECT date, yield_3m, yield_2y,
-           yield_5y, yield_10y, yield_30y,
-           spread_10y_2y, spread_10y_3m
+WITH pivotada AS (
+    SELECT
+        country_code,
+        date,
+        max(yield_pct) FILTER (WHERE maturity_months = 3)
+            AS yield_3m,
+        max(yield_pct) FILTER (WHERE maturity_months = 24)
+            AS yield_2y,
+        max(yield_pct) FILTER (WHERE maturity_months = 60)
+            AS yield_5y,
+        max(yield_pct) FILTER (WHERE maturity_months = 120)
+            AS yield_10y,
+        max(yield_pct) FILTER (WHERE maturity_months = 360)
+            AS yield_30y
     FROM fi.yield_curve
-    WHERE date = (
-        SELECT max(date) FROM fi.yield_curve
-    )
-),
-year_ago AS (
-    SELECT date, yield_3m, yield_2y,
-           yield_5y, yield_10y, yield_30y
-    FROM fi.yield_curve
-    WHERE date = (
-        SELECT max(date) - 365
-        FROM fi.yield_curve
-    )
+    GROUP BY country_code, date
 )
 SELECT
-    'current' AS period,
-    l.date,
-    l.yield_3m, l.yield_2y,
-    l.yield_5y, l.yield_10y,
-    l.yield_30y,
-    l.spread_10y_2y,
-    l.spread_10y_3m
-FROM latest l
-UNION ALL
-SELECT
-    '1y_ago' AS period,
-    y.date,
-    y.yield_3m, y.yield_2y,
-    y.yield_5y, y.yield_10y,
-    y.yield_30y,
-    y.yield_10y - y.yield_2y,
-    y.yield_10y - y.yield_3m
-FROM year_ago y
+    country_code,
+    date,
+    yield_3m,
+    yield_2y,
+    yield_5y,
+    yield_10y,
+    yield_30y,
+    yield_10y - yield_2y AS spread_10y_2y,
+    yield_10y - yield_3m AS spread_10y_3m,
+    -- La inversion de la curva es la senal recesiva clasica.
+    (yield_10y - yield_2y) < 0 AS invertida_10y_2y
+FROM pivotada
 """
 
 _MV_YIELD_CURVE_IX = """
-CREATE UNIQUE INDEX IF NOT EXISTS
-    ix_gold_yield_curve
-ON gold.mart_yield_curve (period)
+CREATE UNIQUE INDEX IF NOT EXISTS ix_gold_yield_curve
+ON gold.mart_yield_curve (country_code, date)
 """
 
 
@@ -1064,6 +1153,29 @@ GROUP BY ds.id, ds.name, ds.display_name,
 """
 
 
+def _recrear_mv(conn, sql: str) -> None:
+    """Soltar y volver a crear una vista materializada.
+
+    Antes se usaba `CREATE MATERIALIZED VIEW IF NOT EXISTS`, que una
+    vez creada la vista **conserva su definicion para siempre**:
+    cambiar el SQL de este fichero no tenia ningun efecto y el build
+    terminaba diciendo que todo habia ido bien. Once de los catorce
+    marts llevaban congelados desde su creacion, sin forma de saber si
+    el SQL del repositorio era el que estaba en la base.
+    """
+    nombre = re.search(
+        r"CREATE MATERIALIZED VIEW\s+([a-z_]+\.[a-z_]+)", sql
+    )
+    if nombre:
+        conn.execute(
+            text(
+                "DROP MATERIALIZED VIEW IF EXISTS "
+                f"{nombre.group(1)} CASCADE"
+            )
+        )
+    conn.execute(text(sql))
+
+
 def build_gold() -> dict:
     """Reconstruir dimensiones, vistas y materializadas de gold."""
     session = get_session()
@@ -1080,8 +1192,8 @@ def build_gold() -> dict:
             conn.execute(text(_DIM_COMPANY))
             conn.execute(text(_DIM_COUNTRY))
             conn.execute(text(_VIEW_POOL))
-            conn.execute(text(_MV_BENCHMARK))
-            conn.execute(text(_MV_INDEX))
+            _recrear_mv(conn, _MV_BENCHMARK)
+            _recrear_mv(conn, _MV_INDEX)
             # Recrear el mart país×año para incorporar columnas nuevas.
             conn.execute(
                 text(
@@ -1091,7 +1203,7 @@ def build_gold() -> dict:
             )
             conn.execute(text(_MV_COUNTRY_YEAR))
             conn.execute(text(_MV_COUNTRY_YEAR_INDEX))
-            conn.execute(text(_MV_TRADE))
+            _recrear_mv(conn, _MV_TRADE)
             conn.execute(text(_MV_TRADE_INDEX))
             # Marts cruzados (empresa↔macro, riesgo, trade, earnings, sector)
             for mv_sql, ix_sql in [
@@ -1107,7 +1219,7 @@ def build_gold() -> dict:
                 (_MV_ETF_CATEGORY, _MV_ETF_CATEGORY_IX),
                 (_MV_YIELD_CURVE, _MV_YIELD_CURVE_IX),
             ]:
-                conn.execute(text(mv_sql))
+                _recrear_mv(conn, mv_sql)
                 conn.execute(text(ix_sql))
             conn.execute(text(_VIEW_INDICATOR))
             conn.execute(text(_VIEW_DATA_SOURCE))

@@ -22,15 +22,17 @@ from sqlalchemy import (
 from sqlalchemy.orm import Mapped, mapped_column
 
 from stonks.db import Base
+from stonks.models.linaje import LinajeEjecucion
 
 
-class Balance(Base):
+class Balance(Base, LinajeEjecucion):
     """Balance energético por país, fuente y flujo."""
 
     __tablename__ = "balance"
     __table_args__ = (
         UniqueConstraint("country_code", "product_code", "flow", "period"),
         Index("ix_energy_balance_country", "country_code", "period"),
+        Index("ix_energy_balance_source", "source_id"),
         {"schema": "energy"},
     )
 
@@ -47,5 +49,5 @@ class Balance(Base):
         Integer, ForeignKey("meta.data_source.id")
     )
     fetched_at: Mapped[datetime] = mapped_column(
-        DateTime, default=datetime.now
+        DateTime(timezone=True), default=datetime.now
     )

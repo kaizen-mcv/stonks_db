@@ -14,6 +14,7 @@ financieros** y **economía mundial** en un modelo **medallion**
 | [TUTORIALS.md](TUTORIALS.md) | **Tutoriales**: backtests PIT, panel mundial, factores de inversión. |
 | [JOIN_PATTERNS.md](JOIN_PATTERNS.md) | **15 patrones de JOIN** entre esquemas con SQL listo para copiar. |
 | [FRESHNESS_SLA.md](FRESHNESS_SLA.md) | **SLAs de frescura**: lag esperado de cada dato por cadencia. |
+| [CERTIFICACION.md](CERTIFICACION.md) | **¿Son fiables los datos?**: cómo se ha verificado cada tabla, o por qué no se puede. |
 | [QUERY_OPTIMIZATION.md](QUERY_OPTIMIZATION.md) | **Rendimiento**: tips para consultar las tablas grandes (31M+ filas). |
 | [../README.md](../README.md) | Visión general, instalación, uso y matriz de cobertura. |
 
@@ -62,12 +63,22 @@ stonks indicators -c health   # catálogo de indicadores por categoría
 ```
 
 ### 5. Fiabilidad de los datos
+- **De cada tabla consta cómo se ha verificado**, o por qué no se puede:
+  [CERTIFICACION.md](CERTIFICACION.md) y `meta.table_certification`. De
+  94 tablas, 21 están contrastadas contra una cifra publicada fuera del
+  proyecto, 72 pasan comprobaciones estructurales, 1 está declarada no
+  verificable y ninguna queda sin declarar.
 - Cada descarga y transformación queda **auditada** en `meta.fetch_run` y
   `meta.transform_run`; la cobertura/frescura por dominio en
-  `meta.data_quality`.
+  `meta.data_quality`. Desde v0.8.0, cada fila lleva además `source_id` y
+  `fetch_run_id`.
 - Todo es **idempotente**: re-ejecutar no duplica.
 - Los **fundamentales** y el **universo S&P 500** son *point-in-time*
   (sin sesgo de supervivencia) para backtests honestos.
+
+Lo que esto **no** promete: que cada cifra sea cierta. Si la fuente
+publica mal un dato, la base lo reproduce. Lo que sí promete es que
+consta cómo se comprobó cada tabla.
 
 ---
 
@@ -77,4 +88,5 @@ Tras cambios de esquema:
 
 ```bash
 python scripts/gen_data_dictionary.py   # reescribe docs/DATA_DICTIONARY.md
+python scripts/gen_certificacion.py     # recertifica y reescribe CERTIFICACION.md
 ```

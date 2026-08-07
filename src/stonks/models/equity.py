@@ -20,9 +20,10 @@ from sqlalchemy.dialects.postgresql import TIMESTAMP
 from sqlalchemy.orm import Mapped, mapped_column
 
 from stonks.db import Base
+from stonks.models.linaje import Linaje, LinajeEjecucion
 
 
-class Company(Base):
+class Company(Base, Linaje):
     """Empresa cotizada."""
 
     __tablename__ = "company"
@@ -30,8 +31,11 @@ class Company(Base):
         UniqueConstraint("ticker", "exchange_id"),
         Index("ix_eq_company_ticker", "ticker"),
         Index("ix_eq_company_isin", "isin"),
+        Index("ix_eq_company_lei", "lei"),
         Index("ix_eq_company_country", "country_code"),
         Index("ix_eq_company_sector", "sector_id"),
+        Index("ix_eq_company_exchange", "exchange_id"),
+        Index("ix_eq_company_currency", "currency_code"),
         {"schema": "equity"},
     )
 
@@ -39,6 +43,11 @@ class Company(Base):
     name: Mapped[str] = mapped_column(String(500), nullable=False)
     ticker: Mapped[str] = mapped_column(String(20), nullable=False)
     isin: Mapped[str | None] = mapped_column(String(12))
+    # LEI (ISO 17442): identificador global de entidad legal.
+    # Estable entre mercados, a diferencia del ticker.
+    lei: Mapped[str | None] = mapped_column(
+        String(20), ForeignKey("ref.legal_entity.lei")
+    )
     exchange_id: Mapped[int | None] = mapped_column(
         Integer, ForeignKey("ref.exchange.id")
     )
@@ -60,16 +69,17 @@ class Company(Base):
     description: Mapped[str | None] = mapped_column(Text)
     employees: Mapped[int | None] = mapped_column(Integer)
     last_updated: Mapped[datetime] = mapped_column(
-        DateTime, default=datetime.now
+        DateTime(timezone=True), default=datetime.now
     )
 
 
-class PriceDaily(Base):
+class PriceDaily(Base, LinajeEjecucion):
     """Precio diario OHLCV."""
 
     __tablename__ = "price_daily"
     __table_args__ = (
         UniqueConstraint("company_id", "date"),
+        Index("ix_eq_price_source", "source_id"),
         Index(
             "ix_eq_price_company_date",
             "company_id",
@@ -87,11 +97,11 @@ class PriceDaily(Base):
         nullable=False,
     )
     date: Mapped[date] = mapped_column(Date, nullable=False)
-    open: Mapped[float | None] = mapped_column(Numeric(14, 4))
-    high: Mapped[float | None] = mapped_column(Numeric(14, 4))
-    low: Mapped[float | None] = mapped_column(Numeric(14, 4))
-    close: Mapped[float] = mapped_column(Numeric(14, 4), nullable=False)
-    adj_close: Mapped[float | None] = mapped_column(Numeric(14, 4))
+    open: Mapped[float | None] = mapped_column(Numeric(20, 10))
+    high: Mapped[float | None] = mapped_column(Numeric(20, 10))
+    low: Mapped[float | None] = mapped_column(Numeric(20, 10))
+    close: Mapped[float] = mapped_column(Numeric(20, 10), nullable=False)
+    adj_close: Mapped[float | None] = mapped_column(Numeric(20, 10))
     volume: Mapped[int | None] = mapped_column(BigInteger)
     source_id: Mapped[int | None] = mapped_column(
         Integer, ForeignKey("meta.data_source.id")
@@ -133,22 +143,22 @@ class PriceIntraday(Base):
         primary_key=True,
     )
     open: Mapped[float | None] = mapped_column(
-        Numeric(14, 4),
+        Numeric(20, 10),
     )
     high: Mapped[float | None] = mapped_column(
-        Numeric(14, 4),
+        Numeric(20, 10),
     )
     low: Mapped[float | None] = mapped_column(
-        Numeric(14, 4),
+        Numeric(20, 10),
     )
     close: Mapped[float] = mapped_column(
-        Numeric(14, 4),
+        Numeric(20, 10),
         nullable=False,
     )
     volume: Mapped[int | None] = mapped_column(BigInteger)
 
 
-class IncomeStatement(Base):
+class IncomeStatement(Base, LinajeEjecucion):
     """Cuenta de resultados."""
 
     __tablename__ = "income_statement"
@@ -158,6 +168,7 @@ class IncomeStatement(Base):
             "fiscal_year",
             "fiscal_quarter",
         ),
+        Index("ix_eq_income_source", "source_id"),
         {"schema": "equity"},
     )
 
@@ -189,11 +200,11 @@ class IncomeStatement(Base):
         Integer, ForeignKey("meta.data_source.id")
     )
     fetched_at: Mapped[datetime] = mapped_column(
-        DateTime, default=datetime.now
+        DateTime(timezone=True), default=datetime.now
     )
 
 
-class BalanceSheet(Base):
+class BalanceSheet(Base, LinajeEjecucion):
     """Balance de situación."""
 
     __tablename__ = "balance_sheet"
@@ -203,6 +214,7 @@ class BalanceSheet(Base):
             "fiscal_year",
             "fiscal_quarter",
         ),
+        Index("ix_eq_balance_source", "source_id"),
         {"schema": "equity"},
     )
 
@@ -243,11 +255,11 @@ class BalanceSheet(Base):
         Integer, ForeignKey("meta.data_source.id")
     )
     fetched_at: Mapped[datetime] = mapped_column(
-        DateTime, default=datetime.now
+        DateTime(timezone=True), default=datetime.now
     )
 
 
-class CashFlow(Base):
+class CashFlow(Base, LinajeEjecucion):
     """Estado de flujos de efectivo."""
 
     __tablename__ = "cash_flow"
@@ -257,6 +269,7 @@ class CashFlow(Base):
             "fiscal_year",
             "fiscal_quarter",
         ),
+        Index("ix_eq_cashflow_source", "source_id"),
         {"schema": "equity"},
     )
 
@@ -284,11 +297,11 @@ class CashFlow(Base):
         Integer, ForeignKey("meta.data_source.id")
     )
     fetched_at: Mapped[datetime] = mapped_column(
-        DateTime, default=datetime.now
+        DateTime(timezone=True), default=datetime.now
     )
 
 
-class Dividend(Base):
+class Dividend(Base, Linaje):
     """Dividendos."""
 
     __tablename__ = "dividend"
@@ -311,7 +324,7 @@ class Dividend(Base):
     dividend_type: Mapped[str | None] = mapped_column(String(20))
 
 
-class Split(Base):
+class Split(Base, Linaje):
     """Stock splits."""
 
     __tablename__ = "split"
@@ -331,7 +344,7 @@ class Split(Base):
     ratio_to: Mapped[float | None] = mapped_column(Numeric(10, 4))
 
 
-class AnalystEstimate(Base):
+class AnalystEstimate(Base, LinajeEjecucion):
     """Estimación de consenso de analistas (foto por día).
 
     El histórico se acumula capturando una foto diaria de yfinance
@@ -341,6 +354,7 @@ class AnalystEstimate(Base):
     __tablename__ = "analyst_estimate"
     __table_args__ = (
         UniqueConstraint("company_id", "snapshot_date", "horizon"),
+        Index("ix_eq_estimate_source", "source_id"),
         {"schema": "equity"},
     )
 
@@ -361,7 +375,7 @@ class AnalystEstimate(Base):
     )
 
 
-class EarningsRevision(Base):
+class EarningsRevision(Base, LinajeEjecucion):
     """Revisiones de estimaciones de EPS (foto por día).
 
     Factor de momentum fundamental: cómo se mueve el consenso de EPS y
@@ -371,6 +385,7 @@ class EarningsRevision(Base):
     __tablename__ = "earnings_revision"
     __table_args__ = (
         UniqueConstraint("company_id", "snapshot_date", "horizon"),
+        Index("ix_eq_revision_source", "source_id"),
         {"schema": "equity"},
     )
 
@@ -390,7 +405,7 @@ class EarningsRevision(Base):
     )
 
 
-class Holder(Base):
+class Holder(Base, Linaje):
     """Accionista institucional o fondo (foto por captura)."""
 
     __tablename__ = "holder"
@@ -410,12 +425,13 @@ class Holder(Base):
     holder_name: Mapped[str] = mapped_column(String(200), nullable=False)
     snapshot_date: Mapped[date] = mapped_column(Date, nullable=False)
     date_reported: Mapped[date | None] = mapped_column(Date)
+    # Porcentaje del capital, no fracción: BlackRock en Apple es 8,47.
     pct_held: Mapped[float | None] = mapped_column(Numeric(9, 6))
     shares: Mapped[int | None] = mapped_column(BigInteger)
     value_usd: Mapped[float | None] = mapped_column(Numeric(20, 2))
 
 
-class InsiderTransaction(Base):
+class InsiderTransaction(Base, Linaje):
     """Operación de un insider (compra/venta)."""
 
     __tablename__ = "insider_transaction"
@@ -439,7 +455,7 @@ class InsiderTransaction(Base):
     value_usd: Mapped[float | None] = mapped_column(Numeric(20, 2))
 
 
-class UpgradeDowngrade(Base):
+class UpgradeDowngrade(Base, Linaje):
     """Cambio de recomendación/precio objetivo de una firma."""
 
     __tablename__ = "upgrade_downgrade"
@@ -461,7 +477,7 @@ class UpgradeDowngrade(Base):
     price_target: Mapped[float | None] = mapped_column(Numeric(14, 4))
 
 
-class RecommendationTrend(Base):
+class RecommendationTrend(Base, Linaje):
     """Resumen de recomendaciones (nº de analistas por categoría)."""
 
     __tablename__ = "recommendation_trend"
@@ -483,7 +499,7 @@ class RecommendationTrend(Base):
     strong_sell: Mapped[int | None] = mapped_column(SmallInteger)
 
 
-class SharesHistory(Base):
+class SharesHistory(Base, Linaje):
     """Acciones en circulación a lo largo del tiempo."""
 
     __tablename__ = "shares_history"
@@ -500,7 +516,7 @@ class SharesHistory(Base):
     shares: Mapped[int | None] = mapped_column(BigInteger)
 
 
-class EarningsDate(Base):
+class EarningsDate(Base, Linaje):
     """Fecha de resultados: estimado vs reportado."""
 
     __tablename__ = "earnings_date"
@@ -519,11 +535,15 @@ class EarningsDate(Base):
     surprise_pct: Mapped[float | None] = mapped_column(Numeric(10, 4))
 
 
-class MarketIndex(Base):
+class MarketIndex(Base, Linaje):
     """Índice de mercado."""
 
     __tablename__ = "market_index"
-    __table_args__ = {"schema": "equity"}
+    __table_args__ = (
+        Index("ix_eq_mktindex_country", "country_code"),
+        Index("ix_eq_mktindex_exchange", "exchange_id"),
+        {"schema": "equity"},
+    )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     code: Mapped[str] = mapped_column(String(50), unique=True, nullable=False)
@@ -538,7 +558,7 @@ class MarketIndex(Base):
     description: Mapped[str | None] = mapped_column(Text)
 
 
-class IndexConstituentCurrent(Base):
+class IndexConstituentCurrent(Base, LinajeEjecucion):
     """Constituyentes ACTUALES de un índice (snapshot sin historial).
 
     Para índices donde no reconstruimos historial point-in-time (el
@@ -549,6 +569,8 @@ class IndexConstituentCurrent(Base):
     __tablename__ = "index_constituent_current"
     __table_args__ = (
         UniqueConstraint("index_id", "company_id"),
+        Index("ix_eq_idxconst_company", "company_id"),
+        Index("ix_eq_idxconst_source", "source_id"),
         {"schema": "equity"},
     )
 
@@ -566,7 +588,7 @@ class IndexConstituentCurrent(Base):
     )
 
 
-class IndexPrice(Base):
+class IndexPrice(Base, Linaje):
     """Precio diario de un índice."""
 
     __tablename__ = "index_price"
@@ -589,8 +611,43 @@ class IndexPrice(Base):
         nullable=False,
     )
     date: Mapped[date] = mapped_column(Date, nullable=False)
-    open: Mapped[float | None] = mapped_column(Numeric(14, 4))
-    high: Mapped[float | None] = mapped_column(Numeric(14, 4))
-    low: Mapped[float | None] = mapped_column(Numeric(14, 4))
-    close: Mapped[float] = mapped_column(Numeric(14, 4), nullable=False)
+    open: Mapped[float | None] = mapped_column(Numeric(20, 10))
+    high: Mapped[float | None] = mapped_column(Numeric(20, 10))
+    low: Mapped[float | None] = mapped_column(Numeric(20, 10))
+    close: Mapped[float] = mapped_column(Numeric(20, 10), nullable=False)
     volume: Mapped[int | None] = mapped_column(BigInteger)
+
+
+class FactorReturn(Base, LinajeEjecucion):
+    """Rentabilidad de factores académicos (Fama-French).
+
+    La base ya calculaba puntuaciones de factores propias en
+    `gold.fact_factor_scores`, pero no tenía ningún patrón externo con
+    el que contrastarlas. La Data Library de Kenneth French publica de
+    forma gratuita las series canónicas (mercado, tamaño, valor,
+    rentabilidad, inversión y momento) por región.
+
+    Los valores están en tanto por ciento mensual o diario, tal y como
+    los publica la fuente.
+    """
+
+    __tablename__ = "factor_return"
+    __table_args__ = (
+        UniqueConstraint("region", "frequency", "factor", "date"),
+        Index("ix_eq_factor_date", "date"),
+        Index("ix_eq_factor_source", "source_id"),
+        {"schema": "equity"},
+    )
+
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+    # developed | emerging | us | europe | japan | asia_pacific
+    region: Mapped[str] = mapped_column(String(20), nullable=False)
+    # daily | monthly
+    frequency: Mapped[str] = mapped_column(String(10), nullable=False)
+    # mkt_rf | smb | hml | rmw | cma | mom | rf
+    factor: Mapped[str] = mapped_column(String(10), nullable=False)
+    date: Mapped[date] = mapped_column(Date, nullable=False)
+    value_pct: Mapped[float] = mapped_column(Numeric(12, 6), nullable=False)
+    source_id: Mapped[int | None] = mapped_column(
+        Integer, ForeignKey("meta.data_source.id")
+    )
